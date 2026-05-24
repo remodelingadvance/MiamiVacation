@@ -13,6 +13,7 @@ import {
   HiArrowRight,
   HiTag,
   HiX,
+  HiStar,
   HiInformationCircle,
 } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
