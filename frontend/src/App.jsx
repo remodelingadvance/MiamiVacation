@@ -14,6 +14,9 @@ const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
 const BookingConfirmationPage = lazy(() => import('./pages/BookingConfirmationPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
 
 function App() {
   const location = useLocation();
@@ -28,7 +31,10 @@ function App() {
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/properties/:slug" element={<PropertyDetailsPage />} />
             <Route path="/about" element={<AboutPage />} />
-
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            
             <Route element={<ProtectedRoute />}>
               <Route path="/booking/:propertyId" element={<BookingPage />} />
               <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmationPage />} />
