@@ -63,3 +63,13 @@ export const webhookLimiter = rateLimit({
     message: 'Too many webhook requests',
   },
 });
+
+// Contact form limiter
+export const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 contact submissions
+  message: {
+    success: false,
+    message: 'Too many contact form submissions. Please try again later.',
+  },
+});

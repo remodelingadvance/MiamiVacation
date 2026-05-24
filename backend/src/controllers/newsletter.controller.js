@@ -9,28 +9,43 @@ import logger from '../utils/logger.js';
 export const subscribe = catchAsync(async (req, res, next) => {
   const { email, firstName, preferences } = req.body;
 
+  // Check if already subscribed
   const existingSubscriber = await Newsletter.findOne({ email });
 
   if (existingSubscriber) {
     if (existingSubscriber.status === 'unsubscribed') {
+      // Re-subscribe
       existingSubscriber.status = 'active';
       existingSubscriber.subscribedAt = Date.now();
+      existingSubscriber.unsubscribedAt = undefined;
+      if (preferences) existingSubscriber.preferences = preferences;
       await existingSubscriber.save();
       
       return res.status(200).json({
         success: true,
         message: 'You have been re-subscribed to our newsletter',
+        subscriber: existingSubscriber,
       });
     }
     
-    return next(new AppError('This email is already subscribed', 400));
+    return next(new AppError('This email is already subscribed to our newsletter', 400));
   }
 
+  // Create new subscriber
   const subscriber = await Newsletter.create({
     email,
     firstName,
-    preferences,
+    preferences: preferences || {
+      promotions: true,
+      newProperties: true,
+      blog: false,
+      events: false,
+    },
     source: req.body.source || 'homepage',
+    metadata: {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    },
   });
 
   logger.info(`Newsletter subscription: ${email}`);
@@ -38,6 +53,7 @@ export const subscribe = catchAsync(async (req, res, next) => {
   res.status(201).json({
     success: true,
     message: 'Successfully subscribed to newsletter',
+    subscriber,
   });
 });
 
@@ -45,7 +61,7 @@ export const subscribe = catchAsync(async (req, res, next) => {
 // @route   POST /api/v1/newsletter/unsubscribe
 // @access  Public
 export const unsubscribe = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
+  const { email, reason } = req.body;
 
   const subscriber = await Newsletter.findOne({ email });
 
@@ -53,8 +69,15 @@ export const unsubscribe = catchAsync(async (req, res, next) => {
     return next(new AppError('Email not found in our subscriber list', 404));
   }
 
+  if (subscriber.status === 'unsubscribed') {
+    return next(new AppError('This email is already unsubscribed', 400));
+  }
+
   subscriber.status = 'unsubscribed';
   subscriber.unsubscribedAt = Date.now();
+  if (reason) {
+    subscriber.unsubscribeReason = reason;
+  }
   await subscriber.save();
 
   logger.info(`Newsletter unsubscription: ${email}`);
@@ -69,27 +92,117 @@ export const unsubscribe = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/newsletter/subscribers
 // @access  Private/Admin
 export const getSubscribers = catchAsync(async (req, res, next) => {
-  const { status, page = 1, limit = 50 } = req.query;
+  const { status, source, page = 1, limit = 50, sort = '-subscribedAt' } = req.query;
 
   const query = {};
   if (status) query.status = status;
+  if (source) query.source = source;
 
   const subscribers = await Newsletter.find(query)
-    .sort('-subscribedAt')
+    .sort(sort)
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
 
   const total = await Newsletter.countDocuments(query);
 
+  // Get stats
+  const stats = await Newsletter.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalSubscribers: { $sum: 1 },
+        activeSubscribers: {
+          $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] },
+        },
+        unsubscribedCount: {
+          $sum: { $cond: [{ $eq: ['$status', 'unsubscribed'] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+
   res.status(200).json({
     success: true,
     count: subscribers.length,
     total,
+    stats: stats[0] || {},
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
       totalPages: Math.ceil(total / limit),
     },
     subscribers,
+  });
+});
+
+// @desc    Delete subscriber (Admin)
+// @route   DELETE /api/v1/newsletter/subscribers/:id
+// @access  Private/Admin
+export const deleteSubscriber = catchAsync(async (req, res, next) => {
+  const subscriber = await Newsletter.findById(req.params.id);
+
+  if (!subscriber) {
+    return next(new AppError('Subscriber not found', 404));
+  }
+
+  await subscriber.deleteOne();
+
+  logger.info(`Subscriber deleted: ${subscriber.email}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Subscriber deleted successfully',
+  });
+});
+
+// @desc    Bulk import subscribers (Admin)
+// @route   POST /api/v1/newsletter/bulk-import
+// @access  Private/Admin
+export const bulkImportSubscribers = catchAsync(async (req, res, next) => {
+  const { subscribers } = req.body;
+
+  if (!Array.isArray(subscribers) || subscribers.length === 0) {
+    return next(new AppError('Please provide an array of subscribers', 400));
+  }
+
+  const results = {
+    success: 0,
+    failed: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  for (const sub of subscribers) {
+    try {
+      const existing = await Newsletter.findOne({ email: sub.email });
+      if (existing) {
+        results.skipped++;
+        continue;
+      }
+
+      await Newsletter.create({
+        email: sub.email,
+        firstName: sub.firstName,
+        preferences: sub.preferences || {
+          promotions: true,
+          newProperties: true,
+          blog: false,
+          events: false,
+        },
+        source: 'import',
+      });
+      results.success++;
+    } catch (error) {
+      results.failed++;
+      results.errors.push({
+        email: sub.email,
+        error: error.message,
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    results,
   });
 });

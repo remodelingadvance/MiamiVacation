@@ -3,6 +3,8 @@ import {
   subscribe,
   unsubscribe,
   getSubscribers,
+  deleteSubscriber,
+  bulkImportSubscribers,
 } from '../controllers/newsletter.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { generalLimiter } from '../middleware/rateLimiter.js';
@@ -14,11 +16,11 @@ router.post('/subscribe', generalLimiter, subscribe);
 router.post('/unsubscribe', generalLimiter, unsubscribe);
 
 // Admin routes
-router.get(
-  '/subscribers',
-  protect,
-  authorize('admin', 'super-admin'),
-  getSubscribers
-);
+router.use(protect);
+router.use(authorize('admin', 'super-admin'));
+
+router.get('/subscribers', getSubscribers);
+router.delete('/subscribers/:id', deleteSubscriber);
+router.post('/bulk-import', bulkImportSubscribers);
 
 export default router;

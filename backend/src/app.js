@@ -9,11 +9,33 @@ import xss from 'xss-clean';
 import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
 
+// Import routes
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import propertyRoutes from './routes/property.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import couponRoutes from './routes/coupon.routes.js';
+import contactRoutes from './routes/contact.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
+
+// Import middleware
+import errorHandler from './middleware/errorHandler.js';
+import { notFound } from './middleware/notFound.js';
 
 const app = express();
 
-// Body parser
-app.use(express.json({ limit: '10mb' }));
+// Body parser - IMPORTANT: Do this before webhook route
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/v1/payments/webhook') {
+    next(); // Skip JSON parsing for webhook
+  } else {
+    express.json({ limit: '10mb' })(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
@@ -25,10 +47,10 @@ app.use(hpp());
 
 // CORS
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL],
+  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL, 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Compression
@@ -57,13 +79,24 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
 
-// Mount routes
+// API routes
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
 
-
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/users`, userRoutes);
+app.use(`${API_PREFIX}/properties`, propertyRoutes);
+app.use(`${API_PREFIX}/bookings`, bookingRoutes);
+app.use(`${API_PREFIX}/reviews`, reviewRoutes);
+app.use(`${API_PREFIX}/coupons`, couponRoutes);
+app.use(`${API_PREFIX}/contact`, contactRoutes);
+app.use(`${API_PREFIX}/upload`, uploadRoutes);
+app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/payments`, paymentRoutes);
+app.use(`${API_PREFIX}/newsletter`, newsletterRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -71,8 +104,16 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
   });
 });
+
+// 404 handler
+app.use(notFound);
+
+// Error handler
+app.use(errorHandler);
 
 export default app;
