@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiX, HiHome, HiBuilding, HiInformationCircle, HiMail, HiPhone, HiHeart } from 'react-icons/hi';
+import { HiX, HiHome, HiInformationCircle, HiMail, HiPhone, HiHeart } from 'react-icons/hi';
+import { FaBuilding } from "react-icons/fa";
 import { useAuth } from '../../contexts/AuthContext';
 import { APP_CONFIG } from '../../config/constants';
 
@@ -28,7 +29,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { icon: HiHome, label: 'Home', to: '/' },
-    { icon: HiBuilding, label: 'Properties', to: '/properties' },
+    { icon: FaBuilding, label: 'Properties', to: '/properties' },
     { icon: HiInformationCircle, label: 'About', to: '/about' },
     { icon: HiMail, label: 'Contact', to: '/contact' },
   ];
@@ -109,7 +110,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                     onClick={onClose}
                     className="flex items-center gap-4 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/5 transition-all"
                   >
-                    <HiBuilding className="w-5 h-5 text-[var(--color-primary)]" />
+                    <FaBuilding className="w-5 h-5 text-[var(--color-primary)]" />
                     <span>My Bookings</span>
                   </Link>
                   <Link
