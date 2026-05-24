@@ -17,6 +17,9 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function App() {
   const location = useLocation();
@@ -34,11 +37,14 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
             <Route element={<ProtectedRoute />}>
               <Route path="/booking/:propertyId" element={<BookingPage />} />
               <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmationPage />} />
             </Route>
+
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </Suspense>
