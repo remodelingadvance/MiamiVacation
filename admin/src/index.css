@@ -1,0 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  :root {
+    --color-primary: #C8A97E;
+    --color-primary-dark: #B8956E;
+    --color-primary-light: #D4B896;
+    --color-secondary: #1A1A2E;
+    --color-accent: #E6B17E;
+    --color-bg-dark: #0A0A0F;
+    --color-bg-medium: #12121A;
+    --color-bg-light: #1A1A2E;
+    --color-text-primary: #F5F5F7;
+    --color-text-secondary: #A0A0B0;
+    --color-text-muted: #6B7280;
+    --color-success: #10B981;
+    --color-error: #EF4444;
+    --color-warning: #F59E0B;
+    --color-info: #3B82F6;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-primary);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg-medium);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 3px;
+  }
+
+  .glass {
+    background: rgba(26, 26, 46, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-strong {
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(200, 169, 126, 0.2);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-bg-dark);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 30px rgba(200, 169, 126, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--color-primary);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: 2px solid var(--color-primary);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .btn-outline:hover {
+    background: var(--color-primary);
+    color: var(--color-bg-dark);
+  }
+
+  .btn-danger {
+    background: var(--color-error);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--color-bg-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    transition: all 0.15s;
+    outline: none;
+  }
+
+  .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(200, 169, 126, 0.1);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--color-success);
+  }
+
+  .badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--color-warning);
+  }
+
+  .badge-error {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--color-error);
+  }
+
+  .badge-info {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--color-info);
+  }
+
+  .stat-card {
+    padding: 24px;
+    border-radius: 16px;
+    background: rgba(26, 26, 46, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .table-header {
+    background: var(--color-bg-light);
+  }
+
+  .table-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .table-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
