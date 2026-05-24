@@ -11,6 +11,7 @@ import MainLayout from './layouts/MainLayout';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
 const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
+const BookingPage = lazy(() => import('./pages/BookingPage'));
 
 function App() {
   const location = useLocation();
@@ -24,6 +25,10 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/properties/:slug" element={<PropertyDetailsPage />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/booking/:propertyId" element={<BookingPage />} />
+            </Route>
           </Route>
         </Routes>
       </Suspense>
