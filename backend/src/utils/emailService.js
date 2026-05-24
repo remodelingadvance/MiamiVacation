@@ -1,0 +1,106 @@
+import createTransporter from '../config/brevo.js';
+
+class EmailService {
+  constructor() {
+    this.transporter = createTransporter();
+    this.from = `"${process.env.BREVO_SENDER_NAME}" <${process.env.BREVO_SENDER_EMAIL}>`;
+  }
+
+  async send({ to, subject, html, attachments = [] }) {
+    try {
+      const mailOptions = {
+        from: this.from,
+        to,
+        subject,
+        html,
+        attachments,
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Email sent:', info.messageId);
+      return info;
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      throw error;
+    }
+  }
+
+  async sendBookingConfirmation(booking, user) {
+    const subject = `Booking Confirmation - ${booking.bookingNumber}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .booking-details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Booking Confirmed! 🎉</h1>
+            <p>Thank you for choosing Miami Luxury Rentals</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${user.firstName},</h2>
+            <p>Your booking has been confirmed. Here are your booking details:</p>
+            
+            <div class="booking-details">
+              <p><strong>Booking Number:</strong> ${booking.bookingNumber}</p>
+              <p><strong>Property:</strong> ${booking.property.name}</p>
+              <p><strong>Check-in:</strong> ${new Date(booking.checkIn).toLocaleDateString()}</p>
+              <p><strong>Check-out:</strong> ${new Date(booking.checkOut).toLocaleDateString()}</p>
+              <p><strong>Guests:</strong> ${booking.guests}</p>
+              <p><strong>Total Amount:</strong> $${booking.totalAmount.toFixed(2)}</p>
+            </div>
+
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+            
+            <a href="${process.env.FRONTEND_URL}/bookings/${booking._id}" class="button">View Booking</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.send({ to: user.email, subject, html });
+  }
+
+  async sendPaymentConfirmation(booking, user) {
+    const subject = `Payment Confirmed - ${booking.bookingNumber}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Payment Confirmed ✅</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${user.firstName},</h2>
+            <p>Your payment of $${booking.totalAmount.toFixed(2)} has been processed successfully.</p>
+            <p>Booking Number: ${booking.bookingNumber}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.send({ to: user.email, subject, html });
+  }
+}
+
+export default new EmailService();
