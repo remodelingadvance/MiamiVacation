@@ -10,6 +10,7 @@ import {
   searchProperties,
   checkAvailability,
   getPropertyStats,
+  getPropertyBookings,
 } from '../controllers/property.controller.js';
 import { protect, authorize, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -29,6 +30,7 @@ router.get('/search', validate(propertySearchValidator), searchProperties);
 router.get('/slug/:slug', getPropertyBySlug);
 router.get('/:id', getProperty);
 router.get('/:id/availability', checkAvailability);
+router.get('/:id/bookings', getPropertyBookings);
 
 // Admin only routes
 router.use(protect);

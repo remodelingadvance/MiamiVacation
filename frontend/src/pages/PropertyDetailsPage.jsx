@@ -13,8 +13,23 @@ import {
   HiShare,
   HiShieldCheck,
   HiSparkles,
+  HiWifi,
+  HiFire,
+  HiDesktopComputer,
+  HiSun,
+  HiKey,
+  HiCreditCard,
+  HiPhone,
+  HiMail,
+  HiClock,
+  HiX,
+  HiPlus,
+  HiInformationCircle,
 } from 'react-icons/hi';
-import { FaBed, FaBath, FaRulerCombined, FaParking } from 'react-icons/fa';
+import { FaBed, FaBath, FaRulerCombined, FaParking, FaSnowflake, FaUtensils, FaTv, FaSoap, FaShieldAlt } from 'react-icons/fa';
+import { GiBarbecue, GiHotSpices } from 'react-icons/gi';
+import { PiSwimmingPoolBold } from "react-icons/pi";
+import { FaCar, FaCoffee } from "react-icons/fa";
 import SEOHead from '../components/common/SEOHead';
 import ImageGallery from '../components/common/ImageGallery';
 import StarRating from '../components/common/StarRating';
@@ -27,6 +42,21 @@ import { useAuth } from '../contexts/AuthContext';
 import apiService from '../config/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
+
+// Icon mapping for amenities
+const getAmenityIcon = (category) => {
+  const icons = {
+    basic: <HiWifi className="w-5 h-5" />,
+    kitchen: <FaUtensils className="w-5 h-5" />,
+    bathroom: <FaSoap className="w-5 h-5" />,
+    outdoor: <PiSwimmingPoolBold className="w-5 h-5" />,
+    entertainment: <FaTv className="w-5 h-5" />,
+    safety: <FaShieldAlt className="w-5 h-5" />,
+    accessibility: <FaCar className="w-5 h-5" />,
+    other: <HiSparkles className="w-5 h-5" />,
+  };
+  return icons[category] || <HiSparkles className="w-5 h-5" />;
+};
 
 const PropertyDetailsPage = () => {
   const { slug } = useParams();
@@ -90,7 +120,7 @@ const PropertyDetailsPage = () => {
       <SEOHead
         title={property.name}
         description={property.description.short}
-        image={property.images[0]?.url}
+        image={property.images?.[0]?.url}
         type="property"
       />
 
@@ -99,23 +129,28 @@ const PropertyDetailsPage = () => {
         <div className="container-custom py-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="badge badge-primary">{property.type}</span>
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <span className="badge badge-primary capitalize">{property.type}</span>
                 {property.featured && (
                   <span className="badge badge-warning">Featured</span>
                 )}
+                <span className="badge badge-success capitalize">{property.status}</span>
               </div>
               <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">
                 {property.name}
               </h1>
-              <div className="flex items-center gap-4 text-[var(--color-text-secondary)]">
+              <div className="flex flex-wrap items-center gap-4 text-[var(--color-text-secondary)]">
                 <div className="flex items-center gap-1">
                   <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />
-                  <span>{property.location.neighborhood}, {property.location.city}</span>
+                  <span>{property.location?.address}, {property.location?.neighborhood}, {property.location?.city}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <HiStar className="w-4 h-4 text-[var(--color-primary)]" />
-                  <span>{property.ratings.average} ({property.ratings.count} reviews)</span>
+                  <span>{property.ratings?.average || 0} ({property.ratings?.count || 0} reviews)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <HiUsers className="w-4 h-4 text-[var(--color-primary)]" />
+                  <span>Up to {property.details?.maxGuests} guests</span>
                 </div>
               </div>
             </div>
@@ -154,11 +189,13 @@ const PropertyDetailsPage = () => {
       </section>
 
       {/* Image Gallery */}
-      <section className="pb-8">
-        <div className="container-custom">
-          <ImageGallery images={property.images} alt={property.name} />
-        </div>
-      </section>
+      {property.images && property.images.length > 0 && (
+        <section className="pb-8">
+          <div className="container-custom">
+            <ImageGallery images={property.images} alt={property.name} />
+          </div>
+        </section>
+      )}
 
       {/* Content */}
       <section className="py-8">
@@ -167,8 +204,8 @@ const PropertyDetailsPage = () => {
             {/* Main content */}
             <div className="lg:col-span-2 space-y-8">
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-white/10 pb-4">
-                {['overview', 'amenities', 'reviews', 'location'].map((tab) => (
+              <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
+                {['overview', 'amenities', 'policies', 'reviews', 'location'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -183,7 +220,7 @@ const PropertyDetailsPage = () => {
                 ))}
               </div>
 
-              {/* Overview */}
+              {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -196,62 +233,187 @@ const PropertyDetailsPage = () => {
                       About this property
                     </h2>
                     <p className="text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-line">
-                      {property.description.full}
+                      {property.description?.full || property.description?.short}
                     </p>
                   </div>
 
                   {/* Key details */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {[
-                      { icon: FaBed, label: 'Bedrooms', value: property.details.bedrooms },
-                      { icon: FaBath, label: 'Bathrooms', value: property.details.bathrooms },
-                      { icon: HiUsers, label: 'Max Guests', value: property.details.maxGuests },
-                      { icon: FaRulerCombined, label: 'Size', value: `${property.details.size} sq ft` },
-                    ].map((detail) => (
-                      <div key={detail.label} className="p-4 rounded-xl glass-light text-center">
-                        <detail.icon className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                        <p className="text-white font-semibold">{detail.value}</p>
-                        <p className="text-xs text-[var(--color-text-muted)]">{detail.label}</p>
+                  <div>
+                    <h3 className="text-xl font-display font-bold text-white mb-4">Property Details</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="p-4 rounded-xl glass-light text-center">
+                        <FaBed className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                        <p className="text-white font-semibold">{property.details?.bedrooms}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">Bedrooms</p>
                       </div>
-                    ))}
+                      <div className="p-4 rounded-xl glass-light text-center">
+                        <FaBath className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                        <p className="text-white font-semibold">{property.details?.bathrooms}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">Bathrooms</p>
+                      </div>
+                      <div className="p-4 rounded-xl glass-light text-center">
+                        <HiUsers className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                        <p className="text-white font-semibold">{property.details?.maxGuests}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">Max Guests</p>
+                      </div>
+                      <div className="p-4 rounded-xl glass-light text-center">
+                        <FaRulerCombined className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                        <p className="text-white font-semibold">{property.details?.size || 'N/A'} {property.details?.size ? 'sq ft' : ''}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">Size</p>
+                      </div>
+                      {property.details?.floor && (
+                        <div className="p-4 rounded-xl glass-light text-center">
+                          <HiHome className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                          <p className="text-white font-semibold">Floor {property.details.floor}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">Floor</p>
+                        </div>
+                      )}
+                      {property.details?.yearBuilt && (
+                        <div className="p-4 rounded-xl glass-light text-center">
+                          <HiCalendar className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                          <p className="text-white font-semibold">{property.details.yearBuilt}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">Year Built</p>
+                        </div>
+                      )}
+                      {property.details?.parking > 0 && (
+                        <div className="p-4 rounded-xl glass-light text-center">
+                          <FaParking className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
+                          <p className="text-white font-semibold">{property.details.parking}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">Parking Spots</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Nearby Places */}
+                  {property.location?.nearbyPlaces && property.location.nearbyPlaces.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-white mb-4">Nearby Places</h3>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {property.location.nearbyPlaces.map((place, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 rounded-lg glass-light">
+                            <div className="flex items-center gap-3">
+                              <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
+                              <div>
+                                <p className="text-white font-medium">{place.name}</p>
+                                <p className="text-xs text-[var(--color-text-muted)] capitalize">{place.type?.replace('_', ' ')}</p>
+                              </div>
+                            </div>
+                            <span className="text-[var(--color-primary)] text-sm font-medium">{place.distance}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* House rules */}
                   <div>
                     <h3 className="text-xl font-display font-bold text-white mb-4">House Rules</h3>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                        <HiCalendar className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
+                        <HiClock className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
                         <div>
                           <p className="text-white text-sm font-medium">Check-in</p>
-                          <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules.checkIn}</p>
+                          <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules?.checkIn || '15:00'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                        <HiCalendar className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
+                        <HiClock className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
                         <div>
                           <p className="text-white text-sm font-medium">Check-out</p>
-                          <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules.checkOut}</p>
+                          <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules?.checkOut || '11:00'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                        <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
+                        {property.houseRules?.smoking ? (
+                          <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
+                        ) : (
+                          <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        )}
                         <p className="text-[var(--color-text-secondary)] text-sm">
-                          {property.houseRules.smoking ? 'Smoking allowed' : 'No smoking'}
+                          {property.houseRules?.smoking ? 'Smoking allowed' : 'No smoking'}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                        <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
+                        {property.houseRules?.pets ? (
+                          <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
+                        ) : (
+                          <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        )}
                         <p className="text-[var(--color-text-secondary)] text-sm">
-                          {property.houseRules.pets ? 'Pets allowed' : 'No pets'}
+                          {property.houseRules?.pets ? 'Pets allowed' : 'No pets'}
                         </p>
                       </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
+                        {property.houseRules?.parties ? (
+                          <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
+                        ) : (
+                          <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        )}
+                        <p className="text-[var(--color-text-secondary)] text-sm">
+                          {property.houseRules?.parties ? 'Parties allowed' : 'No parties/events'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Additional Rules */}
+                    {property.houseRules?.additionalRules && property.houseRules.additionalRules.length > 0 && (
+                      <div className="mt-4 p-4 rounded-lg glass-light">
+                        <h4 className="text-white font-medium mb-2">Additional Rules</h4>
+                        <ul className="space-y-1">
+                          {property.houseRules.additionalRules.map((rule, index) => (
+                            <li key={index} className="text-[var(--color-text-secondary)] text-sm flex items-center gap-2">
+                              <HiShieldCheck className="w-4 h-4 text-[var(--color-primary)]" />
+                              {rule}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pricing Information */}
+                  <div>
+                    <h3 className="text-xl font-display font-bold text-white mb-4">Pricing Information</h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg glass-light">
+                        <p className="text-[var(--color-text-muted)] text-sm">Base Price</p>
+                        <p className="text-white font-bold text-lg">{formatCurrency(property.pricing?.basePrice)} <span className="text-sm font-normal text-[var(--color-text-muted)]">/night</span></p>
+                      </div>
+                      {property.pricing?.cleaningFee > 0 && (
+                        <div className="p-3 rounded-lg glass-light">
+                          <p className="text-[var(--color-text-muted)] text-sm">Cleaning Fee</p>
+                          <p className="text-white font-semibold">{formatCurrency(property.pricing.cleaningFee)}</p>
+                        </div>
+                      )}
+                      {property.pricing?.serviceFee > 0 && (
+                        <div className="p-3 rounded-lg glass-light">
+                          <p className="text-[var(--color-text-muted)] text-sm">Service Fee</p>
+                          <p className="text-white font-semibold">{formatCurrency(property.pricing.serviceFee)}</p>
+                        </div>
+                      )}
+                      <div className="p-3 rounded-lg glass-light">
+                        <p className="text-[var(--color-text-muted)] text-sm">Minimum Stay</p>
+                        <p className="text-white font-semibold">{property.pricing?.minimumStay || 2} nights</p>
+                      </div>
+                      {property.pricing?.weeklyDiscount > 0 && (
+                        <div className="p-3 rounded-lg glass-light">
+                          <p className="text-[var(--color-text-muted)] text-sm">Weekly Discount</p>
+                          <p className="text-[var(--color-success)] font-semibold">{property.pricing.weeklyDiscount}% off</p>
+                        </div>
+                      )}
+                      {property.pricing?.monthlyDiscount > 0 && (
+                        <div className="p-3 rounded-lg glass-light">
+                          <p className="text-[var(--color-text-muted)] text-sm">Monthly Discount</p>
+                          <p className="text-[var(--color-success)] font-semibold">{property.pricing.monthlyDiscount}% off</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Amenities */}
+              {/* Amenities Tab */}
               {activeTab === 'amenities' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -259,14 +421,21 @@ const PropertyDetailsPage = () => {
                   className="space-y-6"
                 >
                   <h2 className="text-2xl font-display font-bold text-white mb-4">
-                    Amenities
+                    Amenities & Features
                   </h2>
                   {property.amenities && property.amenities.length > 0 ? (
-                    <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid sm:grid-cols-2 gap-4">
                       {property.amenities.map((amenity, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                          <span className="text-2xl">{amenity.icon || '✨'}</span>
-                          <span className="text-[var(--color-text-secondary)]">{amenity.name}</span>
+                        <div key={index} className="flex items-start gap-3 p-3 rounded-lg glass-light">
+                          <div className="text-[var(--color-primary)] text-xl">
+                            {getAmenityIcon(amenity.category)}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{amenity.name}</p>
+                            {amenity.description && (
+                              <p className="text-[var(--color-text-muted)] text-sm mt-1">{amenity.description}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -276,43 +445,91 @@ const PropertyDetailsPage = () => {
                 </motion.div>
               )}
 
-              {/* Reviews */}
+              {/* Policies Tab */}
+              {activeTab === 'policies' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <h2 className="text-2xl font-display font-bold text-white mb-4">
+                    Policies & Important Notes
+                  </h2>
+                  {property.policiesAndNotes && property.policiesAndNotes.length > 0 ? (
+                    <div className="space-y-6">
+                      {property.policiesAndNotes.map((policy, index) => (
+                        <div key={index} className="p-5 rounded-xl glass-light">
+                          <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <HiShieldCheck className="w-5 h-5 text-[var(--color-primary)]" />
+                            {policy.title}
+                          </h3>
+                          <ul className="space-y-2">
+                            {policy.points.map((point, pointIndex) => (
+                              <li key={pointIndex} className="flex items-start gap-2 text-[var(--color-text-secondary)]">
+                                <HiCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[var(--color-text-muted)]">No policies listed</p>
+                  )}
+
+                  {/* Cancellation info placeholder */}
+                  <div className="p-5 rounded-xl glass-light">
+                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                      <HiCreditCard className="w-5 h-5 text-[var(--color-primary)]" />
+                      Cancellation Policy
+                    </h3>
+                    <p className="text-[var(--color-text-secondary)]">
+                      Free cancellation up to 30 days before check-in. For more details, please contact the host.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Reviews Tab */}
               {activeTab === 'reviews' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-6"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
                     <h2 className="text-2xl font-display font-bold text-white">
                       Reviews ({reviews.length})
                     </h2>
                     <div className="flex items-center gap-2">
                       <HiStar className="w-6 h-6 text-[var(--color-primary)]" />
-                      <span className="text-2xl font-bold text-white">{property.ratings.average}</span>
+                      <span className="text-2xl font-bold text-white">{property.ratings?.average || 0}</span>
                       <span className="text-[var(--color-text-muted)]">
-                        · {property.ratings.count} reviews
+                        · {property.ratings?.count || 0} reviews
                       </span>
                     </div>
                   </div>
 
                   {/* Rating breakdown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(property.ratings.breakdown || {}).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between p-3 rounded-lg glass-light">
-                        <span className="text-[var(--color-text-secondary)] capitalize">{key}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-[var(--color-primary)] rounded-full"
-                              style={{ width: `${(value / 5) * 100}%` }}
-                            />
+                  {property.ratings?.breakdown && Object.keys(property.ratings.breakdown).length > 0 && (
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(property.ratings.breakdown).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between p-3 rounded-lg glass-light">
+                          <span className="text-[var(--color-text-secondary)] capitalize">{key}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-[var(--color-primary)] rounded-full"
+                                style={{ width: `${(value / 5) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-white text-sm font-medium">{value?.toFixed(1)}</span>
                           </div>
-                          <span className="text-white text-sm font-medium">{value.toFixed(1)}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Review list */}
                   <div className="space-y-4">
@@ -329,7 +546,7 @@ const PropertyDetailsPage = () => {
                 </motion.div>
               )}
 
-              {/* Location */}
+              {/* Location Tab */}
               {activeTab === 'location' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -340,55 +557,67 @@ const PropertyDetailsPage = () => {
                     Location
                   </h2>
                   
+                  <div className="p-4 rounded-xl glass-light">
+                    <p className="text-[var(--color-text-secondary)]">
+                      <strong className="text-white">Address:</strong> {property.location?.address}
+                    </p>
+                    <p className="text-[var(--color-text-secondary)] mt-1">
+                      <strong className="text-white">Neighborhood:</strong> {property.location?.neighborhood}
+                    </p>
+                    <p className="text-[var(--color-text-secondary)] mt-1">
+                      <strong className="text-white">City:</strong> {property.location?.city}, {property.location?.state} {property.location?.zipCode}
+                    </p>
+                  </div>
+                  
                   {/* Map */}
-                  <div className="h-[400px] rounded-2xl overflow-hidden">
-                    <MapContainer
-                      center={[
-                        property.location.coordinates.coordinates[1],
-                        property.location.coordinates.coordinates[0],
-                      ]}
-                      zoom={14}
-                      scrollWheelZoom={false}
-                      className="w-full h-full"
-                    >
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <Marker
-                        position={[
+                  {property.location?.coordinates?.coordinates && (
+                    <div className="h-[400px] rounded-2xl overflow-hidden">
+                      <MapContainer
+                        center={[
                           property.location.coordinates.coordinates[1],
                           property.location.coordinates.coordinates[0],
                         ]}
+                        zoom={14}
+                        scrollWheelZoom={false}
+                        className="w-full h-full"
                       >
-                        <Popup>
-                          <strong>{property.name}</strong>
-                          <br />
-                          {property.location.address}
-                        </Popup>
-                      </Marker>
-                    </MapContainer>
-                  </div>
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker
+                          position={[
+                            property.location.coordinates.coordinates[1],
+                            property.location.coordinates.coordinates[0],
+                          ]}
+                        >
+                          <Popup>
+                            <strong>{property.name}</strong>
+                            <br />
+                            {property.location.address}
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    </div>
+                  )}
 
-                  {/* Nearby attractions */}
-                  {property.location.nearbyAttractions && property.location.nearbyAttractions.length > 0 && (
+                  {/* Nearby Places - detailed */}
+                  {property.location?.nearbyPlaces && property.location.nearbyPlaces.length > 0 && (
                     <div>
                       <h3 className="text-xl font-display font-bold text-white mb-4">
-                        Nearby Attractions
+                        Nearby Places
                       </h3>
-                      <div className="space-y-3">
-                        {property.location.nearbyAttractions.map((attraction, index) => (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {property.location.nearbyPlaces.map((place, index) => (
                           <div key={index} className="flex items-center justify-between p-3 rounded-lg glass-light">
                             <div className="flex items-center gap-3">
                               <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
                               <div>
-                                <p className="text-white font-medium">{attraction.name}</p>
-                                <p className="text-xs text-[var(--color-text-muted)] capitalize">{attraction.type}</p>
+                                <p className="text-white font-medium">{place.name}</p>
+                                <p className="text-xs text-[var(--color-text-muted)] capitalize">{place.type?.replace('_', ' ')}</p>
                               </div>
                             </div>
-                            <span className="text-[var(--color-primary)] text-sm font-medium">
-                              {attraction.distance}
-                            </span>
+                            <span className="text-[var(--color-primary)] text-sm font-medium">{place.distance}</span>
                           </div>
                         ))}
                       </div>

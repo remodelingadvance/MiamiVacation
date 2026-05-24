@@ -69,6 +69,14 @@ const propertySchema = new mongoose.Schema({
       }
     },
     neighborhood: String,
+    nearbyPlaces: [{
+      name: String,
+      distance: String,
+      type: {
+        type: String,
+        enum: ['airport', 'bus_station', 'metro', 'beach', 'restaurant', 'shopping', 'park', 'hospital', 'school', 'other']
+      }
+    }],
     nearbyAttractions: [{
       name: String,
       distance: String,
@@ -97,7 +105,7 @@ const propertySchema = new mongoose.Schema({
     size: {
       type: Number,
       min: [0, 'Size cannot be negative']
-    }, // in square feet
+    },
     floor: Number,
     yearBuilt: Number,
     parking: {
@@ -111,7 +119,8 @@ const propertySchema = new mongoose.Schema({
       enum: ['basic', 'kitchen', 'bathroom', 'outdoor', 'entertainment', 'safety', 'accessibility', 'other']
     },
     name: String,
-    icon: String
+    icon: String,
+    description: String
   }],
   houseRules: {
     checkIn: {
@@ -136,6 +145,20 @@ const propertySchema = new mongoose.Schema({
     },
     additionalRules: [String]
   },
+  policiesAndNotes: [{
+    title: {
+      type: String,
+      required: true
+    },
+    points: [{
+      type: String,
+    //   required: true
+    }],
+    order: {
+      type: Number,
+      default: 0
+    }
+  }],
   pricing: {
     basePrice: {
       type: Number,
@@ -153,7 +176,7 @@ const propertySchema = new mongoose.Schema({
     taxRate: {
       type: Number,
       default: 13.5
-    }, // Miami-Dade County tax rate
+    },
     currency: {
       type: String,
       default: 'USD'
@@ -183,11 +206,11 @@ const propertySchema = new mongoose.Schema({
     weeklyDiscount: {
       type: Number,
       default: 0
-    }, // percentage
+    },
     monthlyDiscount: {
       type: Number,
       default: 0
-    } // percentage
+    }
   },
   images: [{
     url: {

@@ -1,4 +1,4 @@
-import { Property, Review } from '../models/index.js';
+import { Property, Review, Booking } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import ApiFeatures from '../utils/ApiFeatures.js';
@@ -318,6 +318,10 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
     success: true,
     isAvailable,
     conflictingBookings: conflictingBookings.length,
+    bookedDates: conflictingBookings.map(booking => ({
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut
+    }))
   });
 });
 
@@ -325,21 +329,65 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/properties/:id/stats
 // @access  Private/Admin
 export const getPropertyStats = catchAsync(async (req, res, next) => {
+  const property = await Property.findById(req.params.id)
+    .populate('bookings')
+    .populate('reviews');
+
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  // Calculate booking stats
+  const confirmedBookings = property.bookings.filter(b => b.status === 'confirmed');
+  const totalRevenue = confirmedBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+  
+  // Get monthly bookings
+  const monthlyBookings = {};
+  property.bookings.forEach(booking => {
+    const month = booking.createdAt.toISOString().slice(0, 7);
+    monthlyBookings[month] = (monthlyBookings[month] || 0) + 1;
+  });
+
+  const stats = {
+    totalBookings: property.bookings.length,
+    confirmedBookings: confirmedBookings.length,
+    cancelledBookings: property.bookings.filter(b => b.status === 'cancelled').length,
+    totalRevenue,
+    averageRating: property.ratings.average,
+    totalReviews: property.reviews.length,
+    occupancyRate: property.bookings.length > 0 ? 
+      (property.bookings.filter(b => b.status === 'confirmed').length / property.bookings.length) * 100 : 0,
+    monthlyBookings,
+    amenitiesCount: property.amenities.length,
+    imagesCount: property.images.length,
+    nearbyPlacesCount: property.location.nearbyPlaces?.length || 0,
+    policiesCount: property.policiesAndNotes?.length || 0,
+  };
+
+  res.status(200).json({
+    success: true,
+    stats,
+  });
+});
+
+// @desc    Get property bookings for calendar
+// @route   GET /api/v1/properties/:id/bookings
+// @access  Public
+export const getPropertyBookings = catchAsync(async (req, res, next) => {
   const property = await Property.findById(req.params.id);
 
   if (!property) {
     return next(new AppError('Property not found', 404));
   }
 
-  const stats = {
-    totalBookings: property.bookings.length,
-    averageRating: property.ratings.average,
-    totalReviews: property.reviews.length,
-    // Add more stats as needed
-  };
+  const bookings = await Booking.find({
+    property: property._id,
+    status: { $in: ['confirmed', 'active'] }
+  }).select('checkIn checkOut status guestCount totalPrice');
 
   res.status(200).json({
     success: true,
-    stats,
+    count: bookings.length,
+    bookings,
   });
 });

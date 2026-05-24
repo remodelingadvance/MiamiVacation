@@ -107,15 +107,7 @@ const reviewSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  tags: [String],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  tags: [String]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -124,26 +116,38 @@ const reviewSchema = new mongoose.Schema({
 
 // Indexes
 reviewSchema.index({ property: 1, status: 1 });
-reviewSchema.index({ user: 1, property: 1 }, { unique: true }); // One review per user per property
+reviewSchema.index({ user: 1, property: 1 });
 reviewSchema.index({ rating: -1 });
 reviewSchema.index({ createdAt: -1 });
 reviewSchema.index({ verified: 1 });
 
 // Update property ratings after save
 reviewSchema.post('save', async function() {
-  await this.constructor.calculateAverageRatings(this.property);
-});
-
-// Update property ratings after remove
-reviewSchema.post('remove', async function() {
-  await this.constructor.calculateAverageRatings(this.property);
-});
-
-// Calculate average ratings for property
-reviewSchema.statics.calculateAverageRatings = async function(propertyId) {
   const Property = mongoose.model('Property');
-  await Property.calculateRatings(propertyId);
-};
+  await Property.calculateRatings(this.property);
+});
+
+// Update property ratings after findOneAndUpdate
+reviewSchema.post('findOneAndUpdate', async function(doc) {
+  if (doc) {
+    const Property = mongoose.model('Property');
+    await Property.calculateRatings(doc.property);
+  }
+});
+
+// Update property ratings after deleteOne
+reviewSchema.post('deleteOne', async function() {
+  if (this._conditions._id) {
+    const review = await this.model.findOne(this._conditions);
+    if (review) {
+      const Property = mongoose.model('Property');
+      await Property.calculateRatings(review.property);
+    }
+  }
+});
+
+// Calculate average ratings for property - Remove duplicate, use the one from Property model
+// The Property.calculateRatings method already exists in the Property model
 
 const Review = mongoose.model('Review', reviewSchema);
 

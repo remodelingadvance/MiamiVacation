@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'; // Add this import at the top
 import { Review, Booking, Property } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -11,6 +12,11 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+
+  // Validate propertyId format
+  if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+    return next(new AppError('Invalid property ID', 400));
+  }
 
   const reviews = await Review.find({
     property: propertyId,
@@ -26,11 +32,11 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
     status: 'approved',
   });
 
-  // Get rating statistics
+  // Get rating statistics - Fix the aggregation
   const stats = await Review.aggregate([
     {
       $match: {
-        property: mongoose.Types.ObjectId(propertyId),
+        property: new mongoose.Types.ObjectId(propertyId),
         status: 'approved',
       },
     },
@@ -186,12 +192,13 @@ export const deleteReview = catchAsync(async (req, res, next) => {
     return next(new AppError('You can only delete your own reviews', 403));
   }
 
-  await review.remove();
+  const propertyId = review.property;
+  await review.deleteOne();
 
   // Update property ratings
-  await Property.calculateRatings(review.property);
+  await Property.calculateRatings(propertyId);
 
-  logger.info(`Review deleted for property ${review.property} by user ${req.user.id}`);
+  logger.info(`Review deleted for property ${propertyId} by user ${req.user.id}`);
 
   res.status(200).json({
     success: true,
@@ -221,6 +228,8 @@ export const markHelpful = catchAsync(async (req, res, next) => {
     review.helpful.yes += 1;
   } else if (vote === 'no') {
     review.helpful.no += 1;
+  } else {
+    return next(new AppError('Invalid vote type. Use "yes" or "no"', 400));
   }
 
   review.helpful.voters.push(req.user.id);

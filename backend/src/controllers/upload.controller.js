@@ -11,13 +11,25 @@ export const uploadImage = catchAsync(async (req, res, next) => {
     return next(new AppError('Please upload an image', 400));
   }
 
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  if (!allowedTypes.includes(req.file.mimetype)) {
+    return next(new AppError('Invalid file type. Only JPEG, PNG, and WEBP are allowed', 400));
+  }
+
+  // Validate file size (5MB)
+  if (req.file.size > 5 * 1024 * 1024) {
+    return next(new AppError('File too large. Maximum size is 5MB', 400));
+  }
+
   res.status(200).json({
     success: true,
     image: {
       url: req.file.path,
       publicId: req.file.filename,
       size: req.file.size,
-      format: req.file.mimetype,
+      format: req.file.mimetype.split('/')[1],
+      filename: req.file.originalname,
     },
   });
 });
@@ -34,7 +46,8 @@ export const uploadImages = catchAsync(async (req, res, next) => {
     url: file.path,
     publicId: file.filename,
     size: file.size,
-    format: file.mimetype,
+    format: file.mimetype.split('/')[1],
+    filename: file.originalname,
   }));
 
   res.status(200).json({
