@@ -4,25 +4,23 @@ import AppError from '../utils/AppError.js';
 // Validation middleware
 export const validate = (validations) => {
   return async (req, res, next) => {
-    // Run all validations
-    await Promise.all(validations.map(validation => validation.run(req)));
+    await Promise.all(
+      validations.map((validation) => validation.run(req))
+    );
 
     const errors = validationResult(req);
-    
+
     if (errors.isEmpty()) {
       return next();
     }
 
-    const extractedErrors = [];
-    errors.array().map(err => extractedErrors.push({ 
-      field: err.path,
-      message: err.msg 
-    }));
+    console.log('VALIDATION ERRORS');
+    console.log(errors.array());
 
     return res.status(422).json({
       success: false,
       message: 'Validation failed',
-      errors: extractedErrors,
+      errors: errors.array(),
     });
   };
 };
