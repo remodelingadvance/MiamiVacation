@@ -1,5 +1,3 @@
-
-
 import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -24,7 +22,8 @@ const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentFailedPage = lazy(() => import('./pages/PaymentFailedPage'));
-
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function App() {
@@ -44,7 +43,11 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-<Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            
+            {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/booking/:propertyId" element={<BookingPage />} />
               <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmationPage />} />
@@ -53,9 +56,8 @@ function App() {
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/payment/failed" element={<PaymentFailedPage />} />
-              
             </Route>
-
+            
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
