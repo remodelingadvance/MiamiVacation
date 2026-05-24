@@ -4,6 +4,9 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import PageLoader from './components/common/PageLoader';
+import AdminProperties from './pages/AdminProperties';
+import AdminPropertyForm from './pages/AdminPropertyForm';
+
 
 const ProtectedAdminRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAdminAuth();
@@ -29,6 +32,10 @@ function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="properties" element={<AdminProperties />} />
+        <Route path="properties/new" element={<AdminPropertyForm />} />
+        <Route path="properties/:id/edit" element={<AdminPropertyForm />} />
+
       </Route>
 
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
