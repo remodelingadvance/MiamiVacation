@@ -18,9 +18,12 @@ const ContactPage = lazy(() => import('./pages/ContactPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
+const PaymentFailedPage = lazy(() => import('./pages/PaymentFailedPage'));
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -41,13 +44,15 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
+<Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/booking/:propertyId" element={<BookingPage />} />
               <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmationPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/payment/success" element={<PaymentSuccessPage />} />
+              <Route path="/payment/failed" element={<PaymentFailedPage />} />
               
             </Route>
 
