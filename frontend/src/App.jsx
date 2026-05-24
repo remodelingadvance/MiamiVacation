@@ -10,6 +10,7 @@ import MainLayout from './layouts/MainLayout';
 // Lazy loaded pages
 const HomePage = lazy(() => import('./pages/HomePage'));
 const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
+const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
 
 function App() {
   const location = useLocation();
@@ -22,6 +23,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/properties" element={<PropertiesPage />} />
+            <Route path="/properties/:slug" element={<PropertyDetailsPage />} />
           </Route>
         </Routes>
       </Suspense>
