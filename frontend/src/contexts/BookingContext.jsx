@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import toast from 'react-hot-toast';
 import apiService from '../config/api';
 import { useAuth } from './AuthContext';
+import { calculateDisplayPrice, calculateNights } from '../utils/helpers';
 
 const BookingContext = createContext(null);
 
@@ -45,6 +46,7 @@ export const BookingProvider = ({ children }) => {
     setCouponDiscount(null);
     setStep(1);
     setLoading(false);
+    setCurrentBooking(null);
   }, []);
 
   // Set property for booking
@@ -63,10 +65,6 @@ export const BookingProvider = ({ children }) => {
       checkIn,
       checkOut,
     }));
-    
-    if (checkIn && checkOut) {
-      calculatePricing(checkIn, checkOut);
-    }
   }, []);
 
   // Set guests
@@ -77,33 +75,24 @@ export const BookingProvider = ({ children }) => {
     }));
   }, []);
 
-  // Calculate pricing
-  const calculatePricing = useCallback((checkIn, checkOut) => {
+  // Update pricing (call this from the component)
+  const updatePricing = useCallback((newPricing) => {
+    setPricing(newPricing);
+  }, []);
+
+  // Calculate pricing internally
+  const calculatePricing = useCallback(() => {
     const property = bookingData.property;
-    if (!property || !checkIn || !checkOut) return;
+    const checkIn = bookingData.checkIn;
+    const checkOut = bookingData.checkOut;
+    
+    if (!property || !checkIn || !checkOut) return null;
 
-    const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
-    const basePrice = property.pricing.basePrice;
-    const baseTotal = basePrice * nights;
-    const cleaningFee = property.pricing.cleaningFee || 0;
-    const serviceFee = property.pricing.serviceFee || 0;
-    const taxRate = property.pricing.taxRate / 100 || 0.135;
-    const subtotal = baseTotal + cleaningFee + serviceFee;
-    const taxes = subtotal * taxRate;
-    const total = subtotal + taxes - (couponDiscount?.discount || 0);
-
-    setPricing({
-      nightlyRate: basePrice,
-      nights,
-      baseTotal,
-      cleaningFee,
-      serviceFee,
-      subtotal,
-      taxes,
-      discount: couponDiscount?.discount || 0,
-      total,
-    });
-  }, [bookingData.property, couponDiscount]);
+    const nights = calculateNights(checkIn, checkOut);
+    const calculatedPricing = calculateDisplayPrice(property, nights);
+    setPricing(calculatedPricing);
+    return calculatedPricing;
+  }, [bookingData.property, bookingData.checkIn, bookingData.checkOut]);
 
   // Validate coupon
   const validateCoupon = useCallback(async (code) => {
@@ -111,84 +100,136 @@ export const BookingProvider = ({ children }) => {
 
     try {
       setLoading(true);
+      
+      // Calculate current total
+      const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
+      const currentPricing = calculateDisplayPrice(bookingData.property, nights);
+      
       const response = await apiService.validateCoupon({
         code,
-        bookingAmount: pricing?.baseTotal || 0,
-        nights: pricing?.nights || 1,
+        bookingAmount: currentPricing.baseTotal,
+        nights: nights,
         propertyId: bookingData.propertyId,
       });
 
       if (response.data.success) {
-        setCouponDiscount(response.data);
+        const discountAmount = response.data.discount || response.data.coupon?.discount || 0;
+        
+        // Update pricing with discount
+        const discountedPricing = {
+          ...currentPricing,
+          discount: discountAmount,
+          total: Math.max(0, currentPricing.total - discountAmount),
+        };
+        
+        setPricing(discountedPricing);
+        setCouponDiscount({
+          discount: discountAmount,
+          coupon: response.data.coupon || response.data,
+        });
         setBookingData(prev => ({ ...prev, couponCode: code }));
-        toast.success(`Coupon applied! You saved $${response.data.discount}`);
+        toast.success(`Coupon applied! You saved $${discountAmount}`);
+        return true;
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Invalid coupon code';
       toast.error(message);
       setCouponDiscount(null);
       setBookingData(prev => ({ ...prev, couponCode: '' }));
+      // Recalculate pricing without discount
+      calculatePricing();
+      return false;
     } finally {
       setLoading(false);
     }
-  }, [bookingData.property, bookingData.propertyId, pricing]);
+  }, [bookingData.property, bookingData.propertyId, bookingData.checkIn, bookingData.checkOut, calculatePricing]);
 
   // Remove coupon
   const removeCoupon = useCallback(() => {
     setCouponDiscount(null);
     setBookingData(prev => ({ ...prev, couponCode: '' }));
+    // Recalculate pricing without discount
+    calculatePricing();
     toast.success('Coupon removed');
-  }, []);
+  }, [calculatePricing]);
 
-  // Create booking
+  // Create booking - FIXED VERSION
   const createBooking = useCallback(async (paymentMethodId) => {
     if (!isAuthenticated) {
       toast.error('Please login to book');
       return null;
     }
 
+    // Validate required fields
+    if (!bookingData.propertyId || !bookingData.checkIn || !bookingData.checkOut) {
+      toast.error('Please select dates and property');
+      return null;
+    }
+
+    // Calculate nights and pricing if not already calculated
+    const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
+    let currentPricing = pricing;
+    
+    if (!currentPricing) {
+      currentPricing = calculateDisplayPrice(bookingData.property, nights);
+    }
+    
+    if (!currentPricing || currentPricing.total <= 0) {
+      toast.error('Invalid pricing calculation');
+      return null;
+    }
+
     try {
       setLoading(true);
       
-      const response = await apiService.createBooking({
+      // Prepare booking data
+      const bookingPayload = {
         propertyId: bookingData.propertyId,
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
         guests: bookingData.guests,
-        couponCode: bookingData.couponCode || undefined,
-        specialRequests: bookingData.specialRequests,
-      });
+        specialRequests: bookingData.specialRequests || '',
+      };
+      
+      // Add coupon code if applied
+      if (bookingData.couponCode) {
+        bookingPayload.couponCode = bookingData.couponCode;
+      }
+      
+      // Add payment method if provided
+      if (paymentMethodId) {
+        bookingPayload.paymentMethodId = paymentMethodId;
+      }
+      
+      console.log('Creating booking with payload:', bookingPayload);
+      
+      const response = await apiService.createBooking(bookingPayload);
+
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.message || 'Booking failed');
+      }
 
       const booking = response.data.booking;
       setCurrentBooking(booking);
       
-      // Process payment
-      if (paymentMethodId) {
-        const paymentResponse = await apiService.createPaymentIntent({
-          bookingId: booking._id,
-          paymentMethodId,
-        });
-
-        toast.success('Booking created! Redirecting to payment...');
-        return { booking, clientSecret: paymentResponse.data.clientSecret };
-      }
-
       toast.success('Booking created successfully!');
       return { booking };
+      
     } catch (error) {
-      const message = error.response?.data?.message || 'Booking failed';
+      console.error('Booking creation error:', error);
+      const message = error.response?.data?.message || error.message || 'Booking failed';
       toast.error(message);
       return null;
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, bookingData]);
+  }, [isAuthenticated, bookingData, pricing]);
 
   // Cancel booking
   const cancelBooking = useCallback(async (bookingId, reason) => {
     try {
       setLoading(true);
-      const response = await apiService.cancelBooking(bookingId, reason);
+      const response = await apiService.cancelBooking(bookingId, { reason });
       toast.success('Booking cancelled successfully');
       return response.data.booking;
     } catch (error) {
@@ -202,13 +243,38 @@ export const BookingProvider = ({ children }) => {
 
   // Next step
   const nextStep = useCallback(() => {
+    // Validate current step before proceeding
+    if (step === 1 && (!bookingData.checkIn || !bookingData.checkOut)) {
+      toast.error('Please select check-in and check-out dates');
+      return;
+    }
+    if (step === 2 && (!bookingData.guests.adults || bookingData.guests.adults < 1)) {
+      toast.error('Please select at least 1 adult guest');
+      return;
+    }
     setStep(prev => Math.min(prev + 1, 3));
-  }, []);
+  }, [step, bookingData]);
 
   // Previous step
   const prevStep = useCallback(() => {
     setStep(prev => Math.max(prev - 1, 1));
   }, []);
+
+  // Auto-calculate pricing when dates or property changes
+  useEffect(() => {
+    if (bookingData.property && bookingData.checkIn && bookingData.checkOut) {
+      const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
+      const calculatedPricing = calculateDisplayPrice(bookingData.property, nights);
+      
+      // Apply coupon discount if any
+      if (couponDiscount && couponDiscount.discount) {
+        calculatedPricing.discount = couponDiscount.discount;
+        calculatedPricing.total = Math.max(0, calculatedPricing.total - couponDiscount.discount);
+      }
+      
+      setPricing(calculatedPricing);
+    }
+  }, [bookingData.property, bookingData.checkIn, bookingData.checkOut, couponDiscount]);
 
   const value = {
     currentBooking,
@@ -221,6 +287,7 @@ export const BookingProvider = ({ children }) => {
     setDates,
     setGuests,
     calculatePricing,
+    updatePricing,
     validateCoupon,
     removeCoupon,
     createBooking,

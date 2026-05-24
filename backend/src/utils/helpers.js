@@ -10,9 +10,8 @@ export const generateBookingNumber = () => {
   const date = new Date();
   const year = date.getFullYear().toString().slice(-2);
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
   const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `MIA-${year}${month}${day}-${random}`;
+  return `MIA${year}${month}${random}`;
 };
 
 // Format currency
@@ -29,7 +28,7 @@ export const calculateNights = (checkIn, checkOut) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-// Calculate total price
+// Calculate total price - FIXED VERSION
 export const calculateTotalPrice = (
   basePrice,
   nights,
@@ -43,27 +42,35 @@ export const calculateTotalPrice = (
     discount = 0,
   } = options;
 
-  const baseTotal = basePrice * nights;
+  // Calculate base total (with weekend multiplier if needed)
+  let baseTotal = basePrice * nights;
+  
+  // Apply weekend multiplier (for simplicity, we'll apply to all nights)
+  // In production, you'd check each date individually
+  // baseTotal = baseTotal * weekendMultiplier;
+  
   const subtotal = baseTotal + cleaningFee + serviceFee;
   const tax = subtotal * (taxRate / 100);
   const totalBeforeDiscount = subtotal + tax;
-  const total = totalBeforeDiscount - discount;
+  const finalTotal = totalBeforeDiscount - discount;
 
   return {
+    nightlyRate: basePrice,
+    nights: nights,
     baseTotal: Math.round(baseTotal * 100) / 100,
-    cleaningFee,
-    serviceFee,
+    cleaningFee: Math.round(cleaningFee * 100) / 100,
+    serviceFee: Math.round(serviceFee * 100) / 100,
     subtotal: Math.round(subtotal * 100) / 100,
-    tax: Math.round(tax * 100) / 100,
+    taxes: Math.round(tax * 100) / 100,
     discount: Math.round(discount * 100) / 100,
-    total: Math.round(total * 100) / 100,
+    total: Math.round(finalTotal * 100) / 100,
   };
 };
 
 // Check if date is weekend
 export const isWeekend = (date) => {
   const day = new Date(date).getDay();
-  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  return day === 0 || day === 6;
 };
 
 // Pagination helper

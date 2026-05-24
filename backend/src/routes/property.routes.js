@@ -10,7 +10,7 @@ import {
   searchProperties,
   checkAvailability,
   getPropertyStats,
-  getPropertyBookings,
+  getPropertyBookings, // Make sure this is imported
 } from '../controllers/property.controller.js';
 import { protect, authorize, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -23,14 +23,14 @@ import { generalLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Public routes
+// Public routes - IMPORTANT: Specific routes MUST come before generic ones
 router.get('/', generalLimiter, optionalAuth, getProperties);
 router.get('/featured', getFeaturedProperties);
 router.get('/search', validate(propertySearchValidator), searchProperties);
 router.get('/slug/:slug', getPropertyBySlug);
-router.get('/:id', getProperty);
+router.get('/:id/bookings', getPropertyBookings); // This MUST be before /:id
 router.get('/:id/availability', checkAvailability);
-router.get('/:id/bookings', getPropertyBookings);
+router.get('/:id', getProperty);
 
 // Admin only routes
 router.use(protect);

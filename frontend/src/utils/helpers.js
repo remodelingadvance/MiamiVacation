@@ -2,6 +2,7 @@ import { format, formatDistance, parseISO, differenceInDays } from 'date-fns';
 
 // Format currency
 export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
+  if (!amount && amount !== 0) return '$0';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
@@ -80,87 +81,40 @@ export const isValidPhone = (phone) => {
   return phoneRegex.test(phone);
 };
 
-// Get query params
-export const getQueryParams = (url) => {
-  const params = {};
-  const searchParams = new URLSearchParams(url);
-  for (let [key, value] of searchParams) {
-    params[key] = value;
-  }
-  return params;
-};
-
-// Debounce function
-export const debounce = (func, wait = 300) => {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+// Calculate total price for display
+// Calculate total price for display
+export const calculateDisplayPrice = (property, nights) => {
+  if (!property || !property.pricing) {
+    return {
+      nightlyRate: 0,
+      nights: nights || 0,
+      baseTotal: 0,
+      cleaningFee: 0,
+      serviceFee: 0,
+      taxes: 0,
+      discount: 0,
+      total: 0,
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
-
-// Throttle function
-export const throttle = (func, limit = 300) => {
-  let inThrottle;
-  return function(...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
-};
-
-// Generate random ID
-export const generateId = (length = 8) => {
-  return Math.random().toString(36).substring(2, length + 2);
-};
-
-// Class name merger
-export const cn = (...classes) => {
-  return classes.filter(Boolean).join(' ');
-};
-
-// Smooth scroll to element
-export const scrollToElement = (elementId, offset = 80) => {
-  const element = document.getElementById(elementId);
-  if (element) {
-    const top = element.getBoundingClientRect().top + window.pageYOffset - offset;
-    window.scrollTo({ top, behavior: 'smooth' });
   }
-};
-
-// Copy to clipboard
-export const copyToClipboard = async (text) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (err) {
-    console.error('Failed to copy:', err);
-    return false;
-  }
-};
-
-// Get browser locale
-export const getBrowserLocale = () => {
-  return navigator.language || 'en-US';
-};
-
-// Format file size
-export const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-// Get random items from array
-export const getRandomItems = (arr, count) => {
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+  
+  const basePrice = property.pricing.basePrice || 0;
+  const cleaningFee = property.pricing.cleaningFee || 0;
+  const serviceFee = property.pricing.serviceFee || 0;
+  const taxRate = (property.pricing.taxRate || 13.5) / 100;
+  
+  const baseTotal = basePrice * (nights || 0);
+  const subtotal = baseTotal + cleaningFee + serviceFee;
+  const taxes = subtotal * taxRate;
+  const total = subtotal + taxes;
+  
+  return {
+    nightlyRate: basePrice,
+    nights: nights || 0,
+    baseTotal: Math.round(baseTotal * 100) / 100,
+    cleaningFee: Math.round(cleaningFee * 100) / 100,
+    serviceFee: Math.round(serviceFee * 100) / 100,
+    taxes: Math.round(taxes * 100) / 100,
+    discount: 0,
+    total: Math.round(total * 100) / 100,
+  };
 };

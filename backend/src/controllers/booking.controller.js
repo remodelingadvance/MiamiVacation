@@ -1,16 +1,24 @@
-import { Booking, Property, Coupon } from '../models/index.js';
+import { Booking, Property, Coupon, User } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
-import { calculateTotalPrice } from '../utils/helpers.js';
+import { calculateTotalPrice, generateBookingNumber } from '../utils/helpers.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
+import mongoose from 'mongoose';
 
 // @desc    Create booking
 // @route   POST /api/v1/bookings
 // @access  Private
 export const createBooking = catchAsync(async (req, res, next) => {
-  const { propertyId, checkIn, checkOut, guests, couponCode, specialRequests } = req.body;
+  const { propertyId, checkIn, checkOut, guests, couponCode, specialRequests, paymentMethodId, guestDetails } = req.body;
+
+  console.log('Creating booking with data:', { propertyId, checkIn, checkOut, guests, guestDetails });
+
+  // Validate required fields
+  if (!propertyId || !checkIn || !checkOut || !guests) {
+    return next(new AppError('Missing required booking information', 400));
+  }
 
   // Get property
   const property = await Property.findById(propertyId);
@@ -22,20 +30,23 @@ export const createBooking = catchAsync(async (req, res, next) => {
     return next(new AppError('Property is not available for booking', 400));
   }
 
-  // Check availability
+  // STRICT availability check - no overlapping dates allowed
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  
   const conflictingBookings = await Booking.find({
     property: propertyId,
-    status: { $in: ['confirmed', 'active'] },
+    status: { $in: ['confirmed', 'active', 'pending'] },
     $or: [
       {
-        checkIn: { $lt: new Date(checkOut) },
-        checkOut: { $gt: new Date(checkIn) },
+        checkIn: { $lt: checkOutDate },
+        checkOut: { $gt: checkInDate },
       },
     ],
   });
 
   if (conflictingBookings.length > 0) {
-    return next(new AppError('Property is not available for these dates', 400));
+    return next(new AppError('Property is not available for these dates. Please select different dates.', 400));
   }
 
   // Check guest capacity
@@ -44,8 +55,10 @@ export const createBooking = catchAsync(async (req, res, next) => {
     return next(new AppError(`Maximum guests allowed is ${property.details.maxGuests}`, 400));
   }
 
+  // Calculate nights
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+  
   // Check minimum stay
-  const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
   if (nights < property.pricing.minimumStay) {
     return next(new AppError(`Minimum stay is ${property.pricing.minimumStay} nights`, 400));
   }
@@ -53,9 +66,9 @@ export const createBooking = catchAsync(async (req, res, next) => {
   // Calculate pricing
   const basePrice = property.pricing.basePrice;
   let pricing = calculateTotalPrice(basePrice, nights, {
-    cleaningFee: property.pricing.cleaningFee,
-    serviceFee: property.pricing.serviceFee,
-    taxRate: property.pricing.taxRate,
+    cleaningFee: property.pricing.cleaningFee || 0,
+    serviceFee: property.pricing.serviceFee || 0,
+    taxRate: property.pricing.taxRate || 13.5,
   });
 
   // Apply coupon if provided
@@ -64,64 +77,74 @@ export const createBooking = catchAsync(async (req, res, next) => {
     coupon = await Coupon.findOne({ 
       code: couponCode.toUpperCase(),
       status: 'active',
+      validFrom: { $lte: new Date() },
+      validUntil: { $gte: new Date() },
     });
 
-    if (!coupon) {
-      return next(new AppError('Invalid or expired coupon code', 400));
+    if (coupon) {
+      let discountAmount = 0;
+      if (coupon.type === 'percentage') {
+        discountAmount = (pricing.baseTotal * coupon.value) / 100;
+      } else {
+        discountAmount = coupon.value;
+      }
+      
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
+      }
+      
+      pricing.discount = Math.round(discountAmount * 100) / 100;
+      pricing.coupon = {
+        code: coupon.code,
+        discount: pricing.discount,
+        type: coupon.type,
+      };
+      pricing.total = Math.round((pricing.total - pricing.discount) * 100) / 100;
     }
-
-    const validation = coupon.isValid(
-      pricing.baseTotal,
-      nights,
-      req.user.id,
-      propertyId
-    );
-
-    if (!validation.valid) {
-      return next(new AppError(validation.message, 400));
-    }
-
-    const discount = coupon.calculateDiscount(pricing.baseTotal);
-    pricing.discount = discount;
-    pricing.coupon = {
-      code: coupon.code,
-      discount,
-      type: coupon.type,
-    };
-    pricing.total -= discount;
   }
 
-  // Create booking
+  // Generate booking number
+  const bookingNumber = `MIA${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+
+  // Create booking with guest details
   const booking = await Booking.create({
+    bookingNumber,
     user: req.user.id,
     property: propertyId,
-    checkIn,
-    checkOut,
+    checkIn: checkInDate,
+    checkOut: checkOutDate,
     guests: {
       adults: guests.adults || 1,
       children: guests.children || 0,
       infants: guests.infants || 0,
     },
+    status: 'confirmed',
+    payment: {
+      status: 'pending',
+      method: 'stripe',
+      amountPaid: pricing.total,
+    },
     pricing: {
       nightlyRate: basePrice,
-      nights,
+      nights: nights,
       baseTotal: pricing.baseTotal,
       cleaningFee: pricing.cleaningFee,
       serviceFee: pricing.serviceFee,
-      taxes: pricing.tax,
+      taxes: pricing.taxes,
       discount: pricing.discount || 0,
       coupon: pricing.coupon,
       subtotal: pricing.subtotal,
       total: pricing.total,
     },
-    specialRequests,
+    specialRequests: specialRequests || '',
     guestsInfo: {
       primaryGuest: {
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        email: req.user.email,
-        phone: req.user.phone,
+        firstName: guestDetails?.firstName || req.user.firstName,
+        lastName: guestDetails?.lastName || req.user.lastName,
+        email: guestDetails?.email || req.user.email,
+        phone: guestDetails?.phone || req.user.phone,
       },
+      additionalGuests: [],
     },
     metadata: {
       source: 'direct',
@@ -130,30 +153,16 @@ export const createBooking = catchAsync(async (req, res, next) => {
     },
   });
 
-  // Update coupon usage
-  if (coupon) {
-    coupon.usedCount += 1;
-    coupon.usedBy.push({
-      user: req.user.id,
-      booking: booking._id,
-    });
-    await coupon.save();
-  }
-
   // Add booking to property
+  if (!property.bookings) property.bookings = [];
   property.bookings.push(booking._id);
   await property.save();
 
   // Add booking to user
-  req.user.bookings.push(booking._id);
-  await req.user.save();
-
-  // Send booking confirmation email
-  try {
-    await emailService.sendBookingConfirmation(booking, req.user);
-  } catch (error) {
-    logger.error('Booking confirmation email failed:', error);
-  }
+  const user = await User.findById(req.user.id);
+  if (!user.bookings) user.bookings = [];
+  user.bookings.push(booking._id);
+  await user.save();
 
   logger.info(`Booking created: ${booking.bookingNumber} by user ${req.user.id}`);
 
@@ -168,7 +177,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
 // @access  Private
 export const getMyBookings = catchAsync(async (req, res, next) => {
   const bookings = await Booking.find({ user: req.user.id })
-    .populate('property')
+    .populate('property', 'name slug images type location')
     .sort('-createdAt');
 
   res.status(200).json({
@@ -183,7 +192,7 @@ export const getMyBookings = catchAsync(async (req, res, next) => {
 // @access  Private
 export const getBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
-    .populate('property')
+    .populate('property', 'name slug images type location houseRules')
     .populate('user', 'firstName lastName email phone');
 
   if (!booking) {
@@ -247,7 +256,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
     try {
       const refund = await stripe.refunds.create({
         payment_intent: booking.payment.stripePaymentIntentId,
-        amount: Math.round(refundAmount * 100), // Stripe uses cents
+        amount: Math.round(refundAmount * 100),
       });
 
       booking.payment.amountRefunded = refundAmount;
@@ -255,7 +264,6 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
       booking.payment.status = refundAmount === booking.pricing.total ? 'refunded' : 'partially_refunded';
     } catch (error) {
       logger.error('Refund failed:', error);
-      return next(new AppError('Refund processing failed. Please contact support.', 500));
     }
   }
 
@@ -271,42 +279,6 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
 
   await booking.save();
 
-  // Send cancellation email
-  try {
-    await emailService.send({
-      to: req.user.email,
-      subject: `Booking Cancelled - ${booking.bookingNumber}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #ff6b6b; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Booking Cancelled</h1>
-            </div>
-            <div class="content">
-              <h2>Hello ${req.user.firstName},</h2>
-              <p>Your booking ${booking.bookingNumber} has been cancelled.</p>
-              <p>Refund Amount: $${refundAmount.toFixed(2)}</p>
-              <p>Cancellation Fee: $${cancellationFee.toFixed(2)}</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
-    });
-  } catch (error) {
-    logger.error('Cancellation email failed:', error);
-  }
-
   logger.info(`Booking cancelled: ${booking.bookingNumber} by user ${req.user.id}`);
 
   res.status(200).json({
@@ -319,14 +291,30 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/bookings/admin/all
 // @access  Private/Admin
 export const getAllBookings = catchAsync(async (req, res, next) => {
-  const bookings = await Booking.find()
+  const { property, status, page = 1, limit = 20 } = req.query;
+  
+  const query = {};
+  if (property) query.property = property;
+  if (status) query.status = status;
+
+  const bookings = await Booking.find(query)
     .populate('user', 'firstName lastName email')
-    .populate('property', 'name type')
-    .sort('-createdAt');
+    .populate('property', 'name type slug')
+    .sort('-createdAt')
+    .skip((page - 1) * limit)
+    .limit(parseInt(limit));
+
+  const total = await Booking.countDocuments(query);
 
   res.status(200).json({
     success: true,
     count: bookings.length,
+    total,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / limit),
+    },
     bookings,
   });
 });
