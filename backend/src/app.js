@@ -96,7 +96,7 @@ app.use(`${API_PREFIX}/contact`, contactRoutes);
 app.use(`${API_PREFIX}/upload`, uploadRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/payments`, paymentRoutes);
-app.use(`${API_PREFIX}/newsletter`, newsletterRoutes);
+app.use(`${API_PREFIX}/newsletter`, newsletterRoutes); 
 
 // Health check endpoint
 app.get('/health', (req, res) => {

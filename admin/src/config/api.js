@@ -86,11 +86,36 @@ const adminApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
 
-  // Newsletter
+  // Newsletter Subscribers (Admin)
   getSubscribers: (params) => api.get('/newsletter/subscribers', { params }),
+  deleteSubscriber: (id) => api.delete(`/newsletter/subscribers/${id}`),
+  exportSubscribers: () => api.get('/newsletter/subscribers/export', { responseType: 'blob' }),
+
+  // Newsletter Campaigns (Admin)
+  getCampaigns: (params) => api.get('/newsletter/campaigns', { params }),
+  getCampaign: (id) => api.get(`/newsletter/campaigns/${id}`),
+  createCampaign: (data) => api.post('/newsletter/campaigns', data),
+  updateCampaign: (id, data) => api.patch(`/newsletter/campaigns/${id}`, data),
+  sendCampaign: (id) => api.post(`/newsletter/campaigns/${id}/send`),
+  deleteCampaign: (id) => api.delete(`/newsletter/campaigns/${id}`),
+
+  // Notifications
+  getNotifications: (params) => api.get('/notifications', { params }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllNotificationsRead: () => api.patch('/notifications/read-all'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  getNotificationSettings: () => api.get('/notifications/settings'),
 
   // Analytics
   getAnalytics: (params) => api.get('/admin/analytics', { params }),
+
+  // Generic request methods for custom endpoints
+  get: (url, config) => api.get(url, config),
+  post: (url, data, config) => api.post(url, data, config),
+  patch: (url, data, config) => api.patch(url, data, config),
+  delete: (url, config) => api.delete(url, config),
+  put: (url, data, config) => api.put(url, data, config),
 };
 
 export { api };

@@ -18,6 +18,7 @@ import AdminContactDetail from './pages/AdminContactDetail';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminCouponDetails from './pages/AdminCouponDetails';
 import AdminSettings from './pages/AdminSettings';
+import AdminNewsletter from './pages/AdminNewsletter';
 
 const ProtectedAdminRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAdminAuth();
@@ -59,6 +60,7 @@ function App() {
         <Route path="contacts/:id" element={<AdminContactDetail />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="newsletter" element={<AdminNewsletter />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
