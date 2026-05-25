@@ -1,3 +1,4 @@
+// routes/notification.routes.js
 import express from 'express';
 import {
   getNotifications,
@@ -6,11 +7,13 @@ import {
   markAllAsRead,
   deleteNotification,
   getNotificationSettings,
+  bulkDeleteNotifications,
 } from '../controllers/notification.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// All routes require authentication and admin role
 router.use(protect);
 router.use(authorize('admin', 'super-admin'));
 
@@ -20,5 +23,6 @@ router.get('/settings', getNotificationSettings);
 router.patch('/read-all', markAllAsRead);
 router.patch('/:id/read', markAsRead);
 router.delete('/:id', deleteNotification);
+router.post('/bulk', bulkDeleteNotifications);
 
 export default router;

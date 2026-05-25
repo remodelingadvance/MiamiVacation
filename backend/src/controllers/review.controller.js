@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'; // Add this import at the top
+// controllers/review.controller.js
+import mongoose from 'mongoose';
 import { Review, Booking, Property, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -13,7 +14,6 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Validate propertyId format
   if (!mongoose.Types.ObjectId.isValid(propertyId)) {
     return next(new AppError('Invalid property ID', 400));
   }
@@ -32,7 +32,6 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
     status: 'approved',
   });
 
-  // Get rating statistics - Fix the aggregation
   const stats = await Review.aggregate([
     {
       $match: {
@@ -71,8 +70,29 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
 // @desc    Create review
 // @route   POST /api/v1/reviews
 // @access  Private
+// controllers/review.controller.js - Update createReview
+
 export const createReview = catchAsync(async (req, res, next) => {
   const { propertyId, bookingId, rating, title, content, ratings } = req.body;
+
+  console.log('Create review request:', { propertyId, bookingId, rating, title });
+
+  // Validate required fields
+  if (!bookingId) {
+    return next(new AppError('Booking ID is required', 400));
+  }
+
+  if (!rating || rating < 1 || rating > 5) {
+    return next(new AppError('Rating must be between 1 and 5', 400));
+  }
+
+  if (!title || title.trim().length < 3) {
+    return next(new AppError('Title must be at least 3 characters', 400));
+  }
+
+  if (!content || content.trim().length < 10) {
+    return next(new AppError('Review content must be at least 10 characters', 400));
+  }
 
   // Check if booking exists and is completed
   const booking = await Booking.findById(bookingId).populate('property');
@@ -87,11 +107,17 @@ export const createReview = catchAsync(async (req, res, next) => {
 
   // Check if booking is completed
   if (booking.status !== 'completed') {
-    return next(new AppError('You can only review completed stays', 400));
+    return next(new AppError('You can only review completed stays. Your booking status is: ' + booking.status, 400));
   }
 
-  // Check if property matches
-  if (booking.property.toString() !== propertyId) {
+  // Use property from booking if propertyId is not provided or doesn't match
+  let finalPropertyId = propertyId;
+  if (!finalPropertyId) {
+    finalPropertyId = booking.property._id;
+  }
+  
+  // Check if property matches the booking
+  if (booking.property._id.toString() !== finalPropertyId) {
     return next(new AppError('Property does not match booking', 400));
   }
 
@@ -108,12 +134,18 @@ export const createReview = catchAsync(async (req, res, next) => {
   // Create review
   const review = await Review.create({
     user: req.user.id,
-    property: propertyId,
+    property: finalPropertyId,
     booking: bookingId,
-    rating,
-    title,
-    content,
-    ratings: ratings || {},
+    rating: parseInt(rating),
+    title: title.trim(),
+    content: content.trim(),
+    ratings: ratings || {
+      cleanliness: rating,
+      communication: rating,
+      location: rating,
+      value: rating,
+      accuracy: rating,
+    },
     verified: true,
   });
 
@@ -122,9 +154,9 @@ export const createReview = catchAsync(async (req, res, next) => {
   await booking.save();
 
   // Update property ratings
-  await Property.calculateRatings(propertyId);
+  await Property.calculateRatings(finalPropertyId);
 
-  // ✅ Create notification for admin
+  // Create notification for admin
   await Notification.createNotification({
     type: 'new_review',
     title: 'New Review Submitted',
@@ -132,7 +164,7 @@ export const createReview = catchAsync(async (req, res, next) => {
     priority: rating >= 4 ? 'medium' : 'high',
     data: {
       reviewId: review._id,
-      propertyId: propertyId,
+      propertyId: finalPropertyId,
       bookingId: bookingId,
       rating: rating,
       title: title,
@@ -140,10 +172,11 @@ export const createReview = catchAsync(async (req, res, next) => {
     link: `/admin/reviews/${review._id}`,
   });
 
-  logger.info(`Review created for property ${propertyId} by user ${req.user.id}`);
+  logger.info(`Review created for property ${finalPropertyId} by user ${req.user.id}`);
 
   res.status(201).json({
     success: true,
+    message: 'Review submitted successfully',
     review,
   });
 });
@@ -176,7 +209,6 @@ export const moderateReview = catchAsync(async (req, res, next) => {
 
   await review.save();
 
-  // ✅ Create notification for review moderation
   if (oldStatus !== status && status === 'approved') {
     await Notification.createNotification({
       type: 'review_flagged',
@@ -210,12 +242,10 @@ export const updateReview = catchAsync(async (req, res, next) => {
     return next(new AppError('Review not found', 404));
   }
 
-  // Check ownership
   if (review.user.toString() !== req.user.id && req.user.role !== 'admin') {
     return next(new AppError('You can only edit your own reviews', 403));
   }
 
-  // Check if within edit window (30 days)
   const daysSinceCreation = (Date.now() - review.createdAt) / (1000 * 60 * 60 * 24);
   if (daysSinceCreation > 30 && req.user.role !== 'admin') {
     return next(new AppError('Reviews can only be edited within 30 days', 400));
@@ -236,7 +266,6 @@ export const updateReview = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true }
   );
 
-  // Update property ratings
   await Property.calculateRatings(review.property);
 
   res.status(200).json({
@@ -255,7 +284,6 @@ export const deleteReview = catchAsync(async (req, res, next) => {
     return next(new AppError('Review not found', 404));
   }
 
-  // Check ownership
   if (review.user.toString() !== req.user.id && req.user.role !== 'admin') {
     return next(new AppError('You can only delete your own reviews', 403));
   }
@@ -263,7 +291,6 @@ export const deleteReview = catchAsync(async (req, res, next) => {
   const propertyId = review.property;
   await review.deleteOne();
 
-  // Update property ratings
   await Property.calculateRatings(propertyId);
 
   logger.info(`Review deleted for property ${propertyId} by user ${req.user.id}`);
@@ -284,9 +311,8 @@ export const markHelpful = catchAsync(async (req, res, next) => {
     return next(new AppError('Review not found', 404));
   }
 
-  const { vote } = req.body; // 'yes' or 'no'
+  const { vote } = req.body;
 
-  // Check if user already voted
   const hasVoted = review.helpful.voters.includes(req.user.id);
   if (hasVoted) {
     return next(new AppError('You have already voted on this review', 400));
@@ -309,7 +335,7 @@ export const markHelpful = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Admin - Get all reviews
+// @desc    Admin - Get all reviews (with pending count for badge)
 // @route   GET /api/v1/reviews/admin/all
 // @access  Private/Admin
 export const getAllReviews = catchAsync(async (req, res, next) => {
@@ -329,11 +355,18 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit));
 
   const total = await Review.countDocuments(query);
+  
+  // Get pending reviews count for badge (reviews that are pending and not viewed by admin)
+  const pendingReviewsCount = await Review.countDocuments({ 
+    status: 'pending',
+    viewedByAdmin: { $ne: true }
+  });
 
   res.status(200).json({
     success: true,
     count: reviews.length,
     total,
+    pendingCount: pendingReviewsCount,
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -343,14 +376,65 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Mark all pending reviews as viewed
+// @desc    Get pending reviews count (for sidebar badge)
+// @route   GET /api/v1/reviews/pending-count
+// @access  Private/Admin
+export const getPendingReviewsCount = catchAsync(async (req, res, next) => {
+  const count = await Review.countDocuments({ 
+    status: 'pending',
+    viewedByAdmin: { $ne: true }
+  });
+  
+  res.status(200).json({
+    success: true,
+    count,
+  });
+});
+
+// @desc    Mark all pending reviews as viewed (FIXED)
 // @route   POST /api/v1/reviews/mark-all-viewed
 // @access  Private/Admin
 export const markAllAsViewed = catchAsync(async (req, res, next) => {
-    // You can either mark them as viewed or just return success
-    // This doesn't change the review status, just acknowledges admin has seen them
-    res.status(200).json({
-        success: true,
-        message: 'All pending reviews marked as viewed',
-    });
+  const result = await Review.updateMany(
+    { 
+      status: 'pending',
+      viewedByAdmin: { $ne: true }
+    },
+    { 
+      viewedByAdmin: true, 
+      viewedAt: new Date(),
+      viewedBy: req.user.id
+    }
+  );
+  
+  logger.info(`Marked ${result.modifiedCount} reviews as viewed by admin ${req.user.id}`);
+  
+  res.status(200).json({
+    success: true,
+    message: `${result.modifiedCount} pending reviews marked as viewed`,
+    modifiedCount: result.modifiedCount,
+  });
+});
+
+// @desc    Mark single review as viewed
+// @route   POST /api/v1/reviews/:id/viewed
+// @access  Private/Admin
+export const markAsViewed = catchAsync(async (req, res, next) => {
+  const review = await Review.findById(req.params.id);
+  
+  if (!review) {
+    return next(new AppError('Review not found', 404));
+  }
+  
+  if (!review.viewedByAdmin) {
+    review.viewedByAdmin = true;
+    review.viewedAt = new Date();
+    review.viewedBy = req.user.id;
+    await review.save();
+  }
+  
+  res.status(200).json({
+    success: true,
+    message: 'Review marked as viewed',
+  });
 });

@@ -119,6 +119,9 @@ export const unsubscribe = catchAsync(async (req, res, next) => {
 // @desc    Get all subscribers (Admin)
 // @route   GET /api/v1/newsletter/subscribers
 // @access  Private/Admin
+// controllers/newsletter.controller.js - Update getSubscribers
+// controllers/newsletter.controller.js - Update getSubscribers
+
 export const getSubscribers = catchAsync(async (req, res, next) => {
   const { status, page = 1, limit = 20, search } = req.query;
   const query = {};
@@ -133,12 +136,20 @@ export const getSubscribers = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit));
 
   const total = await Newsletter.countDocuments(query);
+  
+  // Get active subscribers count for badge
+  const activeCount = await Newsletter.countDocuments({ status: 'active' });
 
   res.status(200).json({
     success: true,
     count: subscribers.length,
-    total,  // Make sure total is included
-    pagination: { page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / limit) },
+    total,
+    activeCount, // This is the badge count
+    pagination: { 
+      page: parseInt(page), 
+      limit: parseInt(limit), 
+      totalPages: Math.ceil(total / limit) 
+    },
     subscribers,
   });
 });

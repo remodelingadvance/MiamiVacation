@@ -1,3 +1,4 @@
+// controllers/booking.controller.js - Complete fixed version
 import { Booking, Property, Coupon, User, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -278,6 +279,16 @@ export const getBooking = catchAsync(async (req, res, next) => {
     return next(new AppError('You can only view your own bookings', 403));
   }
 
+  // If admin is viewing, mark as viewed
+  if (req.user.role === 'admin' || req.user.role === 'super-admin') {
+    if (!booking.viewedByAdmin) {
+      booking.viewedByAdmin = true;
+      booking.viewedAt = new Date();
+      booking.viewedBy = req.user.id;
+      await booking.save();
+    }
+  }
+
   res.status(200).json({
     success: true,
     booking,
@@ -361,7 +372,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Admin - Get all bookings
+// @desc    Admin - Get all bookings with pending count
 // @route   GET /api/v1/bookings/admin/all
 // @access  Private/Admin
 export const getAllBookings = catchAsync(async (req, res, next) => {
@@ -379,11 +390,18 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit));
 
   const total = await Booking.countDocuments(query);
+  
+  // Get pending bookings count for badge (bookings that need admin attention)
+  const pendingBookingsCount = await Booking.countDocuments({ 
+    status: { $in: ['pending', 'confirmed'] },
+    viewedByAdmin: { $ne: true }
+  });
 
   res.status(200).json({
     success: true,
     count: bookings.length,
     total,
+    pendingCount: pendingBookingsCount,
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -393,12 +411,66 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Mark all pending bookings as viewed
+// @desc    Mark all pending bookings as viewed (FIXED)
 // @route   POST /api/v1/bookings/mark-all-viewed
 // @access  Private/Admin
 export const markAllAsViewed = catchAsync(async (req, res, next) => {
-    res.status(200).json({
-        success: true,
-        message: 'All pending bookings marked as viewed',
-    });
+  const result = await Booking.updateMany(
+    { 
+      status: { $in: ['pending', 'confirmed'] },
+      viewedByAdmin: { $ne: true }
+    },
+    { 
+      viewedByAdmin: true, 
+      viewedAt: new Date(),
+      viewedBy: req.user.id
+    }
+  );
+  
+  logger.info(`Marked ${result.modifiedCount} bookings as viewed by admin ${req.user.id}`);
+  
+  res.status(200).json({
+    success: true,
+    message: `${result.modifiedCount} bookings marked as viewed`,
+    modifiedCount: result.modifiedCount,
+  });
+});
+
+
+// @desc    Get pending bookings count (for badge)
+// @route   GET /api/v1/bookings/pending-count
+// @access  Private/Admin
+export const getPendingBookingsCount = catchAsync(async (req, res, next) => {
+  const count = await Booking.countDocuments({ 
+    status: { $in: ['pending', 'confirmed'] },
+    viewedByAdmin: false 
+  });
+  
+  res.status(200).json({
+    success: true,
+    count,
+  });
+});
+
+// @desc    Mark single booking as viewed
+// @route   POST /api/v1/bookings/:id/viewed
+// @access  Private/Admin
+export const markBookingViewed = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id);
+  
+  if (!booking) {
+    return next(new AppError('Booking not found', 404));
+  }
+  
+  if (!booking.viewedByAdmin) {
+    booking.viewedByAdmin = true;
+    booking.viewedAt = new Date();
+    booking.viewedBy = req.user.id;
+    await booking.save();
+  }
+  
+  res.status(200).json({
+    success: true,
+    message: 'Booking marked as viewed',
+  });
 });

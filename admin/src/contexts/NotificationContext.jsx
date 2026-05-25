@@ -1,3 +1,4 @@
+// contexts/NotificationContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
@@ -7,317 +8,462 @@ import { useAdminAuth } from './AdminAuthContext';
 const NotificationContext = createContext(null);
 
 export const useNotifications = () => {
-    const context = useContext(NotificationContext);
-    if (!context) throw new Error('useNotifications must be used within NotificationProvider');
-    return context;
+  const context = useContext(NotificationContext);
+  if (!context) throw new Error('useNotifications must be used within NotificationProvider');
+  return context;
 };
 
 export const NotificationProvider = ({ children }) => {
-    const { isAuthenticated, user } = useAdminAuth();
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [socket, setSocket] = useState(null);
-    const [sidebarBadges, setSidebarBadges] = useState({
-        pendingReviews: 0,
-        unreadContacts: 0,
-        activeCoupons: 0,
-        pendingBookings: 0,
-        unreadNotifications: 0,
-        newsletterStats: 0,
-    });
+  const { isAuthenticated, user, token } = useAdminAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  
+  // Sidebar badges state - IMPORTANT: These need to be fetched from API
+  const [sidebarBadges, setSidebarBadges] = useState({
+    pendingReviews: 0,
+    unreadContacts: 0,
+    activeCoupons: 0,
+    pendingBookings: 0,
+    unreadNotifications: 0,
+    newsletterStats: 0,
+  });
+  
+  const fetchingRef = useRef(false);
+  const lastFetchTime = useRef(0);
+  const mountedRef = useRef(true);
+  const socketRef = useRef(null);
+  const FETCH_INTERVAL = 30000;
+  const BADGE_FETCH_INTERVAL = 15000; // Fetch badges every 15 seconds
+
+  // Connect to Socket.io
+  useEffect(() => {
+    if (!isAuthenticated || !user || !token) {
+      return;
+    }
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     
-    // Use refs to prevent multiple simultaneous requests
-    const fetchingRef = useRef(false);
-    const lastFetchTime = useRef(0);
-    const FETCH_INTERVAL = 30000; // 30 seconds
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
 
-    // Connect to Socket.io
-    useEffect(() => {
-        if (!isAuthenticated || !user) return;
+    const newSocket = io(API_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
 
-        const token = localStorage.getItem('mlr_admin_token');
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    newSocket.on('connect', () => {
+      console.log('[Socket] Connected');
+      setIsConnected(true);
+    });
 
-        const newSocket = io(API_URL, {
-            auth: { token },
-            transports: ['websocket', 'polling'],
-        });
+    newSocket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason);
+      setIsConnected(false);
+    });
 
-        newSocket.on('connect', () => {
-            console.log('Socket connected');
-        });
+    newSocket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error.message);
+      setIsConnected(false);
+    });
 
-        newSocket.on('admin:new-notification', (notification) => {
-            setNotifications(prev => [notification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-            // Refresh badges when new notification arrives
-            fetchSidebarBadges();
+    newSocket.on('admin:new-notification', (notification) => {
+      if (!mountedRef.current) return;
+      
+      console.log('[Socket] New notification:', notification.type);
+      
+      setNotifications(prev => [notification, ...prev]);
+      setUnreadCount(prev => prev + 1);
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadNotifications: prev.unreadNotifications + 1,
+      }));
+      
+      // Show toast for important notifications
+      if (notification.priority === 'urgent' || notification.priority === 'high') {
+        toast.custom((t) => (
+          <div
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full glass-strong rounded-lg shadow-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <div className={`w-2 h-2 rounded-full ${
+                    notification.priority === 'urgent' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
+                  }`} />
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-white">{notification.title}</p>
+                  <p className="mt-1 text-sm text-gray-400 line-clamp-2">{notification.message}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-white/10">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  if (notification.link) {
+                    window.location.href = notification.link;
+                  }
+                }}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[var(--color-primary)] hover:text-[var(--color-accent)]"
+              >
+                View
+              </button>
+            </div>
+          </div>
+        ), { duration: 5000 });
+      }
+    });
 
-            // Show toast for high priority
-            if (notification.priority === 'high' || notification.priority === 'urgent') {
-                toast(notification.title, {
-                    icon: notification.type === 'payment_received' ? '💰' :
-                        notification.type === 'new_booking' ? '🎉' : '🔔',
-                    duration: 5000,
-                });
-            }
-        });
+    newSocket.on('admin:unread-count-update', (count) => {
+      if (!mountedRef.current) return;
+      console.log('[Socket] Unread count update:', count);
+      setUnreadCount(count);
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadNotifications: count,
+      }));
+    });
 
-        newSocket.on('admin:notification-updated', (updatedNotification) => {
-            setNotifications(prev =>
-                prev.map(n => n._id === updatedNotification._id ? updatedNotification : n)
-            );
-            fetchUnreadCount();
-        });
+    newSocket.on('admin:all-marked-read', () => {
+      if (!mountedRef.current) return;
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadNotifications: 0,
+      }));
+    });
 
-        newSocket.on('admin:all-marked-read', () => {
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            setUnreadCount(0);
-            fetchSidebarBadges();
-        });
+    socketRef.current = newSocket;
+    setSocket(newSocket);
 
-        newSocket.on('connect_error', (error) => {
-            console.error('Socket connection error:', error);
-        });
-
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.disconnect();
-        };
-    }, [isAuthenticated, user]);
-
-    // Fetch initial notifications
-    useEffect(() => {
-        if (isAuthenticated) {
-            fetchNotifications();
-            fetchUnreadCount();
-            fetchSidebarBadges();
-
-            // Poll for new notifications every 30 seconds
-            const interval = setInterval(() => {
-                fetchUnreadCount();
-                fetchSidebarBadges();
-            }, FETCH_INTERVAL);
-            return () => clearInterval(interval);
-        }
-    }, [isAuthenticated]);
-
-    const fetchNotifications = async (page = 1) => {
-        try {
-            setLoading(true);
-            const response = await adminApi.getNotifications({ page, limit: 50 });
-            setNotifications(response.data.notifications);
-            setUnreadCount(response.data.unreadCount);
-        } catch (error) {
-            if (error.response?.status !== 429) {
-                console.error('Failed to fetch notifications:', error);
-            }
-        } finally {
-            setLoading(false);
-        }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.removeAllListeners();
+        socketRef.current.disconnect();
+      }
     };
+  }, [isAuthenticated, user, token]);
 
-    const fetchUnreadCount = async () => {
-        try {
-            const response = await adminApi.getUnreadCount();
-            setUnreadCount(response.data.unreadCount);
-        } catch (error) {
-            if (error.response?.status !== 429) {
-                console.error('Failed to fetch unread count:', error);
-            }
-        }
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
     };
+  }, []);
 
-    // Fetch real counts from API for sidebar badges
-    const fetchSidebarBadges = useCallback(async () => {
-        // Prevent multiple simultaneous requests
-        if (fetchingRef.current) return;
-        
-        // Throttle requests (don't fetch more than once every 5 seconds)
-        const now = Date.now();
-        if (now - lastFetchTime.current < 5000) {
-            console.log('Throttling badge fetch');
-            return;
-        }
-        
-        fetchingRef.current = true;
-        lastFetchTime.current = now;
-        
-        try {
-            console.log('Fetching sidebar badges...');
-            
-            // Get pending reviews count
-            let pendingReviews = 0;
-            try {
-                const reviewsRes = await adminApi.getAllReviews({ status: 'pending', limit: 1 });
-                pendingReviews = reviewsRes.data?.total || reviewsRes.data?.count || 0;
-                console.log('Pending reviews:', pendingReviews);
-            } catch (e) {
-                console.error('Failed to fetch reviews count:', e);
-            }
-            
-            // Get unread contacts count
-            let unreadContacts = 0;
-            try {
-                const contactsRes = await adminApi.getContacts({ status: 'unread', limit: 1 });
-                unreadContacts = contactsRes.data?.total || contactsRes.data?.count || 0;
-                console.log('Unread contacts:', unreadContacts);
-            } catch (e) {
-                console.error('Failed to fetch contacts count:', e);
-            }
-            
-            // Get pending bookings count
-            let pendingBookings = 0;
-            try {
-                const bookingsRes = await adminApi.getAllBookings({ status: 'pending', limit: 1 });
-                pendingBookings = bookingsRes.data?.total || bookingsRes.data?.count || 0;
-                console.log('Pending bookings:', pendingBookings);
-            } catch (e) {
-                console.error('Failed to fetch bookings count:', e);
-            }
-            
-            // Get active coupons count
-            let activeCoupons = 0;
-            try {
-                const couponsRes = await adminApi.getCoupons();
-                if (couponsRes.data?.coupons) {
-                    activeCoupons = couponsRes.data.coupons.filter(c => c.status === 'active').length;
-                }
-                console.log('Active coupons:', activeCoupons);
-            } catch (e) {
-                console.error('Failed to fetch coupons count:', e);
-            }
-            
-            // Get newsletter subscribers count
-            let newsletterStats = 0;
-            try {
-                const newsletterRes = await adminApi.getSubscribers({ status: 'active', limit: 1 });
-                newsletterStats = newsletterRes.data?.total || newsletterRes.data?.count || 0;
-                console.log('Newsletter subscribers:', newsletterStats);
-            } catch (e) {
-                console.error('Failed to fetch newsletter count:', e);
-            }
+  // Fetch initial data
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-            const newBadges = {
-                pendingReviews,
-                unreadContacts,
-                activeCoupons,
-                pendingBookings,
-                unreadNotifications: unreadCount,
-                newsletterStats,
-            };
-
-            console.log('Badges updated:', newBadges);
-            setSidebarBadges(newBadges);
-
-            return newBadges;
-        } catch (error) {
-            console.error('Failed to fetch sidebar badges:', error);
-            return null;
-        } finally {
-            fetchingRef.current = false;
-        }
-    }, [unreadCount]);
-
-    const markAsRead = useCallback(async (notificationId) => {
-        try {
-            await adminApi.markNotificationRead(notificationId);
-
-            if (socket) {
-                socket.emit('admin:mark-notification-read', notificationId);
-            }
-
-            setNotifications(prev =>
-                prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
-            );
-            setUnreadCount(prev => Math.max(0, prev - 1));
-            fetchSidebarBadges();
-        } catch (error) {
-            console.error('Failed to mark as read:', error);
-        }
-    }, [socket, fetchSidebarBadges]);
-
-    const markAllAsRead = useCallback(async () => {
-        try {
-            await adminApi.markAllNotificationsRead();
-
-            if (socket) {
-                socket.emit('admin:mark-all-read');
-            }
-
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            setUnreadCount(0);
-            fetchSidebarBadges();
-            return true;
-        } catch (error) {
-            console.error('Failed to mark all as read:', error);
-            return false;
-        }
-    }, [socket, fetchSidebarBadges]);
-
-    const deleteNotification = useCallback(async (notificationId) => {
-        try {
-            await adminApi.deleteNotification(notificationId);
-            setNotifications(prev => prev.filter(n => n._id !== notificationId));
-            if (!notifications.find(n => n._id === notificationId)?.read) {
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            }
-            fetchSidebarBadges();
-        } catch (error) {
-            console.error('Failed to delete notification:', error);
-        }
-    }, [notifications, fetchSidebarBadges]);
-
-    // Function to reset badge after visiting a page
-    const resetBadge = useCallback(async (type) => {
-        try {
-            console.log(`Resetting badge for type: ${type}`);
-            switch (type) {
-                case 'contacts':
-                    await adminApi.markAllContactsRead();
-                    break;
-                case 'reviews':
-                    await adminApi.markAllReviewsViewed();
-                    break;
-                case 'bookings':
-                    await adminApi.markAllBookingsViewed();
-                    break;
-                case 'notifications':
-                    await markAllAsRead();
-                    break;
-                default:
-                    break;
-            }
-            // Refresh badges after reset
-            await fetchSidebarBadges();
-            return true;
-        } catch (error) {
-            console.error(`Failed to reset ${type} badge:`, error);
-            return false;
-        }
-    }, [markAllAsRead, fetchSidebarBadges]);
-
-    const value = {
-        notifications,
-        unreadCount,
-        loading,
-        markAsRead,
-        markAllAsRead,
-        deleteNotification,
-        fetchNotifications,
-        socket,
-        sidebarBadges,
-        fetchSidebarBadges,
-        resetBadge,
+    const fetchInitialData = async () => {
+      try {
+        await Promise.all([
+          fetchNotifications(),
+          fetchUnreadCount(),
+          fetchAllSidebarBadges(), // Fetch all badges at once
+        ]);
+      } catch (error) {
+        console.error('[Notification] Initial fetch error:', error);
+      }
     };
+    
+    fetchInitialData();
+    
+    // Polling for unread count
+    const interval = setInterval(() => {
+      if (mountedRef.current && isAuthenticated) {
+        fetchUnreadCount();
+      }
+    }, FETCH_INTERVAL);
+    
+    // Polling for sidebar badges
+    const badgeInterval = setInterval(() => {
+      if (mountedRef.current && isAuthenticated) {
+        fetchAllSidebarBadges();
+      }
+    }, BADGE_FETCH_INTERVAL);
+    
+    return () => {
+      clearInterval(interval);
+      clearInterval(badgeInterval);
+    };
+  }, [isAuthenticated]);
 
-    return (
-        <NotificationContext.Provider value={value}>
-            {children}
-        </NotificationContext.Provider>
-    );
+  const fetchNotifications = useCallback(async (page = 1, limit = 50) => {
+    if (!isAuthenticated || !mountedRef.current) return;
+    
+    try {
+      setLoading(true);
+      const response = await adminApi.getNotifications({ page, limit });
+      if (mountedRef.current) {
+        setNotifications(response.data.notifications || []);
+        setUnreadCount(response.data.unreadCount || 0);
+      }
+    } catch (error) {
+      if (error.response?.status !== 429) {
+        console.error('[Notification] Fetch error:', error);
+      }
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated || !mountedRef.current) return;
+    
+    try {
+      const response = await adminApi.getUnreadCount();
+      if (mountedRef.current) {
+        setUnreadCount(response.data.unreadCount || 0);
+      }
+    } catch (error) {
+      if (error.response?.status !== 429) {
+        console.error('[Notification] Unread count error:', error);
+      }
+    }
+  }, [isAuthenticated]);
+
+// contexts/NotificationContext.jsx - Update fetchAllSidebarBadges
+
+const fetchAllSidebarBadges = useCallback(async () => {
+  if (!isAuthenticated || !mountedRef.current || fetchingRef.current) return;
+  
+  const now = Date.now();
+  if (now - lastFetchTime.current < 5000) {
+    return;
+  }
+  
+  fetchingRef.current = true;
+  lastFetchTime.current = now;
+  
+  try {
+    console.log('[Notification] Fetching all sidebar badges...');
+    
+    // Fetch all counts in parallel
+    const [
+      reviewsRes,
+      contactsRes,
+      bookingsRes,
+      couponsRes,
+      subscribersRes,
+      notificationsRes,
+    ] = await Promise.allSettled([
+      adminApi.getAllReviews({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
+      adminApi.getContacts({ status: 'unread', limit: 1 }).catch(() => ({ data: { unreadCount: 0, total: 0 } })),
+      adminApi.getAllBookings({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
+      adminApi.getCoupons().catch(() => ({ data: { coupons: [] } })),
+      adminApi.getSubscribers({ status: 'active', limit: 1 }).catch(() => ({ data: { activeCount: 0, total: 0 } })),
+      adminApi.getUnreadCount().catch(() => ({ data: { unreadCount: 0 } })),
+    ]);
+    
+    // Extract counts - Use correct field names
+    const pendingReviews = reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data?.pendingCount || 0) : 0;
+    const unreadContacts = contactsRes.status === 'fulfilled' ? (contactsRes.value.data?.unreadCount || 0) : 0;
+    const pendingBookings = bookingsRes.status === 'fulfilled' ? (bookingsRes.value.data?.pendingCount || 0) : 0;
+    const unreadNotifications = notificationsRes.status === 'fulfilled' ? (notificationsRes.value.data?.unreadCount || 0) : 0;
+    
+    // Count active coupons
+    let activeCoupons = 0;
+    if (couponsRes.status === 'fulfilled' && couponsRes.value.data?.coupons) {
+      activeCoupons = couponsRes.value.data.coupons.filter(c => c.status === 'active').length;
+    }
+    
+    // Get active subscribers count
+    const newsletterStats = subscribersRes.status === 'fulfilled' ? (subscribersRes.value.data?.activeCount || 0) : 0;
+    
+    const badges = {
+      pendingReviews,
+      unreadContacts,
+      activeCoupons,
+      pendingBookings,
+      unreadNotifications,
+      newsletterStats,
+    };
+    
+    console.log('[Notification] Badges updated:', badges);
+    
+    if (mountedRef.current) {
+      setSidebarBadges(badges);
+    }
+  } catch (error) {
+    console.error('[Notification] Badge fetch error:', error);
+  } finally {
+    fetchingRef.current = false;
+  }
+}, [isAuthenticated]);
+
+  const markAsRead = useCallback(async (notificationId) => {
+    try {
+      await adminApi.markNotificationRead(notificationId);
+      
+      if (socketRef.current && isConnected) {
+        socketRef.current.emit('admin:mark-notification-read', notificationId);
+      }
+      
+      setNotifications(prev =>
+        prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadNotifications: Math.max(0, prev.unreadNotifications - 1),
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('[Notification] Mark read error:', error);
+      toast.error('Failed to mark notification as read');
+      return false;
+    }
+  }, [isConnected]);
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await adminApi.markAllNotificationsRead();
+      
+      if (socketRef.current && isConnected) {
+        socketRef.current.emit('admin:mark-all-read');
+      }
+      
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadNotifications: 0,
+      }));
+      
+      toast.success('All notifications marked as read');
+      return true;
+    } catch (error) {
+      console.error('[Notification] Mark all read error:', error);
+      toast.error('Failed to mark all as read');
+      return false;
+    }
+  }, [isConnected]);
+
+  const deleteNotification = useCallback(async (notificationId) => {
+    try {
+      const wasUnread = !notifications.find(n => n._id === notificationId)?.read;
+      await adminApi.deleteNotification(notificationId);
+      
+      setNotifications(prev => prev.filter(n => n._id !== notificationId));
+      
+      if (wasUnread) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        setSidebarBadges(prev => ({
+          ...prev,
+          unreadNotifications: Math.max(0, prev.unreadNotifications - 1),
+        }));
+      }
+      
+      toast.success('Notification deleted');
+      return true;
+    } catch (error) {
+      console.error('[Notification] Delete error:', error);
+      toast.error('Failed to delete notification');
+      return false;
+    }
+  }, [notifications]);
+
+  const bulkDeleteNotifications = useCallback(async (notificationIds) => {
+    try {
+      await adminApi.post('/notifications/bulk', { notificationIds });
+      
+      const deletedUnreadCount = notifications
+        .filter(n => notificationIds.includes(n._id) && !n.read)
+        .length;
+      
+      setNotifications(prev => prev.filter(n => !notificationIds.includes(n._id)));
+      
+      if (deletedUnreadCount > 0) {
+        setUnreadCount(prev => Math.max(0, prev - deletedUnreadCount));
+        setSidebarBadges(prev => ({
+          ...prev,
+          unreadNotifications: Math.max(0, prev.unreadNotifications - deletedUnreadCount),
+        }));
+      }
+      
+      toast.success(`${notificationIds.length} notification(s) deleted`);
+      return true;
+    } catch (error) {
+      console.error('[Notification] Bulk delete error:', error);
+      toast.error('Failed to delete notifications');
+      return false;
+    }
+  }, [notifications]);
+
+  const resetBadge = useCallback(async (type) => {
+    try {
+      console.log(`[Notification] Resetting badge for type: ${type}`);
+      
+      switch (type) {
+        case 'contacts':
+          await adminApi.markAllContactsRead();
+          setSidebarBadges(prev => ({ ...prev, unreadContacts: 0 }));
+          break;
+        case 'reviews':
+          await adminApi.markAllReviewsViewed();
+          setSidebarBadges(prev => ({ ...prev, pendingReviews: 0 }));
+          break;
+        case 'bookings':
+          await adminApi.markAllBookingsViewed();
+          setSidebarBadges(prev => ({ ...prev, pendingBookings: 0 }));
+          break;
+        case 'notifications':
+          await markAllAsRead();
+          break;
+        default:
+          break;
+      }
+      
+      // Refresh all badges after reset
+      setTimeout(() => fetchAllSidebarBadges(), 1000);
+      return true;
+    } catch (error) {
+      console.error(`[Notification] Reset badge error for ${type}:`, error);
+      return false;
+    }
+  }, [markAllAsRead, fetchAllSidebarBadges]);
+
+  // Force refresh badges
+  const refreshBadges = useCallback(async () => {
+    await fetchAllSidebarBadges();
+  }, [fetchAllSidebarBadges]);
+
+  const value = {
+    notifications,
+    unreadCount,
+    loading,
+    isConnected,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    bulkDeleteNotifications,
+    fetchNotifications,
+    socket,
+    sidebarBadges,
+    refreshBadges,
+    resetBadge,
+  };
+
+  return (
+    <NotificationContext.Provider value={value}>
+      {children}
+    </NotificationContext.Provider>
+  );
 };
 
 export default NotificationContext;

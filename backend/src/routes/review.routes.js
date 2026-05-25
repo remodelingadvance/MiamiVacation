@@ -1,3 +1,4 @@
+// routes/review.routes.js
 import express from 'express';
 import {
   getPropertyReviews,
@@ -8,6 +9,8 @@ import {
   getAllReviews,
   moderateReview,
   markAllAsViewed,
+  getPendingReviewsCount,
+  markAsViewed,
 } from '../controllers/review.controller.js';
 import { protect, authorize, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -33,7 +36,9 @@ router.post('/:id/helpful', markHelpful);
 
 // Admin routes
 router.get('/admin/all', authorize('admin', 'super-admin'), getAllReviews);
+router.get('/pending-count', authorize('admin', 'super-admin'), getPendingReviewsCount);
 router.patch('/:id/moderate', authorize('admin', 'super-admin'), moderateReview);
 router.post('/mark-all-viewed', authorize('admin', 'super-admin'), markAllAsViewed);
+router.post('/:id/viewed', authorize('admin', 'super-admin'), markAsViewed);
 
 export default router;

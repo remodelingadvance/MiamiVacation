@@ -117,52 +117,103 @@ const MyBookingsPage = () => {
     setShowReviewModal(true);
   };
 
-  const handleSubmitReview = async () => {
-    if (!reviewData.title.trim()) {
-      toast.error('Please enter a review title');
-      return;
-    }
-    if (!reviewData.content.trim()) {
-      toast.error('Please enter your review content');
-      return;
-    }
-    if (reviewData.content.length < 10) {
-      toast.error('Review must be at least 10 characters');
-      return;
-    }
+  // MyBookingsPage.jsx - Updated handleSubmitReview function
 
-    setSubmittingReview(true);
-    try {
-      const response = await apiService.createReview({
-        propertyId: reviewBooking.property._id,
-        bookingId: reviewBooking._id,
-        rating: reviewData.rating,
-        title: reviewData.title,
-        content: reviewData.content,
-        ratings: {
-          cleanliness: reviewData.cleanliness,
-          accuracy: reviewData.accuracy,
-          communication: reviewData.communication,
-          location: reviewData.location,
-          checkIn: reviewData.checkIn,
-          value: reviewData.value,
-        }
-      });
+const handleSubmitReview = async () => {
+  // Validation
+  if (!reviewData.title.trim()) {
+    toast.error('Please enter a review title');
+    return;
+  }
+  if (reviewData.title.length < 3) {
+    toast.error('Title must be at least 3 characters');
+    return;
+  }
+  if (!reviewData.content.trim()) {
+    toast.error('Please enter your review content');
+    return;
+  }
+  if (reviewData.content.length < 10) {
+    toast.error('Review must be at least 10 characters');
+    return;
+  }
+  if (!reviewData.rating || reviewData.rating < 1) {
+    toast.error('Please select a rating');
+    return;
+  }
 
-      if (response.data.success) {
-        toast.success('Review submitted successfully!');
-        setShowReviewModal(false);
-        setReviewBooking(null);
-        // Refresh bookings to update review status
-        fetchBookings();
+  setSubmittingReview(true);
+  
+  try {
+    // Prepare the request payload - Match backend expectations
+    const payload = {
+      propertyId: reviewBooking.property._id,
+      bookingId: reviewBooking._id,
+      rating: parseInt(reviewData.rating), // Ensure it's a number
+      title: reviewData.title.trim(),
+      content: reviewData.content.trim(),
+      ratings: {
+        cleanliness: reviewData.cleanliness,
+        accuracy: reviewData.accuracy,
+        communication: reviewData.communication,
+        location: reviewData.location,
+        checkIn: reviewData.checkIn,
+        value: reviewData.value
       }
-    } catch (error) {
-      console.error('Review submission error:', error);
-      toast.error(error.response?.data?.message || 'Failed to submit review');
-    } finally {
-      setSubmittingReview(false);
+    };
+
+    console.log('Submitting review payload:', payload);
+
+    // Use the existing apiService.createReview method
+    const response = await apiService.createReview(payload);
+    
+    if (response.data.success) {
+      toast.success('Review submitted successfully! Thank you for your feedback.');
+      setShowReviewModal(false);
+      setReviewBooking(null);
+      // Reset review data
+      setReviewData({
+        rating: 5,
+        title: '',
+        content: '',
+        cleanliness: 5,
+        accuracy: 5,
+        communication: 5,
+        location: 5,
+        checkIn: 5,
+        value: 5,
+      });
+      // Refresh bookings to update review status
+      await fetchBookings();
+    } else {
+      toast.error(response.data.message || 'Failed to submit review');
     }
-  };
+  } catch (error) {
+    console.error('Review submission error:', error);
+    
+    // Detailed error handling
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      const errorMessage = error.response.data?.message || 
+                          error.response.data?.error || 
+                          'Failed to submit review';
+      toast.error(errorMessage);
+      
+      // Log more details for debugging
+      console.error('Error status:', error.response.status);
+      console.error('Error data:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      toast.error('Network error. Please check your connection.');
+    } else {
+      // Something happened in setting up the request
+      toast.error(error.message || 'Failed to submit review');
+    }
+  } finally {
+    setSubmittingReview(false);
+  }
+};
 
   const getStatusBadge = (status) => {
     const statusConfig = {

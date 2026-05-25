@@ -1,3 +1,4 @@
+// config/api.js
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
@@ -54,7 +55,9 @@ const adminApi = {
     getAllBookings: (params) => api.get('/bookings/admin/all', { params }),
     getBooking: (id) => api.get(`/bookings/${id}`),
     updateBookingStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
+    getPendingBookingsCount: () => api.get('/bookings/pending-count'),
     markAllBookingsViewed: () => api.post('/bookings/mark-all-viewed'),
+    markBookingViewed: (id) => api.post(`/bookings/${id}/viewed`),
 
     // Users
     getUsers: (params) => api.get('/admin/users', { params }),
@@ -64,8 +67,10 @@ const adminApi = {
 
     // Reviews
     getAllReviews: (params) => api.get('/reviews/admin/all', { params }),
+    getPendingReviewsCount: () => api.get('/reviews/pending-count'),
     moderateReview: (id, data) => api.patch(`/reviews/${id}/moderate`, data),
     markAllReviewsViewed: () => api.post('/reviews/mark-all-viewed'),
+    markReviewViewed: (id) => api.post(`/reviews/${id}/viewed`),
 
     // Coupons
     getCoupons: () => api.get('/coupons'),
@@ -77,9 +82,11 @@ const adminApi = {
     // Contacts
     getContacts: (params) => api.get('/contact', { params }),
     getContact: (id) => api.get(`/contact/${id}`),
+    getUnreadContactsCount: () => api.get('/contact/unread-count'),
     replyToContact: (id, message) => api.post(`/contact/${id}/reply`, { message }),
     updateContactStatus: (id, data) => api.patch(`/contact/${id}/status`, data),
     markAllContactsRead: () => api.post('/contact/mark-all-read'),
+    markContactRead: (id) => api.post(`/contact/${id}/read`),
 
     // Upload
     uploadImage: (formData) => api.post('/upload/image', formData, {
@@ -102,12 +109,13 @@ const adminApi = {
     sendCampaign: (id) => api.post(`/newsletter-campaigns/campaigns/${id}/send`),
     deleteCampaign: (id) => api.delete(`/newsletter-campaigns/campaigns/${id}`),
 
-    // Notifications
+// Notifications - Add get endpoint with params
     getNotifications: (params) => api.get('/notifications', { params }),
     getUnreadCount: () => api.get('/notifications/unread-count'),
     markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
     markAllNotificationsRead: () => api.patch('/notifications/read-all'),
     deleteNotification: (id) => api.delete(`/notifications/${id}`),
+    bulkDeleteNotifications: (notificationIds) => api.post('/notifications/bulk', { notificationIds }),
     getNotificationSettings: () => api.get('/notifications/settings'),
 
     // Analytics

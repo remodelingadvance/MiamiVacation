@@ -1,3 +1,4 @@
+// routes/booking.routes.js
 import express from 'express';
 import {
   createBooking,
@@ -7,6 +8,8 @@ import {
   getAllBookings,
   updateBookingStatus,
   markAllAsViewed,
+  getPendingBookingsCount,
+  markBookingViewed,
 } from '../controllers/booking.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -29,7 +32,9 @@ router.patch('/:id/cancel', cancelBooking);
 
 // Admin routes
 router.get('/admin/all', authorize('admin', 'super-admin'), getAllBookings);
+router.get('/pending-count', authorize('admin', 'super-admin'), getPendingBookingsCount);
 router.post('/mark-all-viewed', authorize('admin', 'super-admin'), markAllAsViewed);
+router.post('/:id/viewed', authorize('admin', 'super-admin'), markBookingViewed);
 router.patch(
   '/:id/status',
   authorize('admin', 'super-admin'),

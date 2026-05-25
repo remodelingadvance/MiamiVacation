@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+// layouts/AdminLayout.jsx
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -37,9 +38,25 @@ const sidebarLinks = [
     category: 'Management',
     links: [
       { to: '/admin/properties', icon: HiHome, label: 'Properties', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
-      { to: '/admin/bookings', icon: HiCalendar, label: 'Bookings', badgeKey: 'pendingBookings', badgeColor: 'bg-blue-500', resetOnVisit: true, resetType: 'bookings' },
+      { 
+        to: '/admin/bookings', 
+        icon: HiCalendar, 
+        label: 'Bookings', 
+        badgeKey: 'pendingBookings', 
+        badgeColor: 'bg-blue-500', 
+        resetOnVisit: true, 
+        resetType: 'bookings' 
+      },
       { to: '/admin/users', icon: HiUsers, label: 'Users', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
-      { to: '/admin/reviews', icon: HiStar, label: 'Reviews', badgeKey: 'pendingReviews', badgeColor: 'bg-yellow-500', resetOnVisit: true, resetType: 'reviews' },
+      { 
+        to: '/admin/reviews', 
+        icon: HiStar, 
+        label: 'Reviews', 
+        badgeKey: 'pendingReviews', 
+        badgeColor: 'bg-yellow-500', 
+        resetOnVisit: true, 
+        resetType: 'reviews' 
+      },
     ],
   },
   {
@@ -47,13 +64,29 @@ const sidebarLinks = [
     links: [
       { to: '/admin/coupons', icon: HiTag, label: 'Coupons', badgeKey: 'activeCoupons', badgeColor: 'bg-green-500', resetOnVisit: false, resetType: null },
       { to: '/admin/newsletter', icon: HiNewspaper, label: 'Newsletter', badgeKey: 'newsletterStats', badgeColor: 'bg-pink-500', resetOnVisit: false, resetType: null },
-      { to: '/admin/contacts', icon: HiMail, label: 'Contacts', badgeKey: 'unreadContacts', badgeColor: 'bg-orange-500', resetOnVisit: true, resetType: 'contacts' },
+      { 
+        to: '/admin/contacts', 
+        icon: HiMail, 
+        label: 'Contacts', 
+        badgeKey: 'unreadContacts', 
+        badgeColor: 'bg-orange-500', 
+        resetOnVisit: true, 
+        resetType: 'contacts' 
+      },
     ],
   },
   {
     category: 'System',
     links: [
-      { to: '/admin/notifications', icon: HiBell, label: 'Notifications', badgeKey: 'unreadNotifications', badgeColor: 'bg-red-500', resetOnVisit: true, resetType: 'notifications' },
+      { 
+        to: '/admin/notifications', 
+        icon: HiBell, 
+        label: 'Notifications', 
+        badgeKey: 'unreadNotifications', 
+        badgeColor: 'bg-red-500', 
+        resetOnVisit: true, 
+        resetType: 'notifications' 
+      },
       { to: '/admin/settings', icon: HiCog, label: 'Settings', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
     ],
   },
@@ -70,64 +103,93 @@ const AdminLayout = () => {
   const { user, logout } = useAdminAuth();
   const { 
     unreadCount, 
-    fetchSidebarBadges, 
-    resetBadge, 
-    sidebarBadges 
+    sidebarBadges, 
+    refreshBadges, 
+    resetBadge 
   } = useNotifications();
+  
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef(null);
   const searchInputRef = useRef(null);
   const lastVisitedPath = useRef(null);
+  const resetTimeoutRef = useRef(null);
 
-  // Reset badge when visiting a page that has resetOnVisit = true
-  const resetBadgeOnVisit = async () => {
+  // Reset badge when visiting a page
+  const resetBadgeOnVisit = useCallback(async () => {
     const currentPath = location.pathname;
     
     // Don't reset if we're already on the same page
     if (lastVisitedPath.current === currentPath) return;
-    lastVisitedPath.current = currentPath;
+    
+    // Clear any pending reset timeout
+    if (resetTimeoutRef.current) {
+      clearTimeout(resetTimeoutRef.current);
+    }
     
     // Find the link that matches the current path
+    let matchingLink = null;
     for (const category of sidebarLinks) {
       for (const link of category.links) {
-        // Check if the current path matches this link
         const isMatch = currentPath === link.to || 
                        (link.to !== '/admin/dashboard' && currentPath.startsWith(link.to));
         
-        if (isMatch && link.resetOnVisit && link.resetType && !resetting) {
-          setResetting(true);
-          console.log(`Visited ${link.label}, resetting badge for ${link.badgeKey}`);
-          
-          // Reset the specific badge using the context function
-          await resetBadge(link.resetType);
-          
-          setResetting(false);
+        if (isMatch && link.resetOnVisit && link.resetType) {
+          matchingLink = link;
           break;
         }
       }
+      if (matchingLink) break;
     }
-  };
+    
+    if (matchingLink && !resetting) {
+      setResetting(true);
+      lastVisitedPath.current = currentPath;
+      
+      console.log(`[AdminLayout] Resetting badge for ${matchingLink.label} (${matchingLink.resetType})`);
+      
+      // Add a small delay to ensure the page has loaded
+      resetTimeoutRef.current = setTimeout(async () => {
+        try {
+          await resetBadge(matchingLink.resetType);
+          // Refresh all badges after reset
+          setTimeout(() => refreshBadges(), 500);
+        } catch (error) {
+          console.error('[AdminLayout] Badge reset error:', error);
+        } finally {
+          setResetting(false);
+        }
+      }, 500);
+    }
+  }, [location.pathname, resetBadge, refreshBadges, resetting]);
 
-  // Load badges on mount
+  // Refresh badges on mount and when coming back to tab
   useEffect(() => {
-    if (fetchSidebarBadges) {
-      // Initial load
-      fetchSidebarBadges();
-      
-      // Refresh badges every 30 seconds
-      const interval = setInterval(() => {
-        fetchSidebarBadges();
-      }, 30000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [fetchSidebarBadges]);
+    // Initial badge fetch
+    refreshBadges();
+    
+    // Refresh badges when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[AdminLayout] Tab visible, refreshing badges');
+        refreshBadges();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, [refreshBadges]);
 
   // Reset badges when page changes
   useEffect(() => {
     resetBadgeOnVisit();
-  }, [location.pathname]);
+  }, [resetBadgeOnVisit]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -162,10 +224,15 @@ const AdminLayout = () => {
         setGlobalSearchOpen(false);
         setUserMenuOpen(false);
       }
+      // Refresh on Ctrl+R
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshBadges();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [refreshBadges]);
 
   const handleLogout = async () => {
     await logout();
@@ -208,6 +275,13 @@ const AdminLayout = () => {
     if (path.includes('/notifications')) return 'Notifications';
     if (path.includes('/settings')) return 'Settings';
     return 'Admin';
+  };
+
+  // Helper function to get badge count
+  const getBadgeCount = (badgeKey) => {
+    if (!badgeKey) return 0;
+    const count = sidebarBadges[badgeKey] || 0;
+    return count;
   };
 
   return (
@@ -355,10 +429,7 @@ const AdminLayout = () => {
                 )}
                 <ul className="space-y-1">
                   {category.links.map((link) => {
-                    let badgeCount = 0;
-                    if (link.badgeKey && sidebarBadges[link.badgeKey]) {
-                      badgeCount = sidebarBadges[link.badgeKey];
-                    }
+                    const badgeCount = getBadgeCount(link.badgeKey);
                     const showBadge = badgeCount > 0;
                     
                     return (
@@ -474,17 +545,17 @@ const AdminLayout = () => {
               <kbd className="px-1.5 py-0.5 text-[10px] bg-white/5 rounded border border-white/10">⌘K</kbd>
             </button>
 
-            {/* Notification Bell */}
-            <NotificationBell />
-
             {/* Refresh button */}
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => refreshBadges()}
               className="w-10 h-10 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-white transition-colors"
-              title="Refresh data"
+              title="Refresh data (Ctrl+R)"
             >
               <HiRefresh className="w-5 h-5" />
             </button>
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User menu */}
             <div className="relative" ref={userMenuRef}>
