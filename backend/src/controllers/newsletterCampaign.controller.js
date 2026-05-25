@@ -134,6 +134,7 @@ export const deleteCampaign = catchAsync(async (req, res, next) => {
 // @desc    Get newsletter subscribers
 // @route   GET /api/v1/newsletter/subscribers
 // @access  Private/Admin
+// controllers/newsletterCampaign.controller.js - Update getSubscribers to include activeCount
 export const getSubscribers = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 50, status, source, search } = req.query;
 
@@ -154,7 +155,7 @@ export const getSubscribers = catchAsync(async (req, res, next) => {
 
   const total = await Newsletter.countDocuments(query);
 
-  // Get stats
+  // Get stats for badges
   const stats = await Newsletter.aggregate([
     {
       $group: {
@@ -177,6 +178,7 @@ export const getSubscribers = catchAsync(async (req, res, next) => {
     success: true,
     count: subscribers.length,
     total,
+    activeCount: stats[0]?.active || 0, // For badge
     stats: stats[0] || {},
     subscribers,
   });

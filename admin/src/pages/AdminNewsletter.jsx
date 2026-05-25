@@ -1,5 +1,5 @@
+// pages/admin/AdminNewsletter.jsx
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   HiPlus,
@@ -49,11 +49,12 @@ const AdminNewsletter = () => {
     targetAudience: 'all',
   });
 
-  // Fetch campaigns
+  // Fetch campaigns - FIXED: Use correct API endpoint
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await adminApi.get('/newsletter/admin/campaigns');
+      // Use the correct endpoint from adminApi
+      const response = await adminApi.getCampaigns({ page: 1, limit: 100 });
       console.log('Campaigns response:', response.data);
       setCampaigns(response.data.campaigns || []);
     } catch (error) {
@@ -64,60 +65,79 @@ const AdminNewsletter = () => {
     }
   }, []);
 
-  // Fetch subscribers
+  // Fetch subscribers - FIXED: Use correct API endpoint
   const fetchSubscribers = useCallback(async (page = 1) => {
-  try {
-    setLoading(true);
-    const response = await adminApi.getSubscribers({ page, limit: 20 });
-    setSubscribers(response.data.subscribers || []);
-    setTotalSubscribers(response.data.total || 0);
-    setSubscriberStats(response.data.stats || {});
-  } catch (error) {
-    console.error('Failed to load subscribers:', error);
-    toast.error('Failed to load subscribers');
-  } finally {
-    setLoading(false);
-  }
-}, []);
+    try {
+      setLoading(true);
+      const response = await adminApi.getSubscribers({ page, limit: 20 });
+      console.log('Subscribers response:', response.data);
+      setSubscribers(response.data.subscribers || []);
+      setTotalSubscribers(response.data.total || 0);
+      setSubscriberStats(response.data.stats || {});
+    } catch (error) {
+      console.error('Failed to load subscribers:', error);
+      toast.error('Failed to load subscribers');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Initial fetch
   useEffect(() => {
     if (activeTab === 'campaigns') {
       fetchCampaigns();
     } else {
-      fetchSubscribers(currentPage, searchQuery);
+      fetchSubscribers(currentPage);
     }
   }, [activeTab, currentPage, fetchCampaigns, fetchSubscribers]);
 
-  // Handle search
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
-    fetchSubscribers(1, query);
-  };
-
-  // Create campaign
+  // Create campaign - FIXED: Use correct API endpoint
   const handleCreateCampaign = async (e) => {
     e.preventDefault();
+    
+    // Validate
+    if (!campaignForm.name.trim()) {
+      toast.error('Campaign name is required');
+      return;
+    }
+    if (!campaignForm.subject.trim()) {
+      toast.error('Email subject is required');
+      return;
+    }
+    if (!campaignForm.content.trim()) {
+      toast.error('Email content is required');
+      return;
+    }
+
     try {
-      await adminApi.post('/newsletter/admin/campaigns', campaignForm);
-      toast.success('Campaign created successfully');
-      setShowCreateModal(false);
-      setCampaignForm({ name: '', subject: '', content: '', status: 'draft', targetAudience: 'all' });
-      fetchCampaigns();
+      const response = await adminApi.createCampaign(campaignForm);
+      if (response.data.success) {
+        toast.success('Campaign created successfully');
+        setShowCreateModal(false);
+        setCampaignForm({ 
+          name: '', 
+          subject: '', 
+          content: '', 
+          status: 'draft', 
+          targetAudience: 'all' 
+        });
+        fetchCampaigns();
+      }
     } catch (error) {
       console.error('Create campaign error:', error);
       toast.error(error.response?.data?.message || 'Failed to create campaign');
     }
   };
 
-  // Send campaign
+  // Send campaign - FIXED: Use correct API endpoint
   const handleSendCampaign = async (campaignId) => {
     try {
       setSending(true);
-      await adminApi.post(`/newsletter/admin/campaigns/${campaignId}/send`);
-      toast.success('Campaign sending started');
-      fetchCampaigns();
+      const response = await adminApi.sendCampaign(campaignId);
+      if (response.data.success) {
+        toast.success('Campaign sending started');
+        fetchCampaigns();
+      }
     } catch (error) {
       console.error('Send campaign error:', error);
       toast.error(error.response?.data?.message || 'Failed to send campaign');
@@ -126,12 +146,12 @@ const AdminNewsletter = () => {
     }
   };
 
-  // Delete campaign
+  // Delete campaign - FIXED: Use correct API endpoint
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
       setDeleting(true);
-      await adminApi.delete(`/newsletter/admin/campaigns/${deleteId}`);
+      await adminApi.deleteCampaign(deleteId);
       toast.success('Campaign deleted');
       setDeleteId(null);
       fetchCampaigns();
@@ -146,9 +166,7 @@ const AdminNewsletter = () => {
   // Export subscribers
   const handleExportSubscribers = async () => {
     try {
-      const response = await adminApi.get('/newsletter/admin/subscribers/export', {
-        responseType: 'blob',
-      });
+      const response = await adminApi.exportSubscribers();
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -307,7 +325,7 @@ const AdminNewsletter = () => {
 
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-display font-bold text-white">Newsletter</h1>
             <p className="text-sm text-[var(--color-text-muted)]">
@@ -317,7 +335,7 @@ const AdminNewsletter = () => {
               }
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Toggle tabs */}
             <div className="flex rounded-lg glass-light p-1">
               <button
@@ -400,7 +418,11 @@ const AdminNewsletter = () => {
           totalItems={activeTab === 'subscribers' ? totalSubscribers : campaigns.length}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          onSearch={activeTab === 'subscribers' ? handleSearch : undefined}
+          onSearch={activeTab === 'subscribers' ? (query) => {
+            setSearchQuery(query);
+            setCurrentPage(1);
+            fetchSubscribers(1, query);
+          } : undefined}
           searchPlaceholder="Search subscribers..."
           emptyMessage={activeTab === 'campaigns' ? 'No campaigns yet. Create your first campaign!' : 'No subscribers found'}
         />
@@ -536,6 +558,23 @@ const AdminNewsletter = () => {
             </div>
 
             <div>
+              <p className="text-sm text-[var(--color-text-muted)] mb-1">Status</p>
+              <StatusBadge status={selectedCampaign.status} />
+            </div>
+
+            <div>
+              <p className="text-sm text-[var(--color-text-muted)] mb-1">Created</p>
+              <p className="text-white">{formatDate(selectedCampaign.createdAt)}</p>
+            </div>
+
+            {selectedCampaign.sentAt && (
+              <div>
+                <p className="text-sm text-[var(--color-text-muted)] mb-1">Sent At</p>
+                <p className="text-white">{formatDate(selectedCampaign.sentAt)}</p>
+              </div>
+            )}
+
+            <div>
               <p className="text-sm text-[var(--color-text-muted)] mb-2">Content Preview</p>
               <div className="p-4 rounded-lg bg-white/5 max-h-96 overflow-y-auto border border-white/5">
                 <div 
@@ -543,23 +582,6 @@ const AdminNewsletter = () => {
                   className="prose prose-invert max-w-none text-sm"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-[var(--color-text-muted)]">Status</p>
-                <StatusBadge status={selectedCampaign.status} />
-              </div>
-              <div>
-                <p className="text-[var(--color-text-muted)]">Created</p>
-                <p className="text-white">{formatDate(selectedCampaign.createdAt)}</p>
-              </div>
-              {selectedCampaign.sentAt && (
-                <div>
-                  <p className="text-[var(--color-text-muted)]">Sent At</p>
-                  <p className="text-white">{formatDate(selectedCampaign.sentAt)}</p>
-                </div>
-              )}
             </div>
           </div>
         )}
