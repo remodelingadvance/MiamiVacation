@@ -1,4 +1,4 @@
-// controllers/booking.controller.js - Complete fixed version
+// controllers/booking.controller.js - Complete updated version
 import { Booking, Property, Coupon, User, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -12,7 +12,16 @@ import mongoose from 'mongoose';
 // @route   POST /api/v1/bookings
 // @access  Private
 export const createBooking = catchAsync(async (req, res, next) => {
-  const { propertyId, checkIn, checkOut, guests, couponCode, specialRequests, paymentMethodId, guestDetails } = req.body;
+  const { 
+    propertyId, 
+    checkIn, 
+    checkOut, 
+    guests, 
+    couponCode, 
+    specialRequests, 
+    paymentMethodId, 
+    guestDetails 
+  } = req.body;
 
   console.log('Creating booking with data:', { propertyId, checkIn, checkOut, guests, guestDetails });
 
@@ -31,10 +40,35 @@ export const createBooking = catchAsync(async (req, res, next) => {
     return next(new AppError('Property is not available for booking', 400));
   }
 
-  // STRICT availability check - no overlapping dates allowed
+  // Parse dates
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
   
+  if (checkInDate >= checkOutDate) {
+    return next(new AppError('Check-out date must be after check-in date', 400));
+  }
+
+  if (checkInDate < new Date()) {
+    return next(new AppError('Check-in date cannot be in the past', 400));
+  }
+
+  // Check for maintenance dates FIRST
+  const maintenanceDates = property.maintenanceDates || [];
+  const isUnderMaintenance = maintenanceDates.some(md => {
+    const maintenanceStart = new Date(md.startDate);
+    const maintenanceEnd = new Date(md.endDate);
+    // Check if the booking dates overlap with any maintenance period
+    return (checkInDate <= maintenanceEnd && checkOutDate >= maintenanceStart);
+  });
+
+  if (isUnderMaintenance) {
+    return next(new AppError(
+      'Property is under maintenance during selected dates. Please choose different dates.', 
+      400
+    ));
+  }
+
+  // Check for conflicting bookings
   const conflictingBookings = await Booking.find({
     property: propertyId,
     status: { $in: ['confirmed', 'active', 'pending'] },
@@ -105,7 +139,10 @@ export const createBooking = catchAsync(async (req, res, next) => {
   }
 
   // Generate booking number
-  const bookingNumber = `MIA${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+  const year = new Date().getFullYear().toString().slice(-2);
+  const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const bookingNumber = `MIA${year}${month}${random}`;
 
   // Create booking with guest details
   const booking = await Booking.create({
@@ -121,9 +158,10 @@ export const createBooking = catchAsync(async (req, res, next) => {
     },
     status: 'confirmed',
     payment: {
-      status: 'pending',
+      status: 'paid',
       method: 'stripe',
       amountPaid: pricing.total,
+      paidAt: new Date(),
     },
     pricing: {
       nightlyRate: basePrice,
@@ -165,7 +203,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
   user.bookings.push(booking._id);
   await user.save();
 
-  // ✅ Create notification for admin
+  // Create notification for admin
   await Notification.createNotification({
     type: 'new_booking',
     title: 'New Booking Received',
@@ -182,10 +220,36 @@ export const createBooking = catchAsync(async (req, res, next) => {
     link: `/admin/bookings/${booking._id}`,
   });
 
+  // Send confirmation email
+  try {
+    await emailService.send({
+      to: guestDetails?.email || req.user.email,
+      subject: `Booking Confirmed - ${bookingNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Booking Confirmed! 🎉</h2>
+          <p>Dear ${guestDetails?.firstName || req.user.firstName},</p>
+          <p>Your booking has been confirmed. Here are the details:</p>
+          <ul>
+            <li><strong>Booking Number:</strong> ${bookingNumber}</li>
+            <li><strong>Property:</strong> ${property.name}</li>
+            <li><strong>Check-in:</strong> ${checkInDate.toLocaleDateString()}</li>
+            <li><strong>Check-out:</strong> ${checkOutDate.toLocaleDateString()}</li>
+            <li><strong>Total Amount:</strong> $${pricing.total}</li>
+          </ul>
+          <p>Thank you for choosing Miami Luxury Rentals!</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    logger.error('Email sending failed:', error);
+  }
+
   logger.info(`Booking created: ${booking.bookingNumber} by user ${req.user.id}`);
 
   res.status(201).json({
     success: true,
+    message: 'Booking created successfully',
     booking,
   });
 });
@@ -203,9 +267,14 @@ export const updateBookingStatus = catchAsync(async (req, res, next) => {
 
   const oldStatus = booking.status;
   booking.status = status;
+  
+  if (status === 'completed') {
+    booking.payment.status = 'paid';
+  }
+  
   await booking.save();
 
-  // ✅ Create notification for status change
+  // Create notification for status change
   let title = '', message = '', priority = 'medium';
   
   if (status === 'confirmed' && oldStatus !== 'confirmed') {
@@ -315,7 +384,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
     return next(new AppError('Booking cannot be cancelled', 400));
   }
 
-  // Calculate refund
+  // Calculate refund based on cancellation policy
   const now = new Date();
   const checkIn = new Date(booking.checkIn);
   const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
@@ -325,6 +394,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
 
   if (daysUntilCheckIn > 30) {
     refundAmount = booking.pricing.total;
+    cancellationFee = 0;
   } else if (daysUntilCheckIn > 14) {
     refundAmount = booking.pricing.total * 0.5;
     cancellationFee = booking.pricing.total * 0.5;
@@ -368,6 +438,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
+    message: 'Booking cancelled successfully',
     booking,
   });
 });
@@ -391,7 +462,7 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
 
   const total = await Booking.countDocuments(query);
   
-  // Get pending bookings count for badge (bookings that need admin attention)
+  // Get pending bookings count for badge
   const pendingBookingsCount = await Booking.countDocuments({ 
     status: { $in: ['pending', 'confirmed'] },
     viewedByAdmin: { $ne: true }
@@ -411,7 +482,7 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Mark all pending bookings as viewed (FIXED)
+// @desc    Mark all pending bookings as viewed
 // @route   POST /api/v1/bookings/mark-all-viewed
 // @access  Private/Admin
 export const markAllAsViewed = catchAsync(async (req, res, next) => {
@@ -435,7 +506,6 @@ export const markAllAsViewed = catchAsync(async (req, res, next) => {
     modifiedCount: result.modifiedCount,
   });
 });
-
 
 // @desc    Get pending bookings count (for badge)
 // @route   GET /api/v1/bookings/pending-count
@@ -472,5 +542,65 @@ export const markBookingViewed = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Booking marked as viewed',
+  });
+});
+
+// @desc    Check booking availability (including maintenance)
+// @route   GET /api/v1/bookings/check-availability
+// @access  Public
+export const checkAvailability = catchAsync(async (req, res, next) => {
+  const { propertyId, checkIn, checkOut } = req.query;
+
+  if (!propertyId || !checkIn || !checkOut) {
+    return next(new AppError('Property ID, check-in and check-out dates are required', 400));
+  }
+
+  const property = await Property.findById(propertyId);
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+
+  // Check maintenance dates
+  const maintenanceDates = property.maintenanceDates || [];
+  const isUnderMaintenance = maintenanceDates.some(md => {
+    const maintenanceStart = new Date(md.startDate);
+    const maintenanceEnd = new Date(md.endDate);
+    return (checkInDate <= maintenanceEnd && checkOutDate >= maintenanceStart);
+  });
+
+  if (isUnderMaintenance) {
+    return res.status(200).json({
+      success: true,
+      isAvailable: false,
+      reason: 'maintenance',
+      message: 'Property is under maintenance during selected dates'
+    });
+  }
+
+  // Check conflicting bookings
+  const conflictingBookings = await Booking.find({
+    property: propertyId,
+    status: { $in: ['confirmed', 'active', 'pending'] },
+    $or: [
+      {
+        checkIn: { $lt: checkOutDate },
+        checkOut: { $gt: checkInDate },
+      },
+    ],
+  });
+
+  const isAvailable = conflictingBookings.length === 0;
+
+  res.status(200).json({
+    success: true,
+    isAvailable,
+    reason: isAvailable ? null : 'booked',
+    conflictingBookings: conflictingBookings.length,
+    maintenanceDates: maintenanceDates.filter(md => 
+      (checkInDate <= new Date(md.endDate) && checkOutDate >= new Date(md.startDate))
+    )
   });
 });

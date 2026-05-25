@@ -1,7 +1,8 @@
+// pages/BookingPage.jsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { format, addDays, differenceInDays, isSameDay, startOfDay } from 'date-fns';
+import { format, addDays, differenceInDays, isSameDay, startOfDay, isWithinInterval } from 'date-fns';
 import { DateRange } from 'react-date-range';
 import {
   HiCalendar,
@@ -45,6 +46,7 @@ const BookingPage = () => {
   const [property, setPropertyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookedDates, setBookedDates] = useState([]);
+  const [maintenanceDates, setMaintenanceDates] = useState([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -84,11 +86,13 @@ const BookingPage = () => {
   // Step state
   const [step, setStep] = useState(1);
 
-  // Fetch property and booked dates
+  // Fetch property, booked dates, and maintenance dates
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // Fetch property details
         const propertyResponse = await apiService.getProperty(propertyId);
         const propertyData = propertyResponse.data.property;
         setPropertyData(propertyData);
@@ -97,18 +101,38 @@ const BookingPage = () => {
         const bookingsResponse = await apiService.getPropertyBookings(propertyId);
         const bookings = bookingsResponse.data.bookings || [];
         
-        const dates = [];
+        const booked = [];
         bookings.forEach(booking => {
           if (booking.status === 'confirmed' || booking.status === 'active') {
             let currentDate = new Date(booking.checkIn);
             const endDate = new Date(booking.checkOut);
             while (currentDate < endDate) {
-              dates.push(startOfDay(new Date(currentDate)));
+              booked.push(startOfDay(new Date(currentDate)));
               currentDate.setDate(currentDate.getDate() + 1);
             }
           }
         });
-        setBookedDates(dates);
+        setBookedDates(booked);
+        
+        // Fetch maintenance dates
+        try {
+          const maintenanceResponse = await apiService.get(`/properties/${propertyId}/maintenance-dates`);
+          const maintenance = maintenanceResponse.data.maintenanceDates || [];
+          
+          const maintenanceBooked = [];
+          maintenance.forEach(md => {
+            const startDate = new Date(md.startDate);
+            const endDate = new Date(md.endDate);
+            let currentDate = new Date(startDate);
+            while (currentDate <= endDate) {
+              maintenanceBooked.push(startOfDay(new Date(currentDate)));
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          });
+          setMaintenanceDates(maintenanceBooked);
+        } catch (err) {
+          console.log('No maintenance dates found');
+        }
         
         // Calculate initial pricing
         updatePricing(propertyData, dateRange[0].startDate, dateRange[0].endDate);
@@ -162,19 +186,43 @@ const BookingPage = () => {
     return bookedDates.some(bookedDate => isSameDay(bookedDate, date));
   };
 
+  // Check if a date is under maintenance
+  const isDateUnderMaintenance = (date) => {
+    return maintenanceDates.some(mdDate => isSameDay(mdDate, date));
+  };
+
+  // Check if a date is unavailable (booked or maintenance)
+  const isDateUnavailable = (date) => {
+    return isDateBooked(date) || isDateUnderMaintenance(date);
+  };
+
   // Handle date range change
   const handleDateRangeChange = (item) => {
     const { startDate, endDate } = item.selection;
     
     if (startDate && endDate) {
-      // Check if any date in range is booked
+      // Check if any date in range is unavailable
       let currentDate = new Date(startDate);
+      const unavailableDates = [];
+      
       while (currentDate <= endDate) {
-        if (isDateBooked(currentDate)) {
-          toast.error(`Selected dates include a booked date (${format(currentDate, 'MMM dd, yyyy')}). Please choose different dates.`);
-          return;
+        if (isDateUnavailable(currentDate)) {
+          const reason = isDateUnderMaintenance(currentDate) ? 'under maintenance' : 'booked';
+          unavailableDates.push({
+            date: currentDate,
+            reason
+          });
         }
         currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      if (unavailableDates.length > 0) {
+        const firstUnavailable = unavailableDates[0];
+        toast.error(
+          `${format(firstUnavailable.date, 'MMM dd, yyyy')} is ${firstUnavailable.reason}. 
+           Please select different dates.`
+        );
+        return;
       }
     }
     
@@ -187,7 +235,7 @@ const BookingPage = () => {
       const newValue = prev[type] + delta;
       if (type === 'adults' && newValue < 1) return prev;
       if (newValue < 0) return prev;
-      if (property && newValue > property.details?.maxGuests) {
+      if (property && (prev.adults + prev.children + (type === 'adults' ? delta : 0)) > property.details?.maxGuests) {
         toast.error(`Maximum ${property.details?.maxGuests} guests allowed`);
         return prev;
       }
@@ -300,6 +348,32 @@ const BookingPage = () => {
     }
   };
 
+  // Custom day content renderer for calendar
+  const renderDayContent = (date) => {
+    const isBooked = isDateBooked(date);
+    const isMaintenance = isDateUnderMaintenance(date);
+    const isSelected = dateRange[0].startDate && dateRange[0].endDate && 
+      isWithinInterval(date, { start: dateRange[0].startDate, end: dateRange[0].endDate });
+    
+    let statusClass = '';
+    let statusText = '';
+    
+    if (isMaintenance) {
+      statusClass = 'maintenance-date';
+      statusText = '🔧';
+    } else if (isBooked) {
+      statusClass = 'booked-date';
+      statusText = '❌';
+    }
+    
+    return (
+      <div className={`day-cell ${statusClass}`}>
+        <span className="day-number">{format(date, 'd')}</span>
+        {statusText && <span className="status-indicator">{statusText}</span>}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="pt-24">
@@ -367,7 +441,7 @@ const BookingPage = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Step 1: Select Dates - Beautiful Calendar UI */}
+              {/* Step 1: Select Dates */}
               {step === 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -390,14 +464,12 @@ const BookingPage = () => {
                       width: 100% !important;
                     }
                     
-                    /* Month Container */
                     .booking-calendar .rdrMonth {
                       background: transparent !important;
                       width: 100% !important;
                       padding: 0 !important;
                     }
                     
-                    /* Month Name */
                     .booking-calendar .rdrMonthName {
                       color: white !important;
                       font-size: 1.1rem !important;
@@ -406,7 +478,6 @@ const BookingPage = () => {
                       text-align: center !important;
                     }
                     
-                    /* Week Days */
                     .booking-calendar .rdrWeekDay {
                       color: rgba(255, 255, 255, 0.6) !important;
                       font-weight: 500 !important;
@@ -414,7 +485,6 @@ const BookingPage = () => {
                       padding: 0.75rem 0 !important;
                     }
                     
-                    /* Day Numbers */
                     .booking-calendar .rdrDayNumber {
                       font-weight: 500 !important;
                     }
@@ -469,23 +539,35 @@ const BookingPage = () => {
                       border-radius: 0.75rem !important;
                     }
                     
-                    /* Booked Dates - Red Styling */
-                    .booking-calendar .booked-date {
-                      position: relative;
-                    }
-                    
+                    /* Booked Dates */
                     .booking-calendar .rdrDay:has(.booked-date) {
-                      background: rgba(239, 68, 68, 0.2) !important;
+                      background: rgba(239, 68, 68, 0.15) !important;
                       border-radius: 0.75rem !important;
                       cursor: not-allowed !important;
                     }
                     
                     .booking-calendar .rdrDay:has(.booked-date):hover {
-                      background: rgba(239, 68, 68, 0.3) !important;
+                      background: rgba(239, 68, 68, 0.25) !important;
                     }
                     
                     .booking-calendar .rdrDay:has(.booked-date) .rdrDayNumber span {
                       color: #ef4444 !important;
+                      text-decoration: line-through !important;
+                    }
+                    
+                    /* Maintenance Dates */
+                    .booking-calendar .rdrDay:has(.maintenance-date) {
+                      background: rgba(245, 158, 11, 0.15) !important;
+                      border-radius: 0.75rem !important;
+                      cursor: not-allowed !important;
+                    }
+                    
+                    .booking-calendar .rdrDay:has(.maintenance-date):hover {
+                      background: rgba(245, 158, 11, 0.25) !important;
+                    }
+                    
+                    .booking-calendar .rdrDay:has(.maintenance-date) .rdrDayNumber span {
+                      color: #f59e0b !important;
                       text-decoration: line-through !important;
                     }
                     
@@ -496,7 +578,7 @@ const BookingPage = () => {
                     }
                     
                     .booking-calendar .rdrDayPassive .rdrDayNumber span {
-                      color: rgba(255, 255, 255, 0.4) !important;
+                      color: rgba(255, 255, 255, 0.3) !important;
                     }
                     
                     /* Navigation Buttons */
@@ -510,6 +592,25 @@ const BookingPage = () => {
                     .booking-calendar .rdrPprevButton:hover,
                     .booking-calendar .rdrNextButton:hover {
                       background: rgba(255, 255, 255, 0.2) !important;
+                    }
+                    
+                    /* Day Cell Styles */
+                    .day-cell {
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      justify-content: center;
+                      position: relative;
+                    }
+                    
+                    .day-number {
+                      font-size: 0.9rem;
+                      font-weight: 500;
+                    }
+                    
+                    .status-indicator {
+                      font-size: 0.65rem;
+                      margin-top: 2px;
                     }
                   `}</style>
                   
@@ -525,14 +626,7 @@ const BookingPage = () => {
                       direction="horizontal"
                       showDateDisplay={false}
                       showMonthAndYearPickers={true}
-                      dayContentRenderer={(date) => {
-                        const isBooked = isDateBooked(date);
-                        return (
-                          <div className={isBooked ? 'booked-date' : ''}>
-                            {format(date, 'd')}
-                          </div>
-                        );
-                      }}
+                      dayContentRenderer={renderDayContent}
                     />
                   </div>
                   
@@ -540,11 +634,15 @@ const BookingPage = () => {
                   <div className="flex flex-wrap items-center justify-center gap-6 mt-8 pt-6 border-t border-white/10">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-red-500/50 border border-red-500"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Booked (Unavailable)</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">Booked</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-yellow-500/50 border border-yellow-500"></div>
+                      <span className="text-xs text-[var(--color-text-muted)]">Under Maintenance</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-[var(--color-primary)]"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Selected Dates</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">Selected</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-white/20"></div>
@@ -685,7 +783,7 @@ const BookingPage = () => {
                     </div>
                   </div>
 
-                  {/* Contact Information */}
+                  {/* Contact Information - Same as before */}
                   <div className="glass rounded-2xl p-6">
                     <h2 className="text-xl font-display font-bold text-white mb-5">
                       Contact Details

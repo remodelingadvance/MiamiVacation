@@ -185,9 +185,9 @@ export const createPropertyValidator = [
 
     body('policiesAndNotes.*.points.*')
         .optional()
-        .trim(),
-        // .notEmpty()
-        // .withMessage('Policy point cannot be empty'),
+        .trim()
+        .notEmpty()
+        .withMessage('Policy point cannot be empty'),
 
     body('images')
         .optional()

@@ -1,3 +1,4 @@
+// config/api.js - Frontend User API Service
 import axios from 'axios';
 import { getToken, refreshAccessToken, clearAuth } from '../utils/auth';
 
@@ -54,7 +55,7 @@ api.interceptors.response.use(
 
 // API service object
 const apiService = {
-    // Auth
+    // ============ AUTH ============
     login: (credentials) => api.post('/auth/login', credentials),
     signup: (userData) => api.post('/auth/signup', userData),
     logout: () => api.post('/auth/logout'),
@@ -66,51 +67,57 @@ const apiService = {
     verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
     refreshToken: (refreshToken) => api.post('/auth/refresh-token', { refreshToken }),
 
-    // Properties
+    // ============ PROPERTIES ============
     getProperties: (params) => api.get('/properties', { params }),
     getFeaturedProperties: () => api.get('/properties/featured'),
     getProperty: (id) => api.get(`/properties/${id}`),
     getPropertyBySlug: (slug) => api.get(`/properties/slug/${slug}`),
     searchProperties: (params) => api.get('/properties/search', { params }),
     checkAvailability: (id, params) => api.get(`/properties/${id}/availability`, { params }),
+    
+    // Maintenance dates - ADD THIS
+    getMaintenanceDates: (propertyId) => api.get(`/properties/${propertyId}/maintenance-dates`),
 
-    // Bookings
+    // ============ BOOKINGS ============
     createBooking: (data) => api.post('/bookings', data),
     getMyBookings: () => api.get('/bookings/my-bookings'),
     getBooking: (id) => api.get(`/bookings/${id}`),
     cancelBooking: (id, reason) => api.patch(`/bookings/${id}/cancel`, { reason }),
-    // In api.js
     getPropertyBookings: (propertyId) => api.get(`/properties/${propertyId}/bookings`),
+    
+    // Check availability for booking - ADD THIS
+    checkBookingAvailability: (propertyId, checkIn, checkOut) => 
+        api.get(`/bookings/check-availability?propertyId=${propertyId}&checkIn=${checkIn}&checkOut=${checkOut}`),
 
-    // Payments
+    // ============ PAYMENTS ============
     createPaymentIntent: (data) => api.post('/payments/create-payment-intent', data),
     confirmPayment: (data) => api.post('/payments/confirm', data),
     createCheckoutSession: (data) => api.post('/payments/create-checkout-session', data),
 
-    // Reviews
+    // ============ REVIEWS ============
     getPropertyReviews: (propertyId, params) => api.get(`/reviews/property/${propertyId}`, { params }),
     createReview: (data) => api.post('/reviews', data),
     updateReview: (id, data) => api.patch(`/reviews/${id}`, data),
     deleteReview: (id) => api.delete(`/reviews/${id}`),
     markHelpful: (id, vote) => api.post(`/reviews/${id}/helpful`, { vote }),
 
-    // Coupons
+    // ============ COUPONS ============
     validateCoupon: (data) => api.post('/coupons/validate', data),
 
-    // Contact
+    // ============ CONTACT ============
     submitContact: (data) => api.post('/contact', data),
 
-    // Newsletter
+    // ============ NEWSLETTER ============
     subscribeNewsletter: (data) => api.post('/newsletter/subscribe', data),
     unsubscribeNewsletter: (email) => api.post('/newsletter/unsubscribe', { email }),
 
-    // User
+    // ============ USER / FAVORITES ============
     getFavorites: () => api.get('/users/favorites'),
     addToFavorites: (propertyId) => api.post(`/users/favorites/${propertyId}`),
     removeFromFavorites: (propertyId) => api.delete(`/users/favorites/${propertyId}`),
     getUserReviews: () => api.get('/users/reviews'),
 
-    // Upload
+    // ============ UPLOAD ============
     uploadImage: (formData) => api.post('/upload/image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
@@ -118,23 +125,12 @@ const apiService = {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
-    // Admin
-    getDashboardStats: () => api.get('/admin/dashboard'),
-    getUsers: (params) => api.get('/admin/users', { params }),
-    updateUser: (id, data) => api.patch(`/admin/users/${id}`, data),
-    deleteUser: (id) => api.delete(`/admin/users/${id}`),
-    getAllBookings: () => api.get('/bookings/admin/all'),
-    updateBookingStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
-    getAllReviews: (params) => api.get('/reviews/admin/all', { params }),
-    moderateReview: (id, data) => api.patch(`/reviews/${id}/moderate`, data),
-    getCoupons: () => api.get('/coupons'),
-    createCoupon: (data) => api.post('/coupons', data),
-    updateCoupon: (id, data) => api.patch(`/coupons/${id}`, data),
-    deleteCoupon: (id) => api.delete(`/coupons/${id}`),
-    getContacts: (params) => api.get('/contact', { params }),
-    getContact: (id) => api.get(`/contact/${id}`),
-    replyToContact: (id, message) => api.post(`/contact/${id}/reply`, { message }),
-    getSubscribers: (params) => api.get('/newsletter/subscribers', { params }),
+    // ============ GENERIC METHODS ============
+    get: (url, config) => api.get(url, config),
+    post: (url, data, config) => api.post(url, data, config),
+    patch: (url, data, config) => api.patch(url, data, config),
+    delete: (url, config) => api.delete(url, config),
+    put: (url, data, config) => api.put(url, data, config),
 };
 
 export { api };

@@ -430,3 +430,230 @@ export const getPropertyBookings = async (req, res) => {
     });
   }
 };
+
+// controllers/property.controller.js - Add these functions
+
+// @desc    Add maintenance dates to property
+// @route   POST /api/v1/properties/:id/maintenance-dates
+// @access  Private/Admin
+export const addMaintenanceDates = catchAsync(async (req, res, next) => {
+  const { startDate, endDate, reason, description } = req.body;
+  const { id } = req.params;
+
+  if (!startDate || !endDate) {
+    return next(new AppError('Please provide start date and end date', 400));
+  }
+
+  const property = await Property.findById(id);
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  // Parse dates
+  const newStart = new Date(startDate);
+  const newEnd = new Date(endDate);
+
+  if (newStart > newEnd) {
+    return next(new AppError('Start date must be before end date', 400));
+  }
+
+  // Check for overlapping maintenance dates
+  const overlapping = property.maintenanceDates.some(date => {
+    const existingStart = new Date(date.startDate);
+    const existingEnd = new Date(date.endDate);
+    return (newStart <= existingEnd && newEnd >= existingStart);
+  });
+
+  if (overlapping) {
+    return next(new AppError('Maintenance dates overlap with existing maintenance period', 400));
+  }
+
+  // Add new maintenance date
+  property.maintenanceDates.push({
+    startDate: newStart,
+    endDate: newEnd,
+    reason: reason || 'maintenance',
+    description: description || '',
+    createdBy: req.user.id,
+    createdAt: new Date()
+  });
+
+  await property.save();
+
+  logger.info(`Maintenance dates added to property ${property.name} by admin ${req.user.id}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Maintenance dates added successfully',
+    maintenanceDates: property.maintenanceDates
+  });
+});
+
+// @desc    Remove maintenance date
+// @route   DELETE /api/v1/properties/:id/maintenance-dates/:dateId
+// @access  Private/Admin
+export const removeMaintenanceDate = catchAsync(async (req, res, next) => {
+  const { id, dateId } = req.params;
+
+  const property = await Property.findById(id);
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  const maintenanceDateIndex = property.maintenanceDates.findIndex(
+    date => date._id.toString() === dateId
+  );
+
+  if (maintenanceDateIndex === -1) {
+    return next(new AppError('Maintenance date not found', 404));
+  }
+
+  property.maintenanceDates.splice(maintenanceDateIndex, 1);
+  await property.save();
+
+  logger.info(`Maintenance date removed from property ${property.name} by admin ${req.user.id}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Maintenance date removed successfully',
+    maintenanceDates: property.maintenanceDates
+  });
+});
+
+// @desc    Get all maintenance dates for a property
+// @route   GET /api/v1/properties/:id/maintenance-dates
+// @access  Public
+export const getMaintenanceDates = catchAsync(async (req, res, next) => {
+  const property = await Property.findById(req.params.id).select('maintenanceDates name');
+
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    maintenanceDates: property.maintenanceDates || [],
+    propertyName: property.name
+  });
+});
+
+// @desc    Get all properties with filter for maintenance mode
+// @route   GET /api/v1/properties/admin/all-with-filter
+// @access  Private/Admin
+export const getAllPropertiesWithFilter = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20, statusFilter = 'all', search } = req.query;
+
+  let query = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+  
+  console.log('Today date for comparison:', today);
+  
+  // Apply status filter based on the selected filter
+  if (statusFilter === 'active') {
+    // Active properties: status = 'active' AND no active maintenance
+    query = {
+      status: 'active',
+      $or: [
+        { maintenanceDates: { $exists: false } },
+        { maintenanceDates: { $size: 0 } },
+        {
+          maintenanceDates: {
+            $not: {
+              $elemMatch: {
+                startDate: { $lte: today },
+                endDate: { $gte: today }
+              }
+            }
+          }
+        }
+      ]
+    };
+  } 
+  else if (statusFilter === 'maintenance_mode') {
+    // Properties currently under maintenance (has active maintenance dates)
+    query = {
+      $or: [
+        {
+          maintenanceDates: {
+            $exists: true,
+            $elemMatch: {
+              startDate: { $lte: today },
+              endDate: { $gte: today }
+            }
+          }
+        }
+      ]
+    };
+  } 
+  else if (statusFilter === 'inactive') {
+    query = { status: 'inactive' };
+  }
+  // 'all' - no additional filters, show everything
+
+  // Add search filter if provided
+  if (search && search.trim()) {
+    query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { 'location.address': { $regex: search, $options: 'i' } },
+      { 'location.neighborhood': { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  console.log('Query for statusFilter:', statusFilter, JSON.stringify(query));
+
+  // Execute query with pagination
+  const properties = await Property.find(query)
+    .sort('-createdAt')
+    .skip((parseInt(page) - 1) * parseInt(limit))
+    .limit(parseInt(limit));
+
+  const total = await Property.countDocuments(query);
+
+  // Get counts for all filter types for the badges
+  const counts = {
+    all: await Property.countDocuments(),
+    active: await Property.countDocuments({
+      status: 'active',
+      $or: [
+        { maintenanceDates: { $exists: false } },
+        { maintenanceDates: { $size: 0 } },
+        {
+          maintenanceDates: {
+            $not: {
+              $elemMatch: {
+                startDate: { $lte: today },
+                endDate: { $gte: today }
+              }
+            }
+          }
+        }
+      ]
+    }),
+    maintenance_mode: await Property.countDocuments({
+      maintenanceDates: {
+        $exists: true,
+        $elemMatch: {
+          startDate: { $lte: today },
+          endDate: { $gte: today }
+        }
+      }
+    }),
+    inactive: await Property.countDocuments({ status: 'inactive' })
+  };
+
+  console.log('Counts:', counts);
+  console.log('Properties found:', properties.length);
+
+  res.status(200).json({
+    success: true,
+    properties,
+    total,
+    counts,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / limit)
+    }
+  });
+});

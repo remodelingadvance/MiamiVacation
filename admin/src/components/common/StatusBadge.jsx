@@ -1,3 +1,4 @@
+// components/common/StatusBadge.jsx
 const statusConfig = {
   // Booking statuses
   pending: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Pending' },
@@ -29,7 +30,8 @@ const statusConfig = {
   // Property statuses
   active: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Active' },
   inactive: { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Inactive' },
-  maintenance: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Maintenance' },
+  maintenance: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Under Maintenance' },
+  'under-maintenance': { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Under Maintenance' },
   draft: { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Draft' },
 
   // Coupon statuses
@@ -42,11 +44,20 @@ const statusConfig = {
 };
 
 const StatusBadge = ({ status, customLabel }) => {
+  // Handle custom label override
+  if (customLabel) {
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500`}>
+        {customLabel}
+      </span>
+    );
+  }
+  
   const config = statusConfig[status] || { bg: 'bg-gray-500/10', text: 'text-gray-500', label: status };
 
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-      {customLabel || config.label}
+      {config.label}
     </span>
   );
 };

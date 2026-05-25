@@ -1,18 +1,21 @@
+// components/common/AvailabilityCalendar.jsx
 import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { isSameDay, format, parseISO, eachDayOfInterval } from 'date-fns';
+import { isSameDay, format, parseISO } from 'date-fns';
 import apiService from '../../config/api';
 import toast from 'react-hot-toast';
 
 const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSelectedDates }) => {
   const [bookedDates, setBookedDates] = useState([]);
+  const [maintenanceDates, setMaintenanceDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDates, setSelectedDates] = useState(propSelectedDates || [new Date(), null]);
 
   useEffect(() => {
     if (propertyId) {
       fetchBookedDates();
+      fetchMaintenanceDates();
     }
   }, [propertyId]);
 
@@ -22,7 +25,7 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
       console.log('Fetching bookings for property:', propertyId);
       
       const response = await apiService.getPropertyBookings(propertyId);
-      console.log('API Response:', response.data);
+      console.log('Bookings API Response:', response.data);
       
       const bookings = response.data.bookings || [];
       
@@ -48,20 +51,61 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
       
     } catch (error) {
       console.error('Error fetching booked dates:', error);
-      toast.error('Unable to load availability calendar');
+      // Don't show error toast for this, just set empty array
+      setBookedDates([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchMaintenanceDates = async () => {
+    try {
+      const response = await apiService.get(`/properties/${propertyId}/maintenance-dates`);
+      console.log('Maintenance API Response:', response.data);
+      
+      const maintenance = response.data.maintenanceDates || [];
+      
+      // Get all dates within maintenance ranges
+      const allMaintenanceDates = [];
+      
+      maintenance.forEach(md => {
+        const startDate = new Date(md.startDate);
+        const endDate = new Date(md.endDate);
+        
+        // Add all dates between start and end (inclusive)
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          allMaintenanceDates.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      });
+      
+      console.log('Maintenance dates:', allMaintenanceDates.map(d => format(d, 'yyyy-MM-dd')));
+      setMaintenanceDates(allMaintenanceDates);
+      
+    } catch (error) {
+      console.error('Error fetching maintenance dates:', error);
+      setMaintenanceDates([]);
+    }
+  };
+
   const isDateBooked = (date) => {
-    return bookedDates.some(bookedDate => 
-      isSameDay(bookedDate, date)
-    );
+    return bookedDates.some(bookedDate => isSameDay(bookedDate, date));
+  };
+
+  const isDateMaintenance = (date) => {
+    return maintenanceDates.some(mdDate => isSameDay(mdDate, date));
+  };
+
+  const isDateUnavailable = (date) => {
+    return isDateBooked(date) || isDateMaintenance(date);
   };
 
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
+      if (isDateMaintenance(date)) {
+        return 'maintenance-date';
+      }
       if (isDateBooked(date)) {
         return 'booked-date';
       }
@@ -79,10 +123,10 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
 
   const tileDisabled = ({ date, view }) => {
     if (view === 'month') {
-      // Disable past dates
+      // Disable past dates and unavailable dates
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      return date < today;
+      return date < today || isDateUnavailable(date);
     }
     return false;
   };
@@ -90,8 +134,8 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
   const handleDateChange = (dates) => {
     console.log('Date selected:', dates);
     setSelectedDates(dates);
-    if (dates && dates[0] && dates[1]) {
-      onDateSelect?.({ start: dates[0], end: dates[1] });
+    if (onDateSelect && dates && dates[0] && dates[1]) {
+      onDateSelect({ start: dates[0], end: dates[1] });
     }
   };
 
@@ -169,6 +213,16 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
         .availability-calendar .booked-date:hover {
           background: rgba(239, 68, 68, 0.5) !important;
         }
+        .availability-calendar .maintenance-date {
+          background: rgba(245, 158, 11, 0.3) !important;
+          color: #f59e0b !important;
+          text-decoration: line-through;
+          position: relative;
+          cursor: not-allowed;
+        }
+        .availability-calendar .maintenance-date:hover {
+          background: rgba(245, 158, 11, 0.5) !important;
+        }
         .availability-calendar .range-start {
           background: var(--color-primary) !important;
           color: var(--color-bg-dark) !important;
@@ -198,7 +252,7 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
         minDate={new Date()}
       />
       
-      <div className="flex justify-center gap-6 mt-6 pt-4 border-t border-white/10">
+      <div className="flex justify-center gap-6 mt-6 pt-4 border-t border-white/10 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-[var(--color-primary)]"></div>
           <span className="text-xs text-[var(--color-text-muted)]">Selected Range</span>
@@ -206,6 +260,10 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500/50 border border-red-500"></div>
           <span className="text-xs text-[var(--color-text-muted)]">Booked</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-yellow-500/50 border border-yellow-500"></div>
+          <span className="text-xs text-[var(--color-text-muted)]">Under Maintenance</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-white/10"></div>
