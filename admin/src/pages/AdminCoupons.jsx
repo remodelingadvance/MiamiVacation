@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiPlus, HiPencil, HiTrash, HiTag } from 'react-icons/hi';
+import { HiPlus, HiPencil, HiTrash, HiTag, HiEye } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
@@ -53,7 +53,9 @@ const AdminCoupons = () => {
       key: 'code',
       title: 'Code',
       render: (row) => (
-        <span className="font-mono text-[var(--color-primary)] font-bold">{row.code}</span>
+        <Link to={`/admin/coupons/${row._id}`} className="font-mono text-[var(--color-primary)] font-bold hover:underline">
+          {row.code}
+        </Link>
       ),
     },
     {
@@ -110,14 +112,23 @@ const AdminCoupons = () => {
       render: (row) => (
         <div className="flex items-center gap-2">
           <Link
+            to={`/admin/coupons/${row._id}`}
+            className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-colors"
+            title="View Details"
+          >
+            <HiEye className="w-4 h-4" />
+          </Link>
+          <Link
             to={`/admin/coupons/${row._id}/edit`}
             className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+            title="Edit"
           >
             <HiPencil className="w-4 h-4" />
           </Link>
           <button
             onClick={() => setDeleteId(row._id)}
             className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+            title="Deactivate"
           >
             <HiTrash className="w-4 h-4" />
           </button>
@@ -156,7 +167,7 @@ const AdminCoupons = () => {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Delete Coupon"
+        title="Deactivate Coupon"
         message="Are you sure you want to deactivate this coupon? It will no longer be usable."
         loading={deleting}
       />

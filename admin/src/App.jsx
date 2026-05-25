@@ -13,14 +13,18 @@ import AdminUserDetail from './pages/AdminUserDetail';
 import AdminReviews from './pages/AdminReviews';
 import AdminCoupons from './pages/AdminCoupons';
 import AdminCouponForm from './pages/AdminCouponForm';
+import AdminContacts from './pages/AdminContacts';
+import AdminContactDetail from './pages/AdminContactDetail';
+import AdminAnalytics from './pages/AdminAnalytics';
+import AdminCouponDetails from './pages/AdminCouponDetails';
 
 
 const ProtectedAdminRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAdminAuth();
-  
+
   if (loading) return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
-  
+
   return children;
 };
 
@@ -28,7 +32,7 @@ function App() {
   return (
     <Routes>
       <Route path="/admin/login" element={<AdminLogin />} />
-      
+
       <Route
         path="/admin/*"
         element={
@@ -48,9 +52,12 @@ function App() {
         <Route path="users/:id" element={<AdminUserDetail />} />
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="coupons/:id" element={<AdminCouponDetails />} />
         <Route path="coupons/new" element={<AdminCouponForm />} />
         <Route path="coupons/:id/edit" element={<AdminCouponForm />} />
-
+        <Route path="contacts" element={<AdminContacts />} />
+        <Route path="contacts/:id" element={<AdminContactDetail />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
