@@ -24,15 +24,17 @@ const couponSchema = new mongoose.Schema({
   },
   minimumBookingAmount: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Minimum booking amount cannot be negative']
   },
   maximumDiscount: {
     type: Number,
-    default: null // For percentage coupons, cap the maximum discount
+    default: null
   },
   minimumNights: {
     type: Number,
-    default: 1
+    default: 1,
+    min: [1, 'Minimum nights must be at least 1']
   },
   startDate: {
     type: Date,
@@ -45,16 +47,18 @@ const couponSchema = new mongoose.Schema({
   usageLimit: {
     total: {
       type: Number,
-      default: null // null = unlimited
+      default: null
     },
     perUser: {
       type: Number,
-      default: 1
+      default: 1,
+      min: [1, 'Per user limit must be at least 1']
     }
   },
   usedCount: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Used count cannot be negative']
   },
   applicableProperties: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -105,40 +109,37 @@ couponSchema.index({ 'usedBy.user': 1 });
 couponSchema.methods.isValid = function(bookingAmount, nights, userId, propertyId) {
   const now = new Date();
   
-  // Check status
   if (this.status !== 'active') return { valid: false, message: 'Coupon is not active' };
   
-  // Check dates
   if (now < this.startDate) return { valid: false, message: 'Coupon is not yet valid' };
   if (now > this.endDate) return { valid: false, message: 'Coupon has expired' };
   
-  // Check usage limits
-  if (this.usageLimit.total && this.usedCount >= this.usageLimit.total) {
+  if (this.usageLimit?.total && this.usedCount >= this.usageLimit.total) {
     return { valid: false, message: 'Coupon usage limit has been reached' };
   }
   
-  // Check per-user usage
-  const userUsage = this.usedBy.filter(u => u.user.toString() === userId.toString()).length;
-  if (userUsage >= this.usageLimit.perUser) {
-    return { valid: false, message: 'You have already used this coupon' };
+  if (userId !== 'guest') {
+    const userUsage = this.usedBy.filter(u => u.user && u.user.toString() === userId.toString()).length;
+    if (userUsage >= (this.usageLimit?.perUser || 1)) {
+      return { valid: false, message: 'You have already used this coupon' };
+    }
   }
   
-  // Check minimum booking amount
   if (bookingAmount < this.minimumBookingAmount) {
     return { valid: false, message: `Minimum booking amount of $${this.minimumBookingAmount} required` };
   }
   
-  // Check minimum nights
   if (nights < this.minimumNights) {
     return { valid: false, message: `Minimum stay of ${this.minimumNights} nights required` };
   }
   
-  // Check property eligibility
-  if (this.applicableProperties.length > 0 && !this.applicableProperties.includes(propertyId)) {
-    return { valid: false, message: 'Coupon not valid for this property' };
+  if (this.applicableProperties && this.applicableProperties.length > 0) {
+    if (!this.applicableProperties.some(p => p.toString() === propertyId)) {
+      return { valid: false, message: 'Coupon not valid for this property' };
+    }
   }
   
-  if (this.excludedProperties.includes(propertyId)) {
+  if (this.excludedProperties && this.excludedProperties.some(p => p.toString() === propertyId)) {
     return { valid: false, message: 'Coupon not valid for this property' };
   }
   
@@ -151,14 +152,14 @@ couponSchema.methods.calculateDiscount = function(amount) {
   
   if (this.type === 'percentage') {
     discount = amount * (this.value / 100);
-    if (this.maximumDiscount) {
-      discount = Math.min(discount, this.maximumDiscount);
+    if (this.maximumDiscount && discount > this.maximumDiscount) {
+      discount = this.maximumDiscount;
     }
   } else {
     discount = this.value;
   }
   
-  return Math.min(discount, amount); // Don't exceed the total amount
+  return Math.min(discount, amount);
 };
 
 // Auto-update status based on dates

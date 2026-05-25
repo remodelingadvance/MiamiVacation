@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiEye, HiDownload, HiFilter } from 'react-icons/hi';
+import { HiEye, HiDownload, HiFilter, HiChevronRight } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const AdminBookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
@@ -49,16 +50,21 @@ const AdminBookings = () => {
     }
   };
 
+  const handleViewDetails = (bookingId) => {
+    navigate(`/admin/bookings/${bookingId}`);
+  };
+
   const columns = [
     {
       key: 'bookingNumber',
       title: 'Booking #',
       render: (row) => (
         <button
-          onClick={() => { setSelectedBooking(row); setShowDetailModal(true); }}
-          className="text-[var(--color-primary)] hover:underline font-mono text-xs"
+          onClick={() => handleViewDetails(row._id)}
+          className="text-[var(--color-primary)] hover:underline font-mono text-xs flex items-center gap-1"
         >
           {row.bookingNumber}
+          <HiChevronRight className="w-3 h-3" />
         </button>
       ),
     },
@@ -110,6 +116,7 @@ const AdminBookings = () => {
           value={row.status}
           onChange={(e) => handleStatusUpdate(row._id, e.target.value)}
           className="text-xs px-2 py-1 rounded-lg bg-[var(--color-bg-light)] border border-white/10 text-white cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
         >
           <option value="pending">Pending</option>
           <option value="confirmed">Confirmed</option>
@@ -120,6 +127,19 @@ const AdminBookings = () => {
         </select>
       ),
     },
+    {
+      key: 'actions',
+      title: 'Actions',
+      render: (row) => (
+        <button
+          onClick={() => handleViewDetails(row._id)}
+          className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-white transition-colors"
+          title="View Details"
+        >
+          <HiEye className="w-4 h-4" />
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -127,7 +147,7 @@ const AdminBookings = () => {
       <SEOHead title="Manage Bookings" />
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-display font-bold text-white">Bookings</h1>
             <p className="text-sm text-[var(--color-text-muted)]">
@@ -158,47 +178,9 @@ const AdminBookings = () => {
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           emptyMessage="No bookings found"
+          onRowClick={(row) => handleViewDetails(row._id)}
         />
       </div>
-
-      {/* Booking detail modal */}
-      <Modal
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        title={`Booking Details - ${selectedBooking?.bookingNumber}`}
-        size="lg"
-      >
-        {selectedBooking && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Guest Name</p>
-                <p className="text-white">{selectedBooking.user?.firstName} {selectedBooking.user?.lastName}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Email</p>
-                <p className="text-white">{selectedBooking.user?.email}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Check-in</p>
-                <p className="text-white">{formatDate(selectedBooking.checkIn)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Check-out</p>
-                <p className="text-white">{formatDate(selectedBooking.checkOut)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Total Amount</p>
-                <p className="text-white font-bold">{formatCurrency(selectedBooking.pricing?.total)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)]">Payment Status</p>
-                <StatusBadge status={selectedBooking.payment?.status} />
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
     </>
   );
 };

@@ -10,6 +10,9 @@ import AdminBookings from './pages/AdminBookings';
 import AdminBookingDetail from './pages/AdminBookingDetail';
 import AdminUsers from './pages/AdminUsers';
 import AdminUserDetail from './pages/AdminUserDetail';
+import AdminReviews from './pages/AdminReviews';
+import AdminCoupons from './pages/AdminCoupons';
+import AdminCouponForm from './pages/AdminCouponForm';
 
 
 const ProtectedAdminRoute = ({ children }) => {
@@ -43,6 +46,10 @@ function App() {
         <Route path="bookings/:id" element={<AdminBookingDetail />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:id" element={<AdminUserDetail />} />
+        <Route path="reviews" element={<AdminReviews />} />
+        <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="coupons/new" element={<AdminCouponForm />} />
+        <Route path="coupons/:id/edit" element={<AdminCouponForm />} />
 
       </Route>
 

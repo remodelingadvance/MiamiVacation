@@ -79,18 +79,49 @@ export const getCoupon = catchAsync(async (req, res, next) => {
 // @route   POST /api/v1/coupons
 // @access  Private/Admin
 export const createCoupon = catchAsync(async (req, res, next) => {
+  console.log('Creating coupon with data:', JSON.stringify(req.body, null, 2));
+  
+  // Set createdBy
   req.body.createdBy = req.user.id;
-  req.body.code = req.body.code.toUpperCase();
-
+  
+  // Ensure code is uppercase
+  if (req.body.code) {
+    req.body.code = req.body.code.toUpperCase();
+  }
+  
+  // Handle usageLimit structure
+  if (req.body.usageLimit) {
+    // Already in correct format
+  } else {
+    // Build usageLimit from individual fields
+    req.body.usageLimit = {};
+    if (req.body.usageLimitTotal) {
+      req.body.usageLimit.total = parseInt(req.body.usageLimitTotal);
+    }
+    if (req.body.usageLimitPerUser) {
+      req.body.usageLimit.perUser = parseInt(req.body.usageLimitPerUser);
+    }
+    // Remove the individual fields to avoid duplication
+    delete req.body.usageLimitTotal;
+    delete req.body.usageLimitPerUser;
+  }
+  
+  // Validate dates
+  if (new Date(req.body.startDate) >= new Date(req.body.endDate)) {
+    return next(new AppError('End date must be after start date', 400));
+  }
+  
+  // Check for existing coupon
   const existingCoupon = await Coupon.findOne({ code: req.body.code });
   if (existingCoupon) {
     return next(new AppError('Coupon code already exists', 400));
   }
-
+  
+  // Create coupon
   const coupon = await Coupon.create(req.body);
-
+  
   logger.info(`Coupon created: ${coupon.code} by admin ${req.user.id}`);
-
+  
   res.status(201).json({
     success: true,
     coupon,
