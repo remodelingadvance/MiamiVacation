@@ -1,4 +1,4 @@
-import { Contact } from '../models/index.js';
+import { Contact, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
@@ -15,6 +15,21 @@ export const submitContact = catchAsync(async (req, res, next) => {
       userAgent: req.get('user-agent'),
       page: req.get('referer'),
     },
+  });
+
+  // ✅ Create notification for admin
+  await Notification.createNotification({
+    type: 'new_contact',
+    title: 'New Contact Message',
+    message: `New message from ${contact.name}: ${contact.subject}`,
+    priority: contact.priority === 'urgent' ? 'urgent' : 'medium',
+    data: {
+      contactId: contact._id,
+      email: contact.email,
+      subject: contact.subject,
+      name: contact.name,
+    },
+    link: `/admin/contacts/${contact._id}`,
   });
 
   // Send notification email to admin
@@ -223,4 +238,19 @@ export const updateContactStatus = catchAsync(async (req, res, next) => {
     success: true,
     contact,
   });
+});
+
+// @desc    Mark all contacts as read
+// @route   POST /api/v1/contact/mark-all-read
+// @access  Private/Admin
+export const markAllAsRead = catchAsync(async (req, res, next) => {
+    await Contact.updateMany(
+        { status: 'unread' },
+        { status: 'read' }
+    );
+    
+    res.status(200).json({
+        success: true,
+        message: 'All contacts marked as read',
+    });
 });

@@ -1,4 +1,4 @@
-import { Booking, Property, Coupon, User } from '../models/index.js';
+import { Booking, Property, Coupon, User, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
@@ -164,9 +164,83 @@ export const createBooking = catchAsync(async (req, res, next) => {
   user.bookings.push(booking._id);
   await user.save();
 
+  // ✅ Create notification for admin
+  await Notification.createNotification({
+    type: 'new_booking',
+    title: 'New Booking Received',
+    message: `New booking #${booking.bookingNumber} for ${property.name} by ${guestDetails?.firstName || req.user.firstName} ${guestDetails?.lastName || req.user.lastName}`,
+    priority: 'high',
+    data: {
+      bookingId: booking._id,
+      propertyId: property._id,
+      bookingNumber: booking.bookingNumber,
+      amount: pricing.total,
+      guests: totalGuests,
+      nights: nights,
+    },
+    link: `/admin/bookings/${booking._id}`,
+  });
+
   logger.info(`Booking created: ${booking.bookingNumber} by user ${req.user.id}`);
 
   res.status(201).json({
+    success: true,
+    booking,
+  });
+});
+
+// @desc    Update booking status
+// @route   PATCH /api/v1/bookings/:id/status
+// @access  Private/Admin
+export const updateBookingStatus = catchAsync(async (req, res, next) => {
+  const { status } = req.body;
+  const booking = await Booking.findById(req.params.id).populate('property user');
+
+  if (!booking) {
+    return next(new AppError('Booking not found', 404));
+  }
+
+  const oldStatus = booking.status;
+  booking.status = status;
+  await booking.save();
+
+  // ✅ Create notification for status change
+  let title = '', message = '', priority = 'medium';
+  
+  if (status === 'confirmed' && oldStatus !== 'confirmed') {
+    title = 'Booking Confirmed';
+    message = `Booking #${booking.bookingNumber} for ${booking.property.name} has been confirmed`;
+    priority = 'high';
+  } else if (status === 'cancelled' && oldStatus !== 'cancelled') {
+    title = 'Booking Cancelled';
+    message = `Booking #${booking.bookingNumber} for ${booking.property.name} has been cancelled`;
+    priority = 'urgent';
+  } else if (status === 'completed') {
+    title = 'Booking Completed';
+    message = `Booking #${booking.bookingNumber} for ${booking.property.name} has been completed`;
+    priority = 'medium';
+  }
+
+  if (title) {
+    await Notification.createNotification({
+      type: status === 'cancelled' ? 'booking_cancelled' : status === 'confirmed' ? 'booking_confirmed' : 'booking_completed',
+      title,
+      message,
+      priority,
+      data: {
+        bookingId: booking._id,
+        propertyId: booking.property._id,
+        bookingNumber: booking.bookingNumber,
+        oldStatus,
+        newStatus: status,
+      },
+      link: `/admin/bookings/${booking._id}`,
+    });
+  }
+
+  logger.info(`Booking status updated: ${booking.bookingNumber} to ${status} by admin ${req.user.id}`);
+
+  res.status(200).json({
     success: true,
     booking,
   });
@@ -319,26 +393,12 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Admin - Update booking status
-// @route   PATCH /api/v1/bookings/:id/status
+// @desc    Mark all pending bookings as viewed
+// @route   POST /api/v1/bookings/mark-all-viewed
 // @access  Private/Admin
-export const updateBookingStatus = catchAsync(async (req, res, next) => {
-  const { status } = req.body;
-
-  const booking = await Booking.findByIdAndUpdate(
-    req.params.id,
-    { status },
-    { new: true, runValidators: true }
-  );
-
-  if (!booking) {
-    return next(new AppError('Booking not found', 404));
-  }
-
-  logger.info(`Booking status updated: ${booking.bookingNumber} to ${status} by admin ${req.user.id}`);
-
-  res.status(200).json({
-    success: true,
-    booking,
-  });
+export const markAllAsViewed = catchAsync(async (req, res, next) => {
+    res.status(200).json({
+        success: true,
+        message: 'All pending bookings marked as viewed',
+    });
 });

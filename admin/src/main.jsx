@@ -6,12 +6,14 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import './index.css';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
         <AdminAuthProvider>
+          <NotificationProvider>
           <App />
           <Toaster
             position="top-right"
@@ -24,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               },
             }}
           />
+          </NotificationProvider>
         </AdminAuthProvider>
       </BrowserRouter>
     </HelmetProvider>

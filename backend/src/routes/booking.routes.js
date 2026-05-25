@@ -6,6 +6,7 @@ import {
   cancelBooking,
   getAllBookings,
   updateBookingStatus,
+  markAllAsViewed,
 } from '../controllers/booking.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -28,6 +29,7 @@ router.patch('/:id/cancel', cancelBooking);
 
 // Admin routes
 router.get('/admin/all', authorize('admin', 'super-admin'), getAllBookings);
+router.post('/mark-all-viewed', authorize('admin', 'super-admin'), markAllAsViewed);
 router.patch(
   '/:id/status',
   authorize('admin', 'super-admin'),

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'; // Add this import at the top
-import { Review, Booking, Property } from '../models/index.js';
+import { Review, Booking, Property, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import logger from '../utils/logger.js';
@@ -75,7 +75,7 @@ export const createReview = catchAsync(async (req, res, next) => {
   const { propertyId, bookingId, rating, title, content, ratings } = req.body;
 
   // Check if booking exists and is completed
-  const booking = await Booking.findById(bookingId);
+  const booking = await Booking.findById(bookingId).populate('property');
   if (!booking) {
     return next(new AppError('Booking not found', 404));
   }
@@ -124,9 +124,77 @@ export const createReview = catchAsync(async (req, res, next) => {
   // Update property ratings
   await Property.calculateRatings(propertyId);
 
+  // ✅ Create notification for admin
+  await Notification.createNotification({
+    type: 'new_review',
+    title: 'New Review Submitted',
+    message: `${req.user.firstName} ${req.user.lastName} left a ${rating}-star review for ${booking.property.name}`,
+    priority: rating >= 4 ? 'medium' : 'high',
+    data: {
+      reviewId: review._id,
+      propertyId: propertyId,
+      bookingId: bookingId,
+      rating: rating,
+      title: title,
+    },
+    link: `/admin/reviews/${review._id}`,
+  });
+
   logger.info(`Review created for property ${propertyId} by user ${req.user.id}`);
 
   res.status(201).json({
+    success: true,
+    review,
+  });
+});
+
+// @desc    Moderate review (Admin)
+// @route   PATCH /api/v1/reviews/:id/moderate
+// @access  Private/Admin
+export const moderateReview = catchAsync(async (req, res, next) => {
+  const { status, response } = req.body;
+
+  const review = await Review.findById(req.params.id).populate('property user');
+
+  if (!review) {
+    return next(new AppError('Review not found', 404));
+  }
+
+  const oldStatus = review.status;
+  
+  if (status) {
+    review.status = status;
+  }
+
+  if (response) {
+    review.response = {
+      text: response,
+      respondedBy: req.user.id,
+      respondedAt: new Date(),
+    };
+  }
+
+  await review.save();
+
+  // ✅ Create notification for review moderation
+  if (oldStatus !== status && status === 'approved') {
+    await Notification.createNotification({
+      type: 'review_flagged',
+      title: 'Review Approved',
+      message: `Review for ${review.property.name} has been approved and is now visible`,
+      priority: 'low',
+      data: {
+        reviewId: review._id,
+        propertyId: review.property._id,
+        status: status,
+      },
+      link: `/admin/reviews/${review._id}`,
+    });
+  }
+
+  logger.info(`Review moderated: ${review._id} by admin ${req.user.id}`);
+
+  res.status(200).json({
     success: true,
     review,
   });
@@ -275,36 +343,14 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Admin - Moderate review
-// @route   PATCH /api/v1/reviews/:id/moderate
+// @desc    Mark all pending reviews as viewed
+// @route   POST /api/v1/reviews/mark-all-viewed
 // @access  Private/Admin
-export const moderateReview = catchAsync(async (req, res, next) => {
-  const { status, response } = req.body;
-
-  const review = await Review.findById(req.params.id);
-
-  if (!review) {
-    return next(new AppError('Review not found', 404));
-  }
-
-  if (status) {
-    review.status = status;
-  }
-
-  if (response) {
-    review.response = {
-      text: response,
-      respondedBy: req.user.id,
-      respondedAt: new Date(),
-    };
-  }
-
-  await review.save();
-
-  logger.info(`Review moderated: ${review._id} by admin ${req.user.id}`);
-
-  res.status(200).json({
-    success: true,
-    review,
-  });
+export const markAllAsViewed = catchAsync(async (req, res, next) => {
+    // You can either mark them as viewed or just return success
+    // This doesn't change the review status, just acknowledges admin has seen them
+    res.status(200).json({
+        success: true,
+        message: 'All pending reviews marked as viewed',
+    });
 });

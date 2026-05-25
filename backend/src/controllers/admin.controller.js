@@ -1,4 +1,4 @@
-import { User, Property, Booking, Review, Payment, Contact, Coupon, Analytics } from '../models/index.js';
+import { User, Property, Booking, Review, Payment, Contact, Coupon, Analytics, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import logger from '../utils/logger.js';
@@ -213,14 +213,50 @@ export const getUser = catchAsync(async (req, res, next) => {
 export const updateUser = catchAsync(async (req, res, next) => {
   const { role, isActive } = req.body;
 
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
-    { role, isActive },
-    { new: true, runValidators: true }
-  );
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     return next(new AppError('User not found', 404));
+  }
+
+  const oldStatus = user.isActive;
+  const oldRole = user.role;
+
+  user.role = role || user.role;
+  user.isActive = isActive !== undefined ? isActive : user.isActive;
+  await user.save();
+
+  // ✅ Create notification for user status change
+  if (oldStatus !== user.isActive) {
+    await Notification.createNotification({
+      type: 'system_alert',
+      title: user.isActive ? 'User Activated' : 'User Deactivated',
+      message: `User ${user.email} has been ${user.isActive ? 'activated' : 'deactivated'} by ${req.user.email}`,
+      priority: 'medium',
+      data: {
+        userId: user._id,
+        email: user.email,
+        action: user.isActive ? 'activated' : 'deactivated',
+      },
+      link: `/admin/users/${user._id}`,
+    });
+  }
+
+  // ✅ Create notification for role change
+  if (oldRole !== user.role) {
+    await Notification.createNotification({
+      type: 'system_alert',
+      title: 'User Role Changed',
+      message: `User ${user.email} role changed from ${oldRole} to ${user.role}`,
+      priority: 'medium',
+      data: {
+        userId: user._id,
+        email: user.email,
+        oldRole: oldRole,
+        newRole: user.role,
+      },
+      link: `/admin/users/${user._id}`,
+    });
   }
 
   logger.info(`User updated: ${user.email} by admin ${req.user.id}`);

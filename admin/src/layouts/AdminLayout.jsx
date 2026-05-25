@@ -20,114 +20,41 @@ import {
   HiExternalLink,
   HiRefresh,
   HiSearch,
-  HiExclamation,
 } from 'react-icons/hi';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-// import { useNotifications } from '../contexts/NotificationContext';
-// import NotificationBell from '../components/notifications/NotificationBell';
+import { useNotifications } from '../contexts/NotificationContext';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 const sidebarLinks = [
   {
     category: 'Main',
     links: [
-      { 
-        to: '/admin/dashboard', 
-        icon: HiChartBar, 
-        label: 'Dashboard',
-        badge: null,
-        badgeColor: null,
-      },
-      { 
-        to: '/admin/analytics', 
-        icon: HiTrendingUp, 
-        label: 'Analytics',
-        badge: null,
-        badgeColor: null,
-      },
+      { to: '/admin/dashboard', icon: HiChartBar, label: 'Dashboard', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
+      { to: '/admin/analytics', icon: HiTrendingUp, label: 'Analytics', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
     ],
   },
   {
     category: 'Management',
     links: [
-      { 
-        to: '/admin/properties', 
-        icon: HiHome, 
-        label: 'Properties',
-        badge: null,
-        badgeColor: null,
-      },
-      { 
-        to: '/admin/bookings', 
-        icon: HiCalendar, 
-        label: 'Bookings',
-        badge: null,
-        badgeColor: 'bg-blue-500',
-        badgeKey: 'pendingBookings',
-      },
-      { 
-        to: '/admin/users', 
-        icon: HiUsers, 
-        label: 'Users',
-        badge: null,
-        badgeColor: null,
-      },
-      { 
-        to: '/admin/reviews', 
-        icon: HiStar, 
-        label: 'Reviews',
-        badge: null,
-        badgeColor: 'bg-yellow-500',
-        badgeKey: 'pendingReviews',
-      },
+      { to: '/admin/properties', icon: HiHome, label: 'Properties', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
+      { to: '/admin/bookings', icon: HiCalendar, label: 'Bookings', badgeKey: 'pendingBookings', badgeColor: 'bg-blue-500', resetOnVisit: true, resetType: 'bookings' },
+      { to: '/admin/users', icon: HiUsers, label: 'Users', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
+      { to: '/admin/reviews', icon: HiStar, label: 'Reviews', badgeKey: 'pendingReviews', badgeColor: 'bg-yellow-500', resetOnVisit: true, resetType: 'reviews' },
     ],
   },
   {
     category: 'Marketing',
     links: [
-      { 
-        to: '/admin/coupons', 
-        icon: HiTag, 
-        label: 'Coupons',
-        badge: null,
-        badgeColor: 'bg-green-500',
-        badgeKey: 'activeCoupons',
-      },
-      { 
-        to: '/admin/newsletter', 
-        icon: HiNewspaper, 
-        label: 'Newsletter',
-        badge: null,
-        badgeColor: 'bg-pink-500',
-        badgeKey: 'newsletterStats',
-      },
-      { 
-        to: '/admin/contacts', 
-        icon: HiMail, 
-        label: 'Contacts',
-        badge: null,
-        badgeColor: 'bg-orange-500',
-        badgeKey: 'unreadContacts',
-      },
+      { to: '/admin/coupons', icon: HiTag, label: 'Coupons', badgeKey: 'activeCoupons', badgeColor: 'bg-green-500', resetOnVisit: false, resetType: null },
+      { to: '/admin/newsletter', icon: HiNewspaper, label: 'Newsletter', badgeKey: 'newsletterStats', badgeColor: 'bg-pink-500', resetOnVisit: false, resetType: null },
+      { to: '/admin/contacts', icon: HiMail, label: 'Contacts', badgeKey: 'unreadContacts', badgeColor: 'bg-orange-500', resetOnVisit: true, resetType: 'contacts' },
     ],
   },
   {
     category: 'System',
     links: [
-      { 
-        to: '/admin/notifications', 
-        icon: HiBell, 
-        label: 'Notifications',
-        badge: null,
-        badgeColor: 'bg-red-500',
-        badgeKey: 'unreadNotifications',
-      },
-      { 
-        to: '/admin/settings', 
-        icon: HiCog, 
-        label: 'Settings',
-        badge: null,
-        badgeColor: null,
-      },
+      { to: '/admin/notifications', icon: HiBell, label: 'Notifications', badgeKey: 'unreadNotifications', badgeColor: 'bg-red-500', resetOnVisit: true, resetType: 'notifications' },
+      { to: '/admin/settings', icon: HiCog, label: 'Settings', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
     ],
   },
 ];
@@ -138,30 +65,69 @@ const AdminLayout = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [resetting, setResetting] = useState(false);
+  
   const { user, logout } = useAdminAuth();
-  // const { unreadCount, notifications } = useNotifications();
+  const { 
+    unreadCount, 
+    fetchSidebarBadges, 
+    resetBadge, 
+    sidebarBadges 
+  } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const userMenuRef = useRef(null);
   const searchInputRef = useRef(null);
+  const lastVisitedPath = useRef(null);
 
-  // Fetch dashboard stats for sidebar badges
-  const [sidebarBadges, setSidebarBadges] = useState({
-    pendingReviews: 0,
-    unreadContacts: 0,
-    activeCoupons: 0,
-    pendingBookings: 0,
-    unreadNotifications: 0,
-    newsletterStats: 0,
-  });
+  // Reset badge when visiting a page that has resetOnVisit = true
+  const resetBadgeOnVisit = async () => {
+    const currentPath = location.pathname;
+    
+    // Don't reset if we're already on the same page
+    if (lastVisitedPath.current === currentPath) return;
+    lastVisitedPath.current = currentPath;
+    
+    // Find the link that matches the current path
+    for (const category of sidebarLinks) {
+      for (const link of category.links) {
+        // Check if the current path matches this link
+        const isMatch = currentPath === link.to || 
+                       (link.to !== '/admin/dashboard' && currentPath.startsWith(link.to));
+        
+        if (isMatch && link.resetOnVisit && link.resetType && !resetting) {
+          setResetting(true);
+          console.log(`Visited ${link.label}, resetting badge for ${link.badgeKey}`);
+          
+          // Reset the specific badge using the context function
+          await resetBadge(link.resetType);
+          
+          setResetting(false);
+          break;
+        }
+      }
+    }
+  };
 
-  // Update sidebar badges from notifications and context
-//   useEffect(() => {
-//     setSidebarBadges(prev => ({
-//       ...prev,
-//       unreadNotifications: unreadCount,
-//     }));
-//   }, [unreadCount]);
+  // Load badges on mount
+  useEffect(() => {
+    if (fetchSidebarBadges) {
+      // Initial load
+      fetchSidebarBadges();
+      
+      // Refresh badges every 30 seconds
+      const interval = setInterval(() => {
+        fetchSidebarBadges();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [fetchSidebarBadges]);
+
+  // Reset badges when page changes
+  useEffect(() => {
+    resetBadgeOnVisit();
+  }, [location.pathname]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -183,18 +149,15 @@ const AdminLayout = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+B - Toggle sidebar
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         setSidebarCollapsed(prev => !prev);
       }
-      // Ctrl+K - Global search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setGlobalSearchOpen(true);
         setTimeout(() => searchInputRef.current?.focus(), 100);
       }
-      // Escape - Close modals
       if (e.key === 'Escape') {
         setGlobalSearchOpen(false);
         setUserMenuOpen(false);
@@ -212,7 +175,6 @@ const AdminLayout = () => {
     e.preventDefault();
     if (!globalSearchQuery.trim()) return;
 
-    // Navigate based on search type
     const query = globalSearchQuery.toLowerCase();
     
     if (query.startsWith('booking') || query.startsWith('#')) {
@@ -225,7 +187,6 @@ const AdminLayout = () => {
       const propQuery = query.replace('property', '').trim();
       navigate(`/admin/properties?search=${propQuery}`);
     } else {
-      // Default: search properties
       navigate(`/admin/properties?search=${query}`);
     }
     
@@ -355,11 +316,7 @@ const AdminLayout = () => {
               }`}
               title={`${sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar (Ctrl+B)`}
             >
-              {sidebarCollapsed ? (
-                <HiMenu className="w-4 h-4" />
-              ) : (
-                <HiX className="w-4 h-4" />
-              )}
+              {sidebarCollapsed ? <HiMenu className="w-4 h-4" /> : <HiX className="w-4 h-4" />}
             </button>
           </div>
 
@@ -398,8 +355,11 @@ const AdminLayout = () => {
                 )}
                 <ul className="space-y-1">
                   {category.links.map((link) => {
-                    const badgeCount = link.badgeKey ? sidebarBadges[link.badgeKey] : link.badge;
-                    const showBadge = badgeCount && badgeCount > 0;
+                    let badgeCount = 0;
+                    if (link.badgeKey && sidebarBadges[link.badgeKey]) {
+                      badgeCount = sidebarBadges[link.badgeKey];
+                    }
+                    const showBadge = badgeCount > 0;
                     
                     return (
                       <li key={link.to}>
@@ -416,7 +376,6 @@ const AdminLayout = () => {
                         >
                           <div className="relative">
                             <link.icon className="w-5 h-5 flex-shrink-0" />
-                            {/* Badge dot on icon for collapsed sidebar */}
                             {sidebarCollapsed && showBadge && (
                               <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 ${link.badgeColor || 'bg-red-500'} rounded-full border-2 border-[var(--color-bg-dark)]`} />
                             )}
@@ -425,13 +384,11 @@ const AdminLayout = () => {
                           {!sidebarCollapsed && (
                             <>
                               <span className="text-sm font-medium flex-1">{link.label}</span>
-                              {/* Badge count for expanded sidebar */}
                               {showBadge && (
                                 <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full ${link.badgeColor || 'bg-red-500'} text-white text-[10px] font-bold`}>
                                   {badgeCount > 99 ? '99+' : badgeCount}
                                 </span>
                               )}
-                              {/* Active indicator */}
                               {link.to === location.pathname && (
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-[var(--color-primary)] rounded-full" />
                               )}
@@ -494,22 +451,15 @@ const AdminLayout = () => {
         {/* Top header */}
         <header className="h-16 glass border-b border-white/5 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
           <div className="flex items-center gap-4">
-            {/* Mobile menu toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden w-10 h-10 rounded-lg glass-light flex items-center justify-center text-white hover:text-[var(--color-primary)] transition-colors"
             >
               <HiMenu className="w-5 h-5" />
             </button>
-
-            {/* Page title with breadcrumb */}
             <div>
-              <h2 className="text-white font-semibold text-sm">
-                {getPageTitle()}
-              </h2>
-              <p className="text-[10px] text-[var(--color-text-muted)]">
-                {location.pathname}
-              </p>
+              <h2 className="text-white font-semibold text-sm">{getPageTitle()}</h2>
+              <p className="text-[10px] text-[var(--color-text-muted)]">{location.pathname}</p>
             </div>
           </div>
 
@@ -521,10 +471,11 @@ const AdminLayout = () => {
             >
               <HiSearch className="w-4 h-4" />
               <span>Search...</span>
-              <kbd className="px-1.5 py-0.5 text-[10px] bg-white/5 rounded border border-white/10">
-                ⌘K
-              </kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] bg-white/5 rounded border border-white/10">⌘K</kbd>
             </button>
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* Refresh button */}
             <button
@@ -534,9 +485,6 @@ const AdminLayout = () => {
             >
               <HiRefresh className="w-5 h-5" />
             </button>
-
-            {/* Notification Bell */}
-            {/* <NotificationBell /> */}
 
             {/* User menu */}
             <div className="relative" ref={userMenuRef}>
@@ -559,7 +507,6 @@ const AdminLayout = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
                     className="absolute right-0 mt-2 w-64 glass-strong rounded-xl overflow-hidden shadow-2xl z-50"
                   >
                     <div className="p-4 border-b border-white/5">

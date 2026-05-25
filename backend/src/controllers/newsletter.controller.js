@@ -1,4 +1,4 @@
-import { Newsletter } from '../models/index.js';
+import { Newsletter, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import logger from '../utils/logger.js';
@@ -20,6 +20,20 @@ export const subscribe = catchAsync(async (req, res, next) => {
       existingSubscriber.unsubscribedAt = undefined;
       if (preferences) existingSubscriber.preferences = preferences;
       await existingSubscriber.save();
+      
+      // ✅ Create notification for re-subscription
+      await Notification.createNotification({
+        type: 'newsletter_subscriber',
+        title: 'Newsletter Re-subscription',
+        message: `${email} re-subscribed to the newsletter`,
+        priority: 'low',
+        data: {
+          subscriberId: existingSubscriber._id,
+          email: email,
+          action: 'resubscribed',
+        },
+        link: `/admin/newsletter`,
+      });
       
       return res.status(200).json({
         success: true,
@@ -46,6 +60,20 @@ export const subscribe = catchAsync(async (req, res, next) => {
       ip: req.ip,
       userAgent: req.get('user-agent'),
     },
+  });
+
+  // ✅ Create notification for admin
+  await Notification.createNotification({
+    type: 'newsletter_subscriber',
+    title: 'New Newsletter Subscriber',
+    message: `${email} subscribed to the newsletter`,
+    priority: 'low',
+    data: {
+      subscriberId: subscriber._id,
+      email: email,
+      firstName: firstName || '',
+    },
+    link: `/admin/newsletter`,
   });
 
   logger.info(`Newsletter subscription: ${email}`);
@@ -92,45 +120,25 @@ export const unsubscribe = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/newsletter/subscribers
 // @access  Private/Admin
 export const getSubscribers = catchAsync(async (req, res, next) => {
-  const { status, source, page = 1, limit = 50, sort = '-subscribedAt' } = req.query;
-
+  const { status, page = 1, limit = 20, search } = req.query;
   const query = {};
   if (status) query.status = status;
-  if (source) query.source = source;
+  if (search) {
+    query.email = { $regex: search, $options: 'i' };
+  }
 
   const subscribers = await Newsletter.find(query)
-    .sort(sort)
+    .sort('-subscribedAt')
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
 
   const total = await Newsletter.countDocuments(query);
 
-  // Get stats
-  const stats = await Newsletter.aggregate([
-    {
-      $group: {
-        _id: null,
-        totalSubscribers: { $sum: 1 },
-        activeSubscribers: {
-          $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] },
-        },
-        unsubscribedCount: {
-          $sum: { $cond: [{ $eq: ['$status', 'unsubscribed'] }, 1, 0] },
-        },
-      },
-    },
-  ]);
-
   res.status(200).json({
     success: true,
     count: subscribers.length,
-    total,
-    stats: stats[0] || {},
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / limit),
-    },
+    total,  // Make sure total is included
+    pagination: { page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / limit) },
     subscribers,
   });
 });

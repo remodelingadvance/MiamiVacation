@@ -7,6 +7,7 @@ import {
   markHelpful,
   getAllReviews,
   moderateReview,
+  markAllAsViewed,
 } from '../controllers/review.controller.js';
 import { protect, authorize, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -33,5 +34,6 @@ router.post('/:id/helpful', markHelpful);
 // Admin routes
 router.get('/admin/all', authorize('admin', 'super-admin'), getAllReviews);
 router.patch('/:id/moderate', authorize('admin', 'super-admin'), moderateReview);
+router.post('/mark-all-viewed', authorize('admin', 'super-admin'), markAllAsViewed);
 
 export default router;
