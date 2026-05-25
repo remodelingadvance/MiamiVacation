@@ -6,6 +6,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import PageLoader from './components/common/PageLoader';
 import AdminProperties from './pages/AdminProperties';
 import AdminPropertyForm from './pages/AdminPropertyForm';
+import AdminBookings from './pages/AdminBookings';
+import AdminBookingDetail from './pages/AdminBookingDetail';
+import AdminUsers from './pages/AdminUsers';
+import AdminUserDetail from './pages/AdminUserDetail';
 
 
 const ProtectedAdminRoute = ({ children }) => {
@@ -35,6 +39,10 @@ function App() {
         <Route path="properties" element={<AdminProperties />} />
         <Route path="properties/new" element={<AdminPropertyForm />} />
         <Route path="properties/:id/edit" element={<AdminPropertyForm />} />
+        <Route path="bookings" element={<AdminBookings />} />
+        <Route path="bookings/:id" element={<AdminBookingDetail />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="users/:id" element={<AdminUserDetail />} />
 
       </Route>
 

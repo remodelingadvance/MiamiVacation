@@ -14,33 +14,27 @@ import {
     HiShieldCheck,
     HiSparkles,
     HiWifi,
-    HiFire,
-    HiDesktopComputer,
-    HiSun,
-    HiKey,
     HiCreditCard,
     HiPhone,
     HiMail,
     HiClock,
     HiX,
-    HiPlus,
-    HiInformationCircle,
+    HiThumbUp,
+    HiThumbDown,
+    HiBadgeCheck,
 } from 'react-icons/hi';
-import { FaBed, FaBath, FaRulerCombined, FaParking, FaSnowflake, FaUtensils, FaTv, FaSoap, FaShieldAlt } from 'react-icons/fa';
-import { GiBarbecue, GiHotSpices } from 'react-icons/gi';
+import { FaBed, FaBath, FaRulerCombined, FaParking, FaUtensils, FaTv, FaSoap, FaShieldAlt } from 'react-icons/fa';
 import { PiSwimmingPoolBold } from "react-icons/pi";
-import { FaCar, FaCoffee } from "react-icons/fa";
+import { FaCar } from "react-icons/fa";
 import SEOHead from '../components/common/SEOHead';
 import ImageGallery from '../components/common/ImageGallery';
-import StarRating from '../components/common/StarRating';
 import SkeletonLoader from '../components/common/SkeletonLoader';
-import ReviewCard from '../components/reviews/ReviewCard';
 import PropertyCard from '../components/properties/PropertyCard';
 import BookingWidget from '../components/booking/BookingWidget';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../config/api';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency, formatTimeAgo } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import AvailabilityCalendar from '../components/common/AvailabilityCalendar';
 
@@ -59,6 +53,121 @@ const getAmenityIcon = (category) => {
     return icons[category] || <HiSparkles className="w-5 h-5" />;
 };
 
+// Review Card Component
+const ReviewCardComponent = ({ review }) => {
+    const { isAuthenticated } = useAuth();
+    const [helpfulVote, setHelpfulVote] = useState(null);
+    const [voting, setVoting] = useState(false);
+
+    const handleVote = async (vote) => {
+        if (!isAuthenticated) {
+            toast.error('Please login to vote');
+            return;
+        }
+        if (voting) return;
+        try {
+            setVoting(true);
+            await apiService.markHelpful(review._id, vote);
+            setHelpfulVote(vote);
+            toast.success('Thank you for your feedback!');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Vote failed');
+        } finally {
+            setVoting(false);
+        }
+    };
+
+    const ratings = review.ratings || {};
+
+    return (
+        <div className="glass rounded-xl p-6">
+            <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
+                        <span className="text-[var(--color-primary)] font-semibold">
+                            {review.user?.firstName?.[0]}{review.user?.lastName?.[0]}
+                        </span>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h4 className="text-white font-medium">
+                                {review.user?.firstName} {review.user?.lastName}
+                            </h4>
+                            {review.verified && (
+                                <HiBadgeCheck className="w-4 h-4 text-[var(--color-primary)]" title="Verified Stay" />
+                            )}
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                            {formatTimeAgo(review.createdAt)}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <HiStar className="w-5 h-5 text-[var(--color-primary)]" />
+                    <span className="text-white font-semibold">{review.rating}</span>
+                </div>
+            </div>
+
+            {review.title && (
+                <h5 className="text-white font-semibold mb-2">{review.title}</h5>
+            )}
+
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-4">
+                {review.content}
+            </p>
+
+            {Object.keys(ratings).length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                    {Object.entries(ratings).map(([key, value]) => (
+                        <div key={key} className="text-center">
+                            <p className="text-xs text-[var(--color-text-muted)] capitalize mb-1">{key}</p>
+                            <div className="flex items-center justify-center gap-1">
+                                <HiStar className="w-3 h-3 text-[var(--color-primary)]" />
+                                <span className="text-xs text-white">{value}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {review.response?.text && (
+                <div className="mt-4 p-4 rounded-lg glass-light border-l-2 border-[var(--color-primary)]">
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Response from Miami Luxury Rentals</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">{review.response.text}</p>
+                </div>
+            )}
+
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10">
+                <span className="text-xs text-[var(--color-text-muted)]">Was this helpful?</span>
+                <button
+                    onClick={() => handleVote('yes')}
+                    disabled={voting || helpfulVote}
+                    className={`flex items-center gap-1 text-xs transition-colors ${
+                        helpfulVote === 'yes'
+                            ? 'text-[var(--color-success)]'
+                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-success)]'
+                    }`}
+                >
+                    <HiThumbUp className="w-4 h-4" />
+                    Yes ({review.helpful?.yes || 0})
+                </button>
+                <button
+                    onClick={() => handleVote('no')}
+                    disabled={voting || helpfulVote}
+                    className={`flex items-center gap-1 text-xs transition-colors ${
+                        helpfulVote === 'no'
+                            ? 'text-red-500'
+                            : 'text-[var(--color-text-muted)] hover:text-red-500'
+                    }`}
+                >
+                    <HiThumbDown className="w-4 h-4" />
+                    No ({review.helpful?.no || 0})
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const PropertyDetailsPage = () => {
     const { slug } = useParams();
     const { isAuthenticated } = useAuth();
@@ -74,12 +183,13 @@ const PropertyDetailsPage = () => {
             try {
                 setLoading(true);
                 const response = await apiService.getPropertyBySlug(slug);
-                setProperty(response.data.property);
+                const propertyData = response.data.property;
+                setProperty(propertyData);
                 setSimilarProperties(response.data.similarProperties || []);
 
-                // Fetch reviews
-                const reviewsResponse = await apiService.getPropertyReviews(response.data.property._id);
-                setReviews(reviewsResponse.data.reviews || []);
+                if (propertyData._id) {
+                    await fetchReviews(propertyData._id);
+                }
             } catch (error) {
                 console.error('Failed to fetch property:', error);
                 toast.error('Property not found');
@@ -91,6 +201,74 @@ const PropertyDetailsPage = () => {
         fetchProperty();
         window.scrollTo(0, 0);
     }, [slug]);
+
+    const fetchReviews = async (propertyId) => {
+        try {
+            const reviewsResponse = await apiService.getPropertyReviews(propertyId);
+            let fetchedReviews = [];
+            
+            if (reviewsResponse.data.reviews) {
+                fetchedReviews = reviewsResponse.data.reviews;
+            } else if (reviewsResponse.data.data) {
+                fetchedReviews = reviewsResponse.data.data;
+            } else if (Array.isArray(reviewsResponse.data)) {
+                fetchedReviews = reviewsResponse.data;
+            }
+            
+            const approvedReviews = fetchedReviews.filter(r => r.status === 'approved' || !r.status);
+            setReviews(approvedReviews);
+        } catch (error) {
+            console.error('Failed to fetch reviews:', error);
+            setReviews([]);
+        }
+    };
+
+    const getOverallStats = () => {
+        if (reviews.length === 0) {
+            return {
+                average: property?.ratings?.average || 0,
+                total: property?.ratings?.count || 0,
+                breakdown: property?.ratings?.breakdown || {},
+            };
+        }
+        
+        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+        const avgRating = totalRating / reviews.length;
+        
+        const breakdown = {
+            cleanliness: 0,
+            accuracy: 0,
+            communication: 0,
+            location: 0,
+            checkIn: 0,
+            value: 0,
+        };
+        
+        let reviewCount = 0;
+        reviews.forEach(review => {
+            if (review.ratings && Object.keys(review.ratings).length > 0) {
+                reviewCount++;
+                if (review.ratings.cleanliness) breakdown.cleanliness += review.ratings.cleanliness;
+                if (review.ratings.accuracy) breakdown.accuracy += review.ratings.accuracy;
+                if (review.ratings.communication) breakdown.communication += review.ratings.communication;
+                if (review.ratings.location) breakdown.location += review.ratings.location;
+                if (review.ratings.checkIn) breakdown.checkIn += review.ratings.checkIn;
+                if (review.ratings.value) breakdown.value += review.ratings.value;
+            }
+        });
+        
+        if (reviewCount > 0) {
+            Object.keys(breakdown).forEach(key => {
+                breakdown[key] = Math.round((breakdown[key] / reviewCount) * 10) / 10;
+            });
+        }
+        
+        return {
+            average: Math.round(avgRating * 10) / 10,
+            total: reviews.length,
+            breakdown: breakdown,
+        };
+    };
 
     if (loading) {
         return (
@@ -115,12 +293,16 @@ const PropertyDetailsPage = () => {
     }
 
     const isFav = isFavorite(property._id);
+    const stats = getOverallStats();
+    const averageRating = stats.average;
+    const totalReviews = stats.total;
+    const overallBreakdown = stats.breakdown;
 
     return (
         <>
             <SEOHead
                 title={property.name}
-                description={property.description.short}
+                description={property.description?.short}
                 image={property.images?.[0]?.url}
                 type="property"
             />
@@ -147,7 +329,7 @@ const PropertyDetailsPage = () => {
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <HiStar className="w-4 h-4 text-[var(--color-primary)]" />
-                                    <span>{property.ratings?.average || 0} ({property.ratings?.count || 0} reviews)</span>
+                                    <span>{averageRating} ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <HiUsers className="w-4 h-4 text-[var(--color-primary)]" />
@@ -201,7 +383,6 @@ const PropertyDetailsPage = () => {
             <section className="py-8">
                 <div className="container-custom">
                     <div className="grid lg:grid-cols-3 gap-8">
-                        {/* Main content */}
                         <div className="lg:col-span-2 space-y-8">
                             {/* Tabs */}
                             <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
@@ -215,28 +396,23 @@ const PropertyDetailsPage = () => {
                                             }`}
                                     >
                                         {tab}
+                                        {tab === 'reviews' && totalReviews > 0 && (
+                                            <span className="ml-1 text-xs">({totalReviews})</span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Overview Tab */}
                             {activeTab === 'overview' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-8"
-                                >
-                                    {/* Description */}
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                                     <div>
-                                        <h2 className="text-2xl font-display font-bold text-white mb-4">
-                                            About this property
-                                        </h2>
+                                        <h2 className="text-2xl font-display font-bold text-white mb-4">About this property</h2>
                                         <p className="text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-line">
                                             {property.description?.full || property.description?.short}
                                         </p>
                                     </div>
 
-                                    {/* Key details */}
                                     <div>
                                         <h3 className="text-xl font-display font-bold text-white mb-4">Property Details</h3>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -260,153 +436,6 @@ const PropertyDetailsPage = () => {
                                                 <p className="text-white font-semibold">{property.details?.size || 'N/A'} {property.details?.size ? 'sq ft' : ''}</p>
                                                 <p className="text-xs text-[var(--color-text-muted)]">Size</p>
                                             </div>
-                                            {property.details?.floor && (
-                                                <div className="p-4 rounded-xl glass-light text-center">
-                                                    <HiHome className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                    <p className="text-white font-semibold">Floor {property.details.floor}</p>
-                                                    <p className="text-xs text-[var(--color-text-muted)]">Floor</p>
-                                                </div>
-                                            )}
-                                            {property.details?.yearBuilt && (
-                                                <div className="p-4 rounded-xl glass-light text-center">
-                                                    <HiCalendar className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                    <p className="text-white font-semibold">{property.details.yearBuilt}</p>
-                                                    <p className="text-xs text-[var(--color-text-muted)]">Year Built</p>
-                                                </div>
-                                            )}
-                                            {property.details?.parking > 0 && (
-                                                <div className="p-4 rounded-xl glass-light text-center">
-                                                    <FaParking className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                    <p className="text-white font-semibold">{property.details.parking}</p>
-                                                    <p className="text-xs text-[var(--color-text-muted)]">Parking Spots</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Nearby Places */}
-                                    {property.location?.nearbyPlaces && property.location.nearbyPlaces.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xl font-display font-bold text-white mb-4">Nearby Places</h3>
-                                            <div className="grid sm:grid-cols-2 gap-3">
-                                                {property.location.nearbyPlaces.map((place, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 rounded-lg glass-light">
-                                                        <div className="flex items-center gap-3">
-                                                            <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
-                                                            <div>
-                                                                <p className="text-white font-medium">{place.name}</p>
-                                                                <p className="text-xs text-[var(--color-text-muted)] capitalize">{place.type?.replace('_', ' ')}</p>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[var(--color-primary)] text-sm font-medium">{place.distance}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* House rules */}
-                                    <div>
-                                        <h3 className="text-xl font-display font-bold text-white mb-4">House Rules</h3>
-                                        <div className="grid sm:grid-cols-2 gap-3">
-                                            <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                                                <HiClock className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
-                                                <div>
-                                                    <p className="text-white text-sm font-medium">Check-in</p>
-                                                    <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules?.checkIn || '15:00'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                                                <HiClock className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
-                                                <div>
-                                                    <p className="text-white text-sm font-medium">Check-out</p>
-                                                    <p className="text-[var(--color-text-secondary)] text-sm">{property.houseRules?.checkOut || '11:00'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                                                {property.houseRules?.smoking ? (
-                                                    <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
-                                                ) : (
-                                                    <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                                )}
-                                                <p className="text-[var(--color-text-secondary)] text-sm">
-                                                    {property.houseRules?.smoking ? 'Smoking allowed' : 'No smoking'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                                                {property.houseRules?.pets ? (
-                                                    <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
-                                                ) : (
-                                                    <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                                )}
-                                                <p className="text-[var(--color-text-secondary)] text-sm">
-                                                    {property.houseRules?.pets ? 'Pets allowed' : 'No pets'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 rounded-lg glass-light">
-                                                {property.houseRules?.parties ? (
-                                                    <HiCheck className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
-                                                ) : (
-                                                    <HiX className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                                )}
-                                                <p className="text-[var(--color-text-secondary)] text-sm">
-                                                    {property.houseRules?.parties ? 'Parties allowed' : 'No parties/events'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Additional Rules */}
-                                        {property.houseRules?.additionalRules && property.houseRules.additionalRules.length > 0 && (
-                                            <div className="mt-4 p-4 rounded-lg glass-light">
-                                                <h4 className="text-white font-medium mb-2">Additional Rules</h4>
-                                                <ul className="space-y-1">
-                                                    {property.houseRules.additionalRules.map((rule, index) => (
-                                                        <li key={index} className="text-[var(--color-text-secondary)] text-sm flex items-center gap-2">
-                                                            <HiShieldCheck className="w-4 h-4 text-[var(--color-primary)]" />
-                                                            {rule}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Pricing Information */}
-                                    <div>
-                                        <h3 className="text-xl font-display font-bold text-white mb-4">Pricing Information</h3>
-                                        <div className="grid sm:grid-cols-2 gap-3">
-                                            <div className="p-3 rounded-lg glass-light">
-                                                <p className="text-[var(--color-text-muted)] text-sm">Base Price</p>
-                                                <p className="text-white font-bold text-lg">{formatCurrency(property.pricing?.basePrice)} <span className="text-sm font-normal text-[var(--color-text-muted)]">/night</span></p>
-                                            </div>
-                                            {property.pricing?.cleaningFee > 0 && (
-                                                <div className="p-3 rounded-lg glass-light">
-                                                    <p className="text-[var(--color-text-muted)] text-sm">Cleaning Fee</p>
-                                                    <p className="text-white font-semibold">{formatCurrency(property.pricing.cleaningFee)}</p>
-                                                </div>
-                                            )}
-                                            {property.pricing?.serviceFee > 0 && (
-                                                <div className="p-3 rounded-lg glass-light">
-                                                    <p className="text-[var(--color-text-muted)] text-sm">Service Fee</p>
-                                                    <p className="text-white font-semibold">{formatCurrency(property.pricing.serviceFee)}</p>
-                                                </div>
-                                            )}
-                                            <div className="p-3 rounded-lg glass-light">
-                                                <p className="text-[var(--color-text-muted)] text-sm">Minimum Stay</p>
-                                                <p className="text-white font-semibold">{property.pricing?.minimumStay || 2} nights</p>
-                                            </div>
-                                            {property.pricing?.weeklyDiscount > 0 && (
-                                                <div className="p-3 rounded-lg glass-light">
-                                                    <p className="text-[var(--color-text-muted)] text-sm">Weekly Discount</p>
-                                                    <p className="text-[var(--color-success)] font-semibold">{property.pricing.weeklyDiscount}% off</p>
-                                                </div>
-                                            )}
-                                            {property.pricing?.monthlyDiscount > 0 && (
-                                                <div className="p-3 rounded-lg glass-light">
-                                                    <p className="text-[var(--color-text-muted)] text-sm">Monthly Discount</p>
-                                                    <p className="text-[var(--color-success)] font-semibold">{property.pricing.monthlyDiscount}% off</p>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </motion.div>
@@ -414,26 +443,16 @@ const PropertyDetailsPage = () => {
 
                             {/* Amenities Tab */}
                             {activeTab === 'amenities' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-6"
-                                >
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">
-                                        Amenities & Features
-                                    </h2>
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Amenities & Features</h2>
                                     {property.amenities && property.amenities.length > 0 ? (
                                         <div className="grid sm:grid-cols-2 gap-4">
                                             {property.amenities.map((amenity, index) => (
                                                 <div key={index} className="flex items-start gap-3 p-3 rounded-lg glass-light">
-                                                    <div className="text-[var(--color-primary)] text-xl">
-                                                        {getAmenityIcon(amenity.category)}
-                                                    </div>
+                                                    <div className="text-[var(--color-primary)] text-xl">{getAmenityIcon(amenity.category)}</div>
                                                     <div>
                                                         <p className="text-white font-medium">{amenity.name}</p>
-                                                        {amenity.description && (
-                                                            <p className="text-[var(--color-text-muted)] text-sm mt-1">{amenity.description}</p>
-                                                        )}
+                                                        {amenity.description && <p className="text-[var(--color-text-muted)] text-sm mt-1">{amenity.description}</p>}
                                                     </div>
                                                 </div>
                                             ))}
@@ -446,14 +465,8 @@ const PropertyDetailsPage = () => {
 
                             {/* Policies Tab */}
                             {activeTab === 'policies' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-6"
-                                >
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">
-                                        Policies & Important Notes
-                                    </h2>
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Policies & Important Notes</h2>
                                     {property.policiesAndNotes && property.policiesAndNotes.length > 0 ? (
                                         <div className="space-y-6">
                                             {property.policiesAndNotes.map((policy, index) => (
@@ -476,103 +489,106 @@ const PropertyDetailsPage = () => {
                                     ) : (
                                         <p className="text-[var(--color-text-muted)]">No policies listed</p>
                                     )}
-
-                                    {/* Cancellation info placeholder */}
-                                    <div className="p-5 rounded-xl glass-light">
-                                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                                            <HiCreditCard className="w-5 h-5 text-[var(--color-primary)]" />
-                                            Cancellation Policy
-                                        </h3>
-                                        <p className="text-[var(--color-text-secondary)]">
-                                            Free cancellation up to 30 days before check-in. For more details, please contact the host.
-                                        </p>
-                                    </div>
                                 </motion.div>
                             )}
 
                             {/* Reviews Tab */}
                             {activeTab === 'reviews' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-6"
-                                >
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                                     <div className="flex items-center justify-between flex-wrap gap-4">
-                                        <h2 className="text-2xl font-display font-bold text-white">
-                                            Reviews ({reviews.length})
-                                        </h2>
+                                        <h2 className="text-2xl font-display font-bold text-white">Guest Reviews</h2>
                                         <div className="flex items-center gap-2">
                                             <HiStar className="w-6 h-6 text-[var(--color-primary)]" />
-                                            <span className="text-2xl font-bold text-white">{property.ratings?.average || 0}</span>
-                                            <span className="text-[var(--color-text-muted)]">
-                                                · {property.ratings?.count || 0} reviews
-                                            </span>
+                                            <span className="text-2xl font-bold text-white">{averageRating}</span>
+                                            <span className="text-[var(--color-text-muted)]">· {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}</span>
                                         </div>
                                     </div>
 
-                                    {/* Rating breakdown */}
-                                    {property.ratings?.breakdown && Object.keys(property.ratings.breakdown).length > 0 && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {Object.entries(property.ratings.breakdown).map(([key, value]) => (
-                                                <div key={key} className="flex items-center justify-between p-3 rounded-lg glass-light">
-                                                    <span className="text-[var(--color-text-secondary)] capitalize">{key}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-[var(--color-primary)] rounded-full"
-                                                                style={{ width: `${(value / 5) * 100}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className="text-white text-sm font-medium">{value?.toFixed(1)}</span>
+                                    {overallBreakdown && Object.keys(overallBreakdown).length > 0 && (
+                                        <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Cleanliness</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.cleanliness / 5) * 100}%` }} />
                                                     </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.cleanliness.toFixed(1)}</span>
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Accuracy</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.accuracy / 5) * 100}%` }} />
+                                                    </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.accuracy.toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Communication</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.communication / 5) * 100}%` }} />
+                                                    </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.communication.toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Location</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.location / 5) * 100}%` }} />
+                                                    </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.location.toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Check-in</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.checkIn / 5) * 100}%` }} />
+                                                    </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.checkIn.toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[var(--color-text-secondary)] capitalize">Value</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.value / 5) * 100}%` }} />
+                                                    </div>
+                                                    <span className="text-white text-sm font-medium">{overallBreakdown.value.toFixed(1)}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
 
-                                    {/* Review list */}
-                                    <div className="space-y-4">
-                                        {reviews.length > 0 ? (
-                                            reviews.map((review) => (
-                                                <ReviewCard key={review._id} review={review} />
-                                            ))
-                                        ) : (
-                                            <p className="text-[var(--color-text-muted)] text-center py-8">
-                                                No reviews yet. Be the first to review!
-                                            </p>
-                                        )}
-                                    </div>
+                                    {reviews.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {reviews.map((review) => (
+                                                <ReviewCardComponent key={review._id} review={review} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12 glass rounded-2xl">
+                                            <HiStar className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4 opacity-50" />
+                                            <p className="text-[var(--color-text-muted)] text-lg">No reviews yet</p>
+                                            <p className="text-sm text-[var(--color-text-muted)] mt-1">Be the first to share your experience!</p>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 
+                            {/* Availability Tab */}
                             {activeTab === 'availability' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-6"
-                                >
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">
-                                        Availability Calendar
-                                    </h2>
-                                    <p className="text-[var(--color-text-secondary)] mb-6">
-                                        Select your dates to check availability. Booked dates are marked in red.
-                                    </p>
-                                    <AvailabilityCalendar
-                                        propertyId={property._id}
-                                        onDateSelect={(dates) => {
-                                            if (dates.start && dates.end) {
-                                                // Scroll to booking widget or auto-fill dates
-                                                const bookingWidget = document.querySelector('.booking-widget');
-                                                if (bookingWidget) {
-                                                    bookingWidget.scrollIntoView({ behavior: 'smooth' });
-                                                }
-                                            }
-                                        }}
-                                    />
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Availability Calendar</h2>
+                                    <p className="text-[var(--color-text-secondary)] mb-6">Select your dates to check availability. Booked dates are marked in red.</p>
+                                    <AvailabilityCalendar propertyId={property._id} />
                                 </motion.div>
                             )}
 
-                            {/* Location Tab */}
+                            {/* Location Tab - WITH NEARBY PLACES RESTORED */}
                             {activeTab === 'location' && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
@@ -583,6 +599,7 @@ const PropertyDetailsPage = () => {
                                         Location
                                     </h2>
 
+                                    {/* Address Information */}
                                     <div className="p-4 rounded-xl glass-light">
                                         <p className="text-[var(--color-text-secondary)]">
                                             <strong className="text-white">Address:</strong> {property.location?.address}
@@ -627,23 +644,32 @@ const PropertyDetailsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Nearby Places - detailed */}
+                                    {/* Nearby Places - RESTORED */}
                                     {property.location?.nearbyPlaces && property.location.nearbyPlaces.length > 0 && (
                                         <div>
-                                            <h3 className="text-xl font-display font-bold text-white mb-4">
+                                            <h3 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                                                <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
                                                 Nearby Places
                                             </h3>
                                             <div className="grid sm:grid-cols-2 gap-3">
                                                 {property.location.nearbyPlaces.map((place, index) => (
                                                     <div key={index} className="flex items-center justify-between p-3 rounded-lg glass-light">
                                                         <div className="flex items-center gap-3">
-                                                            <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
+                                                            <div className="w-8 h-8 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
+                                                                {place.type === 'airport' && <FaCar className="w-4 h-4 text-[var(--color-primary)]" />}
+                                                                {place.type === 'beach' && <PiSwimmingPoolBold className="w-4 h-4 text-[var(--color-primary)]" />}
+                                                                {place.type === 'metro' && <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />}
+                                                                {(place.type === 'restaurant' || place.type === 'shopping') && <HiStar className="w-4 h-4 text-[var(--color-primary)]" />}
+                                                                {!place.type && <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />}
+                                                            </div>
                                                             <div>
                                                                 <p className="text-white font-medium">{place.name}</p>
                                                                 <p className="text-xs text-[var(--color-text-muted)] capitalize">{place.type?.replace('_', ' ')}</p>
                                                             </div>
                                                         </div>
-                                                        <span className="text-[var(--color-primary)] text-sm font-medium">{place.distance}</span>
+                                                        <span className="text-[var(--color-primary)] text-sm font-medium bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
+                                                            {place.distance}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -653,7 +679,7 @@ const PropertyDetailsPage = () => {
                             )}
                         </div>
 
-                        {/* Sidebar - Booking widget */}
+                        {/* Sidebar */}
                         <div className="lg:col-span-1">
                             <div className="sticky top-24">
                                 <BookingWidget property={property} />
@@ -667,9 +693,7 @@ const PropertyDetailsPage = () => {
             {similarProperties.length > 0 && (
                 <section className="py-16 bg-[var(--color-bg-medium)]">
                     <div className="container-custom">
-                        <h2 className="section-title text-white text-center mb-12">
-                            Similar Properties
-                        </h2>
+                        <h2 className="section-title text-white text-center mb-12">Similar Properties</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                             {similarProperties.slice(0, 4).map((property) => (
                                 <PropertyCard key={property._id} property={property} />
