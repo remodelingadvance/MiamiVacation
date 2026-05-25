@@ -1,26 +1,25 @@
 // pages/admin/AdminNewsletter.jsx
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import {
   HiPlus,
   HiPaperAirplane,
   HiDownload,
   HiEye,
-  HiPencil,
   HiTrash,
   HiUsers,
-  HiChartBar,
   HiMail,
-  HiClock,
   HiCheck,
   HiX,
   HiRefresh,
+  HiUserAdd,
+  HiFilter,
 } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import SubscriberImportModal from '../components/admin/SubscriberImportModal';
 import adminApi from '../config/api';
 import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
@@ -31,15 +30,22 @@ const AdminNewsletter = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalSubscribers, setTotalSubscribers] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
   const [subscriberStats, setSubscriberStats] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubscribers, setSelectedSubscribers] = useState([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportStatus, setExportStatus] = useState(null);
+  const [exportFilter, setExportFilter] = useState('all');
 
   const [campaignForm, setCampaignForm] = useState({
     name: '',
@@ -49,13 +55,11 @@ const AdminNewsletter = () => {
     targetAudience: 'all',
   });
 
-  // Fetch campaigns - FIXED: Use correct API endpoint
+  // Fetch campaigns
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
-      // Use the correct endpoint from adminApi
       const response = await adminApi.getCampaigns({ page: 1, limit: 100 });
-      console.log('Campaigns response:', response.data);
       setCampaigns(response.data.campaigns || []);
     } catch (error) {
       console.error('Failed to load campaigns:', error);
@@ -65,14 +69,17 @@ const AdminNewsletter = () => {
     }
   }, []);
 
-  // Fetch subscribers - FIXED: Use correct API endpoint
-  const fetchSubscribers = useCallback(async (page = 1) => {
+  // Fetch subscribers with pagination for display
+  const fetchSubscribers = useCallback(async (page = 1, search = '') => {
     try {
       setLoading(true);
-      const response = await adminApi.getSubscribers({ page, limit: 20 });
-      console.log('Subscribers response:', response.data);
+      const params = { page, limit: 20 };
+      if (search) params.search = search;
+      
+      const response = await adminApi.getSubscribers(params);
       setSubscribers(response.data.subscribers || []);
       setTotalSubscribers(response.data.total || 0);
+      setActiveCount(response.data.activeCount || 0);
       setSubscriberStats(response.data.stats || {});
     } catch (error) {
       console.error('Failed to load subscribers:', error);
@@ -87,15 +94,14 @@ const AdminNewsletter = () => {
     if (activeTab === 'campaigns') {
       fetchCampaigns();
     } else {
-      fetchSubscribers(currentPage);
+      fetchSubscribers(currentPage, searchQuery);
     }
-  }, [activeTab, currentPage, fetchCampaigns, fetchSubscribers]);
+  }, [activeTab, currentPage, searchQuery, fetchCampaigns, fetchSubscribers]);
 
-  // Create campaign - FIXED: Use correct API endpoint
+  // Create campaign
   const handleCreateCampaign = async (e) => {
     e.preventDefault();
     
-    // Validate
     if (!campaignForm.name.trim()) {
       toast.error('Campaign name is required');
       return;
@@ -129,7 +135,7 @@ const AdminNewsletter = () => {
     }
   };
 
-  // Send campaign - FIXED: Use correct API endpoint
+  // Send campaign
   const handleSendCampaign = async (campaignId) => {
     try {
       setSending(true);
@@ -146,8 +152,8 @@ const AdminNewsletter = () => {
     }
   };
 
-  // Delete campaign - FIXED: Use correct API endpoint
-  const handleDelete = async () => {
+  // Delete campaign
+  const handleDeleteCampaign = async () => {
     if (!deleteId) return;
     try {
       setDeleting(true);
@@ -163,26 +169,117 @@ const AdminNewsletter = () => {
     }
   };
 
-  // Export subscribers
-  const handleExportSubscribers = async () => {
+  // Delete single subscriber
+  const handleDeleteSubscriber = async () => {
+    if (!deleteId) return;
     try {
-      const response = await adminApi.exportSubscribers();
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `subscribers-${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success('Subscribers exported successfully');
+      setDeleting(true);
+      await adminApi.deleteSubscriber(deleteId);
+      toast.success('Subscriber deleted');
+      setDeleteId(null);
+      fetchSubscribers(currentPage, searchQuery);
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Export failed');
+      console.error('Delete error:', error);
+      toast.error('Failed to delete subscriber');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  // Table columns
+  // Bulk delete subscribers
+  const handleBulkDeleteSubscribers = async () => {
+    if (selectedSubscribers.length === 0) return;
+    
+    try {
+      setDeleting(true);
+      await adminApi.post('/newsletter/admin/bulk-delete', { subscriberIds: selectedSubscribers });
+      toast.success(`${selectedSubscribers.length} subscribers deleted`);
+      setSelectedSubscribers([]);
+      setShowBulkDeleteConfirm(false);
+      fetchSubscribers(currentPage, searchQuery);
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error('Failed to delete subscribers');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Export ALL subscribers (not just current page)
+  const handleExportSubscribers = async (format = 'csv', status = null) => {
+    try {
+      setExportStatus('exporting');
+      const loadingToast = toast.loading(`Preparing to export all subscribers...`);
+      
+      // First get total count
+      const statsResponse = await adminApi.getSubscribers({ limit: 1 });
+      const totalCount = statsResponse.data.total || 0;
+      
+      if (totalCount === 0) {
+        toast.dismiss(loadingToast);
+        toast.error('No subscribers to export');
+        setExportStatus(null);
+        return;
+      }
+      
+      toast.loading(`Exporting ${totalCount} subscribers to ${format.toUpperCase()}...`, { id: loadingToast });
+      
+      // Build URL with filters
+      let url = `/newsletter/admin/export?format=${format}`;
+      if (status && status !== 'all') {
+        url += `&status=${status}`;
+      }
+      
+      const response = await adminApi.get(url, {
+        responseType: 'blob',
+      });
+      
+      toast.dismiss(loadingToast);
+      
+      // Create download link
+      const blob = new Blob([response.data], { 
+        type: format === 'excel' 
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+          : 'text/csv' 
+      });
+      const url_blob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url_blob;
+      const statusText = status && status !== 'all' ? `-${status}` : '';
+      link.setAttribute('download', `subscribers${statusText}-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url_blob);
+      
+      toast.success(`Successfully exported ${totalCount} subscribers`);
+      setExportStatus(null);
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Export failed. Please try again.');
+      setExportStatus(null);
+    }
+  };
+
+  // Handle subscriber selection for bulk delete
+  const handleSelectSubscriber = (subscriberId, checked) => {
+    if (checked) {
+      setSelectedSubscribers(prev => [...prev, subscriberId]);
+    } else {
+      setSelectedSubscribers(prev => prev.filter(id => id !== subscriberId));
+    }
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedSubscribers(subscribers.map(s => s._id));
+    } else {
+      setSelectedSubscribers([]);
+    }
+  };
+
+  // Campaign Table Columns
   const campaignColumns = [
     {
       key: 'name',
@@ -265,7 +362,28 @@ const AdminNewsletter = () => {
     },
   ];
 
+  // Subscriber Table Columns
   const subscriberColumns = [
+    {
+      key: 'select',
+      title: () => (
+        <input
+          type="checkbox"
+          checked={selectedSubscribers.length === subscribers.length && subscribers.length > 0}
+          onChange={(e) => handleSelectAll(e.target.checked)}
+          className="w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+        />
+      ),
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedSubscribers.includes(row._id)}
+          onChange={(e) => handleSelectSubscriber(row._id, e.target.checked)}
+          className="w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+        />
+      ),
+      width: '50px',
+    },
     {
       key: 'email',
       title: 'Email',
@@ -278,10 +396,28 @@ const AdminNewsletter = () => {
     },
     {
       key: 'firstName',
-      title: 'Name',
+      title: 'First Name',
       render: (row) => (
         <span className="text-sm text-[var(--color-text-secondary)]">
-          {row.firstName || 'N/A'}
+          {row.firstName || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'lastName',
+      title: 'Last Name',
+      render: (row) => (
+        <span className="text-sm text-[var(--color-text-secondary)]">
+          {row.lastName || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'phone',
+      title: 'Phone',
+      render: (row) => (
+        <span className="text-sm text-[var(--color-text-secondary)]">
+          {row.phone || '-'}
         </span>
       ),
     },
@@ -292,7 +428,9 @@ const AdminNewsletter = () => {
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
           row.status === 'active' 
             ? 'bg-green-500/10 text-green-500' 
-            : 'bg-red-500/10 text-red-500'
+            : row.status === 'unsubscribed'
+            ? 'bg-red-500/10 text-red-500'
+            : 'bg-yellow-500/10 text-yellow-500'
         }`}>
           {row.status === 'active' ? <HiCheck className="w-3 h-3" /> : <HiX className="w-3 h-3" />}
           {row.status}
@@ -317,6 +455,20 @@ const AdminNewsletter = () => {
         </span>
       ),
     },
+    {
+      key: 'actions',
+      title: 'Actions',
+      render: (row) => (
+        <button
+          onClick={() => setDeleteId(row._id)}
+          className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+          title="Delete"
+        >
+          <HiTrash className="w-4 h-4" />
+        </button>
+      ),
+      width: '60px',
+    },
   ];
 
   return (
@@ -331,7 +483,7 @@ const AdminNewsletter = () => {
             <p className="text-sm text-[var(--color-text-muted)]">
               {activeTab === 'campaigns' 
                 ? `Manage email campaigns (${campaigns.length} total)`
-                : `Manage subscribers (${totalSubscribers} total)`
+                : `Manage ${totalSubscribers.toLocaleString()} subscribers (${activeCount.toLocaleString()} active)`
               }
             </p>
           </div>
@@ -340,24 +492,24 @@ const AdminNewsletter = () => {
             <div className="flex rounded-lg glass-light p-1">
               <button
                 onClick={() => setActiveTab('campaigns')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === 'campaigns'
                     ? 'bg-[var(--color-primary)] text-[var(--color-bg-dark)]'
                     : 'text-[var(--color-text-secondary)] hover:text-white'
                 }`}
               >
-                <HiMail className="w-4 h-4 inline mr-1" />
+                <HiMail className="w-4 h-4" />
                 Campaigns
               </button>
               <button
                 onClick={() => setActiveTab('subscribers')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === 'subscribers'
                     ? 'bg-[var(--color-primary)] text-[var(--color-bg-dark)]'
                     : 'text-[var(--color-text-secondary)] hover:text-white'
                 }`}
               >
-                <HiUsers className="w-4 h-4 inline mr-1" />
+                <HiUsers className="w-4 h-4" />
                 Subscribers
               </button>
             </div>
@@ -373,13 +525,80 @@ const AdminNewsletter = () => {
             )}
             
             {activeTab === 'subscribers' && (
-              <button
-                onClick={handleExportSubscribers}
-                className="btn-outline flex items-center gap-2 text-sm"
-              >
-                <HiDownload className="w-4 h-4" />
-                Export CSV
-              </button>
+              <>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="btn-primary flex items-center gap-2 text-sm"
+                >
+                  <HiUserAdd className="w-4 h-4" />
+                  Add Subscriber
+                </button>
+                
+                {selectedSubscribers.length > 0 && (
+                  <button
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                    className="btn-outline flex items-center gap-2 text-sm text-red-500 border-red-500/30 hover:bg-red-500/10"
+                  >
+                    <HiTrash className="w-4 h-4" />
+                    Delete ({selectedSubscribers.length})
+                  </button>
+                )}
+                
+                {/* Export Dropdown with Filter Options */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    disabled={exportStatus === 'exporting'}
+                    className="btn-outline flex items-center gap-2 text-sm"
+                  >
+                    <HiDownload className="w-4 h-4" />
+                    {exportStatus === 'exporting' ? 'Exporting...' : 'Export All'}
+                    <HiFilter className="w-3 h-3" />
+                  </button>
+                  
+                  {showExportMenu && (
+                    <div className="absolute right-0 mt-2 w-64 glass-strong rounded-lg overflow-hidden shadow-xl z-20">
+                      <div className="p-2 border-b border-white/10">
+                        <p className="text-xs text-[var(--color-text-muted)] px-2 mb-1">Filter by status</p>
+                        <select
+                          value={exportFilter}
+                          onChange={(e) => setExportFilter(e.target.value)}
+                          className="input-field text-sm w-full"
+                        >
+                          <option value="all">All Subscribers ({totalSubscribers})</option>
+                          <option value="active">Active Only ({subscriberStats.active || activeCount})</option>
+                          <option value="unsubscribed">Unsubscribed ({subscriberStats.unsubscribed || 0})</option>
+                          <option value="bounced">Bounced ({subscriberStats.bounced || 0})</option>
+                        </select>
+                      </div>
+                      <div className="p-2">
+                        <button
+                          onClick={() => handleExportSubscribers('csv', exportFilter)}
+                          className="w-full px-4 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-white/5 transition-colors rounded-lg flex items-center justify-between"
+                        >
+                          <span>Export as CSV</span>
+                          <span className="text-xs text-[var(--color-text-muted)]">.csv</span>
+                        </button>
+                        <button
+                          onClick={() => handleExportSubscribers('excel', exportFilter)}
+                          className="w-full px-4 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-white/5 transition-colors rounded-lg flex items-center justify-between"
+                        >
+                          <span>Export as Excel</span>
+                          <span className="text-xs text-[var(--color-text-muted)]">.xlsx</span>
+                        </button>
+                      </div>
+                      <div className="p-2 border-t border-white/10">
+                        <p className="text-xs text-[var(--color-text-muted)] px-2">
+                          Total subscribers in export: {exportFilter === 'all' ? totalSubscribers : 
+                            exportFilter === 'active' ? (subscriberStats.active || activeCount) :
+                            exportFilter === 'unsubscribed' ? (subscriberStats.unsubscribed || 0) :
+                            (subscriberStats.bounced || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -389,24 +608,34 @@ const AdminNewsletter = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="stat-card text-center">
               <HiUsers className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">{subscriberStats.total || totalSubscribers}</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Total</p>
+              <p className="text-2xl font-bold text-white">{totalSubscribers.toLocaleString()}</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Total Subscribers</p>
             </div>
             <div className="stat-card text-center">
               <HiCheck className="w-6 h-6 text-green-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-500">{subscriberStats.active || 0}</p>
+              <p className="text-2xl font-bold text-green-500">{(subscriberStats.active || activeCount).toLocaleString()}</p>
               <p className="text-xs text-[var(--color-text-muted)]">Active</p>
             </div>
             <div className="stat-card text-center">
               <HiX className="w-6 h-6 text-red-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-red-500">{subscriberStats.unsubscribed || 0}</p>
+              <p className="text-2xl font-bold text-red-500">{(subscriberStats.unsubscribed || 0).toLocaleString()}</p>
               <p className="text-xs text-[var(--color-text-muted)]">Unsubscribed</p>
             </div>
             <div className="stat-card text-center">
               <HiRefresh className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-yellow-500">{subscriberStats.bounced || 0}</p>
+              <p className="text-2xl font-bold text-yellow-500">{(subscriberStats.bounced || 0).toLocaleString()}</p>
               <p className="text-xs text-[var(--color-text-muted)]">Bounced</p>
             </div>
+          </div>
+        )}
+
+        {/* Info message about export */}
+        {activeTab === 'subscribers' && totalSubscribers > 20 && (
+          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+            <p className="text-xs text-blue-400">
+              <HiDownload className="w-3 h-3 inline mr-1" />
+              Exporting will download all {totalSubscribers.toLocaleString()} subscribers, not just the current page.
+            </p>
           </div>
         )}
 
@@ -421,10 +650,9 @@ const AdminNewsletter = () => {
           onSearch={activeTab === 'subscribers' ? (query) => {
             setSearchQuery(query);
             setCurrentPage(1);
-            fetchSubscribers(1, query);
           } : undefined}
-          searchPlaceholder="Search subscribers..."
-          emptyMessage={activeTab === 'campaigns' ? 'No campaigns yet. Create your first campaign!' : 'No subscribers found'}
+          searchPlaceholder="Search by email, name..."
+          emptyMessage={activeTab === 'campaigns' ? 'No campaigns yet. Create your first campaign!' : 'No subscribers found. Click "Add Subscriber" to get started!'}
         />
       </div>
 
@@ -587,14 +815,35 @@ const AdminNewsletter = () => {
         )}
       </Modal>
 
+      {/* Subscriber Import Modal */}
+      <SubscriberImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => fetchSubscribers(currentPage, searchQuery)}
+      />
+
       {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
-        title="Delete Campaign"
-        message="Are you sure you want to delete this campaign? This action cannot be undone."
-        confirmText="Delete Campaign"
+        onConfirm={activeTab === 'campaigns' ? handleDeleteCampaign : handleDeleteSubscriber}
+        title={activeTab === 'campaigns' ? "Delete Campaign" : "Delete Subscriber"}
+        message={activeTab === 'campaigns' 
+          ? "Are you sure you want to delete this campaign? This action cannot be undone."
+          : "Are you sure you want to delete this subscriber? This action cannot be undone."
+        }
+        confirmText="Delete"
+        loading={deleting}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDeleteSubscribers}
+        title="Delete Subscribers"
+        message={`Are you sure you want to delete ${selectedSubscribers.length} subscriber(s)? This action cannot be undone.`}
+        confirmText="Delete All"
         loading={deleting}
       />
     </>

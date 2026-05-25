@@ -1,3 +1,4 @@
+// models/Newsletter.js
 import mongoose from 'mongoose';
 
 const newsletterSchema = new mongoose.Schema({
@@ -13,6 +14,15 @@ const newsletterSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: [50, 'First name cannot exceed 50 characters']
+  },
+  lastName: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'Last name cannot exceed 50 characters']
+  },
+  phone: {
+    type: String,
+    trim: true
   },
   status: {
     type: String,
@@ -32,8 +42,14 @@ const newsletterSchema = new mongoose.Schema({
   unsubscribedAt: Date,
   source: {
     type: String,
-    enum: ['homepage', 'booking', 'popup', 'other'],
+    enum: ['homepage', 'booking', 'popup', 'manual', 'bulk_import', 'csv_import', 'api'],
     default: 'homepage'
+  },
+  metadata: {
+    ip: String,
+    userAgent: String,
+    importedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    importBatch: String
   }
 }, {
   timestamps: true
@@ -42,7 +58,8 @@ const newsletterSchema = new mongoose.Schema({
 // Indexes
 newsletterSchema.index({ email: 1 });
 newsletterSchema.index({ status: 1 });
+newsletterSchema.index({ source: 1 });
+newsletterSchema.index({ createdAt: -1 });
 
 const Newsletter = mongoose.model('Newsletter', newsletterSchema);
-
 export default Newsletter;
