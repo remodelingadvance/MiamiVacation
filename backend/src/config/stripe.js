@@ -8,6 +8,4 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: false,
 });
 
-console.log("stripe initialized with secret key:", process.env.STRIPE_SECRET_KEY);
-
 export default stripe;

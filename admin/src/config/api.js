@@ -109,7 +109,7 @@ const adminApi = {
     sendCampaign: (id) => api.post(`/newsletter-campaigns/campaigns/${id}/send`),
     deleteCampaign: (id) => api.delete(`/newsletter-campaigns/campaigns/${id}`),
 
-// Notifications - Add get endpoint with params
+    // Notifications - Add get endpoint with params
     getNotifications: (params) => api.get('/notifications', { params }),
     getUnreadCount: () => api.get('/notifications/unread-count'),
     markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
@@ -120,6 +120,11 @@ const adminApi = {
 
     // Analytics
     getAnalytics: (params) => api.get('/admin/analytics', { params }),
+    getAnalyticsSummary: () => api.get('/admin/analytics/summary'),
+    exportAnalytics: (params) => api.get('/admin/analytics/export', {
+        params,
+        responseType: 'blob'
+    }),
 
     // Generic request methods for custom endpoints
     get: (url, config) => api.get(url, config),
