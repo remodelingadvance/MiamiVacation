@@ -8,6 +8,8 @@ import Newsletter from './Newsletter.js';
 import Setting from './Setting.js';
 import Payment from './Payment.js';
 import Analytics from './Analytics.js';
+import Notification from './Notification.js';
+import NewsletterCampaign from './NewsletterCampaign.js';
 
 export {
   User,
@@ -19,5 +21,7 @@ export {
   Newsletter,
   Setting,
   Payment,
-  Analytics
+  Analytics,
+  Notification,
+  NewsletterCampaign
 };

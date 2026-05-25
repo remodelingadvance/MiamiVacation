@@ -8,7 +8,9 @@ import couponRoutes from './coupon.routes.js';
 import contactRoutes from './contact.routes.js';
 import uploadRoutes from './upload.routes.js';
 import adminRoutes from './admin.routes.js';
+import notificationRoutes from './notification.routes.js';
 import newsletterRoutes from './newsletter.routes.js';
+import NewsletterCampaignRoutes from './newsletterCampaign.routes.js';
 
 export {
   authRoutes,
@@ -22,4 +24,6 @@ export {
   uploadRoutes,
   adminRoutes,
   newsletterRoutes,
+  notificationRoutes,
+  NewsletterCampaignRoutes,
 };

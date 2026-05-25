@@ -21,6 +21,8 @@ import uploadRoutes from './routes/upload.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import newsletterRoutes from './routes/newsletter.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import newsletterCampaignRoutes from './routes/newsletterCampaign.routes.js';
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -96,7 +98,9 @@ app.use(`${API_PREFIX}/contact`, contactRoutes);
 app.use(`${API_PREFIX}/upload`, uploadRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/payments`, paymentRoutes);
-app.use(`${API_PREFIX}/newsletter`, newsletterRoutes); 
+app.use(`${API_PREFIX}/newsletter`, newsletterRoutes);
+app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+app.use(`${API_PREFIX}/newsletter-campaigns`, newsletterCampaignRoutes); 
 
 // Health check endpoint
 app.get('/health', (req, res) => {
