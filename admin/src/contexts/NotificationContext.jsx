@@ -1,4 +1,4 @@
-// contexts/NotificationContext.jsx
+// contexts/NotificationContext.jsx - Complete fixed version
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
@@ -21,7 +21,6 @@ export const NotificationProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Sidebar badges state - IMPORTANT: These need to be fetched from API
   const [sidebarBadges, setSidebarBadges] = useState({
     pendingReviews: 0,
     unreadContacts: 0,
@@ -31,12 +30,19 @@ export const NotificationProvider = ({ children }) => {
     newsletterStats: 0,
   });
   
+  // Refs for preventing excessive requests
   const fetchingRef = useRef(false);
   const lastFetchTime = useRef(0);
+  const lastBadgeFetchTime = useRef(0);
   const mountedRef = useRef(true);
   const socketRef = useRef(null);
-  const FETCH_INTERVAL = 30000;
-  const BADGE_FETCH_INTERVAL = 15000; // Fetch badges every 15 seconds
+  const intervalRef = useRef(null);
+  const badgeIntervalRef = useRef(null);
+  
+  // Increased intervals to reduce requests
+  const FETCH_INTERVAL = 60000; // 60 seconds (was 30)
+  const BADGE_FETCH_INTERVAL = 120000; // 120 seconds (2 minutes) - badges don't need frequent updates
+  const MIN_REQUEST_INTERVAL = 10000; // Minimum 10 seconds between ANY request
 
   // Connect to Socket.io
   useEffect(() => {
@@ -87,7 +93,7 @@ export const NotificationProvider = ({ children }) => {
         unreadNotifications: prev.unreadNotifications + 1,
       }));
       
-      // Show toast for important notifications
+      // Show toast for high priority notifications
       if (notification.priority === 'urgent' || notification.priority === 'high') {
         toast.custom((t) => (
           <div
@@ -161,10 +167,13 @@ export const NotificationProvider = ({ children }) => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      // Clear intervals on unmount
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (badgeIntervalRef.current) clearInterval(badgeIntervalRef.current);
     };
   }, []);
 
-  // Fetch initial data
+  // Fetch initial data ONCE on mount
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -173,7 +182,7 @@ export const NotificationProvider = ({ children }) => {
         await Promise.all([
           fetchNotifications(),
           fetchUnreadCount(),
-          fetchAllSidebarBadges(), // Fetch all badges at once
+          fetchAllSidebarBadges(),
         ]);
       } catch (error) {
         console.error('[Notification] Initial fetch error:', error);
@@ -182,28 +191,35 @@ export const NotificationProvider = ({ children }) => {
     
     fetchInitialData();
     
-    // Polling for unread count
-    const interval = setInterval(() => {
+    // Set up polling intervals - REDUCED FREQUENCY
+    intervalRef.current = setInterval(() => {
       if (mountedRef.current && isAuthenticated) {
         fetchUnreadCount();
       }
     }, FETCH_INTERVAL);
     
-    // Polling for sidebar badges
-    const badgeInterval = setInterval(() => {
+    // Badges fetch less frequently - every 2 minutes
+    badgeIntervalRef.current = setInterval(() => {
       if (mountedRef.current && isAuthenticated) {
         fetchAllSidebarBadges();
       }
     }, BADGE_FETCH_INTERVAL);
     
     return () => {
-      clearInterval(interval);
-      clearInterval(badgeInterval);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (badgeIntervalRef.current) clearInterval(badgeIntervalRef.current);
     };
   }, [isAuthenticated]);
 
   const fetchNotifications = useCallback(async (page = 1, limit = 50) => {
     if (!isAuthenticated || !mountedRef.current) return;
+    
+    // Prevent too frequent requests
+    const now = Date.now();
+    if (now - lastFetchTime.current < MIN_REQUEST_INTERVAL) {
+      return;
+    }
+    lastFetchTime.current = now;
     
     try {
       setLoading(true);
@@ -222,7 +238,16 @@ export const NotificationProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!isAuthenticated || !mountedRef.current) return;
+    if (!isAuthenticated || !mountedRef.current || fetchingRef.current) return;
+    
+    // Prevent too frequent requests
+    const now = Date.now();
+    if (now - lastFetchTime.current < MIN_REQUEST_INTERVAL) {
+      return;
+    }
+    
+    fetchingRef.current = true;
+    lastFetchTime.current = now;
     
     try {
       const response = await adminApi.getUnreadCount();
@@ -233,77 +258,74 @@ export const NotificationProvider = ({ children }) => {
       if (error.response?.status !== 429) {
         console.error('[Notification] Unread count error:', error);
       }
+    } finally {
+      fetchingRef.current = false;
     }
   }, [isAuthenticated]);
 
-// contexts/NotificationContext.jsx - Update fetchAllSidebarBadges
-
-const fetchAllSidebarBadges = useCallback(async () => {
-  if (!isAuthenticated || !mountedRef.current || fetchingRef.current) return;
-  
-  const now = Date.now();
-  if (now - lastFetchTime.current < 5000) {
-    return;
-  }
-  
-  fetchingRef.current = true;
-  lastFetchTime.current = now;
-  
-  try {
-    console.log('[Notification] Fetching all sidebar badges...');
+  // Fetch all sidebar badges - WITH THROTTLING
+  const fetchAllSidebarBadges = useCallback(async () => {
+    if (!isAuthenticated || !mountedRef.current || fetchingRef.current) return;
     
-    // Fetch all counts in parallel
-    const [
-      reviewsRes,
-      contactsRes,
-      bookingsRes,
-      couponsRes,
-      subscribersRes,
-      notificationsRes,
-    ] = await Promise.allSettled([
-      adminApi.getAllReviews({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
-      adminApi.getContacts({ status: 'unread', limit: 1 }).catch(() => ({ data: { unreadCount: 0, total: 0 } })),
-      adminApi.getAllBookings({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
-      adminApi.getCoupons().catch(() => ({ data: { coupons: [] } })),
-      adminApi.getSubscribers({ status: 'active', limit: 1 }).catch(() => ({ data: { activeCount: 0, total: 0 } })),
-      adminApi.getUnreadCount().catch(() => ({ data: { unreadCount: 0 } })),
-    ]);
-    
-    // Extract counts - Use correct field names
-    const pendingReviews = reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data?.pendingCount || 0) : 0;
-    const unreadContacts = contactsRes.status === 'fulfilled' ? (contactsRes.value.data?.unreadCount || 0) : 0;
-    const pendingBookings = bookingsRes.status === 'fulfilled' ? (bookingsRes.value.data?.pendingCount || 0) : 0;
-    const unreadNotifications = notificationsRes.status === 'fulfilled' ? (notificationsRes.value.data?.unreadCount || 0) : 0;
-    
-    // Count active coupons
-    let activeCoupons = 0;
-    if (couponsRes.status === 'fulfilled' && couponsRes.value.data?.coupons) {
-      activeCoupons = couponsRes.value.data.coupons.filter(c => c.status === 'active').length;
+    const now = Date.now();
+    // Throttle: Don't fetch more than once every 30 seconds
+    if (now - lastBadgeFetchTime.current < 30000) {
+      console.log('[Notification] Throttling badge fetch - too frequent');
+      return;
     }
     
-    // Get active subscribers count
-    const newsletterStats = subscribersRes.status === 'fulfilled' ? (subscribersRes.value.data?.activeCount || 0) : 0;
+    fetchingRef.current = true;
+    lastBadgeFetchTime.current = now;
     
-    const badges = {
-      pendingReviews,
-      unreadContacts,
-      activeCoupons,
-      pendingBookings,
-      unreadNotifications,
-      newsletterStats,
-    };
-    
-    console.log('[Notification] Badges updated:', badges);
-    
-    if (mountedRef.current) {
-      setSidebarBadges(badges);
+    try {
+      console.log('[Notification] Fetching all sidebar badges...');
+      
+      // Fetch all counts in parallel with proper error handling
+      const [
+        reviewsRes,
+        contactsRes,
+        bookingsRes,
+        couponsRes,
+        subscribersRes,
+      ] = await Promise.allSettled([
+        adminApi.getAllReviews({ status: 'pending', limit: 1 }).catch(() => ({ data: { total: 0, count: 0 } })),
+        adminApi.getContacts({ status: 'unread', limit: 1 }).catch(() => ({ data: { total: 0, count: 0 } })),
+        adminApi.getAllBookings({ status: 'pending', limit: 1 }).catch(() => ({ data: { total: 0, count: 0 } })),
+        adminApi.getCoupons().catch(() => ({ data: { coupons: [] } })),
+        adminApi.getSubscribers({ status: 'active', limit: 1 }).catch(() => ({ data: { total: 0 } })),
+      ]);
+      
+      const pendingReviews = reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data?.total || reviewsRes.value.data?.count || 0) : 0;
+      const unreadContacts = contactsRes.status === 'fulfilled' ? (contactsRes.value.data?.total || contactsRes.value.data?.count || 0) : 0;
+      const pendingBookings = bookingsRes.status === 'fulfilled' ? (bookingsRes.value.data?.total || bookingsRes.value.data?.count || 0) : 0;
+      
+      let activeCoupons = 0;
+      if (couponsRes.status === 'fulfilled' && couponsRes.value.data?.coupons) {
+        activeCoupons = couponsRes.value.data.coupons.filter(c => c.status === 'active').length;
+      }
+      
+      const newsletterStats = subscribersRes.status === 'fulfilled' ? (subscribersRes.value.data?.total || 0) : 0;
+      
+      const badges = {
+        pendingReviews,
+        unreadContacts,
+        activeCoupons,
+        pendingBookings,
+        unreadNotifications: unreadCount,
+        newsletterStats,
+      };
+      
+      console.log('[Notification] Badges updated:', badges);
+      
+      if (mountedRef.current) {
+        setSidebarBadges(badges);
+      }
+    } catch (error) {
+      console.error('[Notification] Badge fetch error:', error);
+    } finally {
+      fetchingRef.current = false;
     }
-  } catch (error) {
-    console.error('[Notification] Badge fetch error:', error);
-  } finally {
-    fetchingRef.current = false;
-  }
-}, [isAuthenticated]);
+  }, [isAuthenticated, unreadCount]);
 
   const markAsRead = useCallback(async (notificationId) => {
     try {
@@ -429,8 +451,8 @@ const fetchAllSidebarBadges = useCallback(async () => {
           break;
       }
       
-      // Refresh all badges after reset
-      setTimeout(() => fetchAllSidebarBadges(), 1000);
+      // Refresh all badges after reset with delay
+      setTimeout(() => fetchAllSidebarBadges(), 2000);
       return true;
     } catch (error) {
       console.error(`[Notification] Reset badge error for ${type}:`, error);
@@ -438,8 +460,10 @@ const fetchAllSidebarBadges = useCallback(async () => {
     }
   }, [markAllAsRead, fetchAllSidebarBadges]);
 
-  // Force refresh badges
+  // Force refresh badges (can be called manually)
   const refreshBadges = useCallback(async () => {
+    // Reset throttle to allow immediate fetch
+    lastBadgeFetchTime.current = 0;
     await fetchAllSidebarBadges();
   }, [fetchAllSidebarBadges]);
 

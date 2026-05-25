@@ -1,3 +1,4 @@
+// app.js - Updated rate limiting configuration
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -63,18 +64,65 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+// ============ RATE LIMITING - FIXED ============
+// General rate limiter for all API routes (higher limit)
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window (changed from 15 minutes)
+  max: 200, // 200 requests per minute (increased from 100 per 15 min)
   message: {
     success: false,
     message: 'Too many requests, please try again later.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health check
+    return req.path === '/health';
+  }
 });
-app.use('/api/', limiter);
+
+// Stricter limiter for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per 15 minutes
+  message: {
+    success: false,
+    message: 'Too many login attempts, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Lighter limiter for admin dashboard polling (allows more requests)
+const adminPollingLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 300, // 300 requests per minute for admin polling
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use user ID as key for admin routes
+    return req.user?.id || req.ip;
+  }
+});
+
+// Apply general limiter to all API routes
+app.use('/api/', generalLimiter);
+
+// Apply stricter limiter to auth routes
+app.use('/api/v1/auth/', authLimiter);
+
+// Apply lighter limiter to admin polling routes
+app.use('/api/v1/admin/', adminPollingLimiter);
+app.use('/api/v1/notifications/', adminPollingLimiter);
+app.use('/api/v1/reviews/admin/', adminPollingLimiter);
+app.use('/api/v1/contact/', adminPollingLimiter);
+app.use('/api/v1/bookings/admin/', adminPollingLimiter);
+app.use('/api/v1/coupons/', adminPollingLimiter);
+app.use('/api/v1/newsletter/', adminPollingLimiter);
 
 // Set security headers
 app.use((req, res, next) => {
