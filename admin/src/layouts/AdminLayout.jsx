@@ -116,52 +116,70 @@ const AdminLayout = () => {
   const resetTimeoutRef = useRef(null);
 
   // Reset badge when visiting a page
-  const resetBadgeOnVisit = useCallback(async () => {
-    const currentPath = location.pathname;
-    
-    // Don't reset if we're already on the same page
-    if (lastVisitedPath.current === currentPath) return;
-    
-    // Clear any pending reset timeout
-    if (resetTimeoutRef.current) {
-      clearTimeout(resetTimeoutRef.current);
-    }
-    
-    // Find the link that matches the current path
-    let matchingLink = null;
-    for (const category of sidebarLinks) {
-      for (const link of category.links) {
-        const isMatch = currentPath === link.to || 
-                       (link.to !== '/admin/dashboard' && currentPath.startsWith(link.to));
-        
-        if (isMatch && link.resetOnVisit && link.resetType) {
-          matchingLink = link;
-          break;
-        }
+const resetBadgeOnVisit = useCallback(async () => {
+  const currentPath = location.pathname;
+  
+  // Don't reset if we're already on the same page
+  if (lastVisitedPath.current === currentPath) return;
+  
+  // Clear any pending reset timeout
+  if (resetTimeoutRef.current) {
+    clearTimeout(resetTimeoutRef.current);
+  }
+  
+  // Find the link that matches the current path
+  let matchingLink = null;
+  for (const category of sidebarLinks) {
+    for (const link of category.links) {
+      const isMatch = currentPath === link.to || 
+                     (link.to !== '/admin/dashboard' && currentPath.startsWith(link.to));
+      
+      if (isMatch && link.resetOnVisit && link.resetType) {
+        matchingLink = link;
+        break;
       }
-      if (matchingLink) break;
     }
+    if (matchingLink) break;
+  }
+  
+  if (matchingLink && !resetting) {
+    setResetting(true);
+    lastVisitedPath.current = currentPath;
     
-    if (matchingLink && !resetting) {
-      setResetting(true);
-      lastVisitedPath.current = currentPath;
-      
-      console.log(`[AdminLayout] Resetting badge for ${matchingLink.label} (${matchingLink.resetType})`);
-      
-      // Add a small delay to ensure the page has loaded
-      resetTimeoutRef.current = setTimeout(async () => {
-        try {
-          await resetBadge(matchingLink.resetType);
-          // Refresh all badges after reset
-          setTimeout(() => refreshBadges(), 500);
-        } catch (error) {
-          console.error('[AdminLayout] Badge reset error:', error);
-        } finally {
-          setResetting(false);
-        }
-      }, 500);
+    console.log(`[AdminLayout] Resetting badge for ${matchingLink.label} (${matchingLink.resetType})`);
+    
+    // Add delay to ensure page has loaded
+    resetTimeoutRef.current = setTimeout(async () => {
+      try {
+        await resetBadge(matchingLink.resetType);
+        // Don't refresh badges here - let interval handle it
+      } catch (error) {
+        console.error('[AdminLayout] Badge reset error:', error);
+      } finally {
+        setResetting(false);
+      }
+    }, 300);
+  }
+}, [location.pathname, resetBadge, resetting]);
+
+// Update the visibility change handler
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      // Only refresh if last fetch was more than 60 seconds ago
+      const now = Date.now();
+      const lastBadgeTime = parseInt(localStorage.getItem('lastBadgeFetch') || '0');
+      if (now - lastBadgeTime > 60000) {
+        console.log('[AdminLayout] Tab visible, refreshing badges');
+        refreshBadges();
+        localStorage.setItem('lastBadgeFetch', now.toString());
+      }
     }
-  }, [location.pathname, resetBadge, refreshBadges, resetting]);
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [refreshBadges]);
 
   // Refresh badges on mount and when coming back to tab
   useEffect(() => {
