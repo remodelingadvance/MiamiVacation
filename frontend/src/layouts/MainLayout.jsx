@@ -31,7 +31,7 @@ const pageVariants = {
 
 const MainLayout = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--color-bg-dark)]">
+    <div className="flex flex-col min-h-screen" style={{ background: 'var(--color-bg-dark)' }}>
       <Navbar />
       
       <main className="flex-grow">

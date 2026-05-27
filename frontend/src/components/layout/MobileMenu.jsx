@@ -1,38 +1,49 @@
 import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiX, HiHome, HiInformationCircle, HiMail, HiPhone, HiHeart } from 'react-icons/hi';
-import { FaBuilding } from "react-icons/fa";
+import {
+  HiGlobeAlt,
+  HiHeart,
+  HiHome,
+  HiInformationCircle,
+  HiMail,
+  HiMap,
+  HiPhone,
+  HiSparkles,
+  HiUser,
+  HiX,
+} from 'react-icons/hi';
+import { FaBuilding } from 'react-icons/fa';
+import { GiTrophyCup } from 'react-icons/gi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import { APP_CONFIG } from '../../config/constants';
+import { THEME } from '../../config/theme.config';
+
+const iconMap = {
+  Home: HiHome,
+  Stays: FaBuilding,
+  Experiences: HiSparkles,
+  Guide: HiMap,
+  About: HiInformationCircle,
+  Contact: HiMail,
+};
 
 const MobileMenu = ({ isOpen, onClose }) => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { favorites } = useWishlist();
   const location = useLocation();
 
-  // Close on route change
   useEffect(() => {
     onClose();
-  }, [location, onClose]);
+  }, [location]);
 
-  // Prevent body scroll when open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  const menuItems = [
-    { icon: HiHome, label: 'Home', to: '/' },
-    { icon: FaBuilding, label: 'Properties', to: '/properties' },
-    { icon: HiInformationCircle, label: 'About', to: '/about' },
-    { icon: HiMail, label: 'Contact', to: '/contact' },
-  ];
 
   return (
     <motion.div
@@ -41,131 +52,172 @@ const MobileMenu = ({ isOpen, onClose }) => {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 lg:hidden"
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="absolute inset-0 bg-[rgba(7,20,76,0.46)] backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-      {/* Menu panel */}
       <motion.div
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm glass-strong"
+        transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+        className="absolute bottom-0 right-0 top-0 flex w-[86%] max-w-sm flex-col bg-white shadow-2xl"
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <Link to="/" className="flex items-center gap-2" onClick={onClose}>
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center">
-                <span className="text-lg font-bold text-[var(--color-bg-dark)]">M</span>
-              </div>
-              <span className="text-lg font-display font-bold text-white">Miami Luxury Rentals</span>
-            </Link>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-full glass-light flex items-center justify-center text-white hover:text-[var(--color-primary)] transition-colors"
-            >
-              <HiX className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-6">
-            <ul className="space-y-2">
-              {menuItems.map((item) => (
-                <li key={item.label}>
-                  <Link
-                    to={item.to}
-                    onClick={onClose}
-                    className="flex items-center gap-4 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <item.icon className="w-5 h-5 text-[var(--color-primary)]" />
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-
-            {/* Auth section */}
-            <div className="mt-8 pt-8 border-t border-white/10">
-              {isAuthenticated ? (
-                <div className="space-y-3">
-                  <Link
-                    to="/profile"
-                    onClick={onClose}
-                    className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 transition-all"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
-                      <span className="text-[var(--color-primary)] font-semibold">
-                        {user?.firstName?.[0]}{user?.lastName?.[0]}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-sm text-[var(--color-text-muted)]">View Profile</p>
-                    </div>
-                  </Link>
-                  <Link
-                    to="/my-bookings"
-                    onClick={onClose}
-                    className="flex items-center gap-4 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <FaBuilding className="w-5 h-5 text-[var(--color-primary)]" />
-                    <span>My Bookings</span>
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    onClick={onClose}
-                    className="flex items-center gap-4 px-4 py-3 rounded-xl text-white/80 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <HiHeart className="w-5 h-5 text-[var(--color-primary)]" />
-                    <span>Wishlist</span>
-                  </Link>
-                  <button
-                    onClick={() => { logout(); onClose(); }}
-                    className="w-full mt-4 btn-primary"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Link
-                    to="/login"
-                    onClick={onClose}
-                    className="block w-full text-center btn-primary"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={onClose}
-                    className="block w-full text-center btn-outline"
-                  >
-                    Create Account
-                  </Link>
-                </div>
-              )}
+        <div className="flex items-center justify-between border-b px-5 py-5" style={{ borderColor: THEME.colors.border }}>
+          <Link to="/" onClick={onClose} className="flex items-center gap-3">
+            <div className="event-logo-mark event-logo-mark-sm">
+              <span>2</span>
+              <GiTrophyCup aria-hidden="true" />
+              <span>6</span>
             </div>
-          </nav>
+            <div className="leading-none">
+              <p className="text-[0.78rem] font-black uppercase" style={{ color: THEME.colors.textDark, letterSpacing: 0 }}>
+                {THEME.logo.line1}
+              </p>
+              <p className="mt-1 text-[0.92rem] font-medium uppercase" style={{ color: THEME.colors.textDark, letterSpacing: 0 }}>
+                {THEME.logo.line2}
+              </p>
+            </div>
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 transition-colors hover:bg-gray-100"
+            style={{ color: THEME.colors.textDark }}
+            aria-label="Close menu"
+          >
+            <HiX className="h-5 w-5" />
+          </button>
+        </div>
 
-          {/* Contact info */}
-          <div className="p-6 border-t border-white/10 space-y-3">
-            <a
-              href={`tel:${APP_CONFIG.phone}`}
-              className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
-            >
-              <HiPhone className="w-4 h-4" />
-              {APP_CONFIG.phone}
-            </a>
-            <a
-              href={`mailto:${APP_CONFIG.email}`}
-              className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
-            >
-              <HiMail className="w-4 h-4" />
-              {APP_CONFIG.email}
-            </a>
-          </div>
+        <nav className="flex-1 overflow-y-auto px-4 py-5">
+          <ul className="space-y-1">
+            {THEME.nav.links.map((item) => {
+              const Icon = iconMap[item.label] ?? HiGlobeAlt;
+              return (
+                <li key={item.label}>
+                  <NavLink
+                    to={item.path}
+                    end={item.path === '/'}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+                        isActive ? 'text-white' : 'text-gray-700 hover:bg-gray-50'
+                      }`
+                    }
+                    style={({ isActive }) =>
+                      isActive ? { background: THEME.colors.primary } : {}
+                    }
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {item.label}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="my-5 h-px" style={{ background: THEME.colors.border }} />
+
+          {isAuthenticated ? (
+            <div className="space-y-1">
+              <Link
+                to="/profile"
+                onClick={onClose}
+                className="flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
+                  style={{ background: THEME.colors.primary }}
+                >
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate" style={{ color: THEME.colors.textDark }}>
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs font-medium" style={{ color: THEME.colors.textLight }}>
+                    View Profile
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                to="/my-bookings"
+                onClick={onClose}
+                className="flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                <FaBuilding className="h-5 w-5 shrink-0" style={{ color: THEME.colors.primary }} />
+                My Bookings
+              </Link>
+
+              <Link
+                to="/wishlist"
+                onClick={onClose}
+                className="flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                <HiHeart className="h-5 w-5 shrink-0" style={{ color: THEME.colors.primary }} />
+                Wishlist
+                {favorites.length > 0 && (
+                  <span className="ml-auto rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-bold text-white">
+                    {favorites.length}
+                  </span>
+                )}
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  onClose();
+                }}
+                className="btn-outline mt-3 w-full py-2.5 text-sm"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Link
+                to="/login"
+                onClick={onClose}
+                className="btn-primary flex w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                <HiUser className="h-4 w-4" />
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                onClick={onClose}
+                className="btn-outline flex w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
+        </nav>
+
+        <div className="space-y-3 border-t px-6 py-5" style={{ borderColor: THEME.colors.border }}>
+          <a
+            href={`tel:${APP_CONFIG.phone}`}
+            className="flex items-center gap-3 text-sm font-medium transition-colors hover:text-[var(--color-primary)]"
+            style={{ color: THEME.colors.textMedium }}
+          >
+            <HiPhone className="h-4 w-4 shrink-0" />
+            {APP_CONFIG.phone}
+          </a>
+          <a
+            href={`mailto:${APP_CONFIG.email}`}
+            className="flex items-center gap-3 text-sm font-medium transition-colors hover:text-[var(--color-primary)]"
+            style={{ color: THEME.colors.textMedium }}
+          >
+            <HiMail className="h-4 w-4 shrink-0" />
+            {APP_CONFIG.email}
+          </a>
         </div>
       </motion.div>
     </motion.div>
