@@ -1,7 +1,48 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { HiSearch, HiX, HiAdjustments } from 'react-icons/hi';
-import { PROPERTY_TYPES, AMENITIES } from '../../config/constants';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  HiAdjustments,
+  HiChevronDown,
+  HiHome,
+  HiSearch,
+  HiSparkles,
+  HiUsers,
+  HiX,
+} from 'react-icons/hi';
+import { AMENITIES, PROPERTY_TYPES } from '../../config/constants';
+
+const Section = ({ title, icon: Icon, open, onToggle, children }) => (
+  <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between px-4 py-4 text-left"
+    >
+      <span className="flex items-center gap-2 text-sm font-black text-[var(--color-text-primary)]">
+        <Icon className="h-5 w-5 text-[var(--color-primary)]" />
+        {title}
+      </span>
+      <HiChevronDown
+        className={`h-5 w-5 text-[var(--color-text-muted)] transition-transform ${
+          open ? 'rotate-180' : ''
+        }`}
+      />
+    </button>
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden"
+        >
+          <div className="px-4 pb-4">{children}</div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
 
 const PropertyFilters = ({ filters, onFilterChange, onReset }) => {
   const [expandedSections, setExpandedSections] = useState({
@@ -12,197 +53,193 @@ const PropertyFilters = ({ filters, onFilterChange, onReset }) => {
   });
 
   const toggleSection = (section) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
   };
 
-  const hasActiveFilters = () => {
-    return filters.search || 
-           filters.type?.length > 0 || 
-           filters.minPrice || 
-           filters.maxPrice || 
-           filters.bedrooms || 
-           filters.guests || 
-           filters.amenities?.length > 0;
-  };
+  const hasActiveFilters =
+    filters.search ||
+    filters.type?.length > 0 ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.bedrooms ||
+    filters.guests ||
+    filters.amenities?.length > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Search */}
-      <div className="relative">
-        <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
+    <aside className="rounded-[24px] border border-white/70 bg-white/86 p-4 shadow-[0_18px_48px_rgba(8,19,76,0.10)] backdrop-blur-xl">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+            Miami Stays
+          </p>
+          <h2 className="text-xl font-black text-[var(--color-text-primary)]">
+            Match-week filters
+          </h2>
+        </div>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)] hover:text-white"
+            aria-label="Clear filters"
+          >
+            <HiX className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      <div className="relative mb-4">
+        <HiSearch className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text-muted)]" />
         <input
           type="text"
           value={filters.search || ''}
           onChange={(e) => onFilterChange({ search: e.target.value })}
-          placeholder="Search properties..."
+          placeholder="Search neighborhood, condo, villa..."
           className="input-field pl-10"
         />
       </div>
 
-      {/* Active filters */}
-      {hasActiveFilters() && (
-        <button
-          onClick={onReset}
-          className="flex items-center gap-2 text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-light)] transition-colors"
+      <div className="space-y-3">
+        <Section
+          title="Property Type"
+          icon={HiHome}
+          open={expandedSections.type}
+          onToggle={() => toggleSection('type')}
         >
-          <HiX className="w-4 h-4" />
-          Clear all filters
-        </button>
-      )}
-
-      {/* Property Type */}
-      <div className="glass-light rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('type')}
-          className="w-full flex items-center justify-between p-4 text-white font-medium"
-        >
-          Property Type
-          <HiAdjustments className={`w-5 h-5 transition-transform ${expandedSections.type ? 'rotate-180' : ''}`} />
-        </button>
-        
-        {expandedSections.type && (
-          <div className="px-4 pb-4 space-y-2">
+          <div className="space-y-2">
             {PROPERTY_TYPES.map((type) => (
-              <label key={type.value} className="flex items-center gap-3 cursor-pointer group">
+              <label
+                key={type.value}
+                className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[var(--color-bg-medium)]"
+              >
                 <input
                   type="checkbox"
                   checked={filters.type?.includes(type.value)}
                   onChange={(e) => {
                     const newTypes = e.target.checked
                       ? [...(filters.type || []), type.value]
-                      : filters.type?.filter(t => t !== type.value);
+                      : filters.type?.filter((item) => item !== type.value);
                     onFilterChange({ type: newTypes });
                   }}
-                  className="w-4 h-4 rounded border-white/20 bg-transparent text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                  className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                 />
-                <span className="text-sm text-[var(--color-text-secondary)] group-hover:text-white transition-colors capitalize">
+                <span className="text-sm font-semibold capitalize text-[var(--color-text-secondary)]">
                   {type.label}
                 </span>
               </label>
             ))}
           </div>
-        )}
-      </div>
+        </Section>
 
-      {/* Price Range */}
-      <div className="glass-light rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('price')}
-          className="w-full flex items-center justify-between p-4 text-white font-medium"
+        <Section
+          title="Price Range"
+          icon={HiAdjustments}
+          open={expandedSections.price}
+          onToggle={() => toggleSection('price')}
         >
-          Price Range
-          <HiAdjustments className={`w-5 h-5 transition-transform ${expandedSections.price ? 'rotate-180' : ''}`} />
-        </button>
-        
-        {expandedSections.price && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                value={filters.minPrice || ''}
-                onChange={(e) => onFilterChange({ minPrice: e.target.value })}
-                placeholder="Min"
-                className="input-field w-full"
-              />
-              <span className="text-[var(--color-text-muted)]">-</span>
-              <input
-                type="number"
-                value={filters.maxPrice || ''}
-                onChange={(e) => onFilterChange({ maxPrice: e.target.value })}
-                placeholder="Max"
-                className="input-field w-full"
-              />
-            </div>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <input
+              type="number"
+              value={filters.minPrice || ''}
+              onChange={(e) => onFilterChange({ minPrice: e.target.value })}
+              placeholder="Min"
+              className="input-field"
+            />
+            <span className="text-[var(--color-text-muted)]">-</span>
+            <input
+              type="number"
+              value={filters.maxPrice || ''}
+              onChange={(e) => onFilterChange({ maxPrice: e.target.value })}
+              placeholder="Max"
+              className="input-field"
+            />
           </div>
-        )}
-      </div>
+        </Section>
 
-      {/* Rooms & Guests */}
-      <div className="glass-light rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('rooms')}
-          className="w-full flex items-center justify-between p-4 text-white font-medium"
+        <Section
+          title="Rooms & Guests"
+          icon={HiUsers}
+          open={expandedSections.rooms}
+          onToggle={() => toggleSection('rooms')}
         >
-          Rooms & Guests
-          <HiAdjustments className={`w-5 h-5 transition-transform ${expandedSections.rooms ? 'rotate-180' : ''}`} />
-        </button>
-        
-        {expandedSections.rooms && (
-          <div className="px-4 pb-4 space-y-4">
-            <div>
-              <label className="text-sm text-[var(--color-text-secondary)] mb-2 block">Bedrooms</label>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="input-label">Bedrooms</span>
               <select
                 value={filters.bedrooms || ''}
                 onChange={(e) => onFilterChange({ bedrooms: e.target.value })}
                 className="input-field w-full"
               >
                 <option value="">Any</option>
-                {[1, 2, 3, 4, 5, 6].map(num => (
-                  <option key={num} value={num}>{num}+ bedrooms</option>
+                {[1, 2, 3, 4, 5, 6].map((num) => (
+                  <option key={num} value={num}>
+                    {num}+ bedrooms
+                  </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="text-sm text-[var(--color-text-secondary)] mb-2 block">Guests</label>
+            </label>
+            <label className="block">
+              <span className="input-label">Guests</span>
               <select
                 value={filters.guests || ''}
                 onChange={(e) => onFilterChange({ guests: e.target.value })}
                 className="input-field w-full"
               >
                 <option value="">Any</option>
-                {[1, 2, 4, 6, 8, 10, 12].map(num => (
-                  <option key={num} value={num}>{num}+ guests</option>
+                {[1, 2, 4, 6, 8, 10, 12].map((num) => (
+                  <option key={num} value={num}>
+                    {num}+ guests
+                  </option>
                 ))}
               </select>
-            </div>
+            </label>
           </div>
-        )}
-      </div>
+        </Section>
 
-      {/* Amenities */}
-      <div className="glass-light rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('amenities')}
-          className="w-full flex items-center justify-between p-4 text-white font-medium"
+        <Section
+          title="Amenities"
+          icon={HiSparkles}
+          open={expandedSections.amenities}
+          onToggle={() => toggleSection('amenities')}
         >
-          Amenities
-          <HiAdjustments className={`w-5 h-5 transition-transform ${expandedSections.amenities ? 'rotate-180' : ''}`} />
-        </button>
-        
-        {expandedSections.amenities && (
-          <div className="px-4 pb-4 space-y-2 max-h-64 overflow-y-auto">
+          <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
             {AMENITIES.map((category) => (
               <div key={category.category}>
-                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-2 mt-3">
+                <p className="mb-2 mt-1 text-xs font-black uppercase text-[var(--color-text-muted)]">
                   {category.category}
                 </p>
-                {category.amenities.map((amenity) => (
-                  <label key={amenity.value} className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.amenities?.includes(amenity.value)}
-                      onChange={(e) => {
-                        const newAmenities = e.target.checked
-                          ? [...(filters.amenities || []), amenity.value]
-                          : filters.amenities?.filter(a => a !== amenity.value);
-                        onFilterChange({ amenities: newAmenities });
-                      }}
-                      className="w-4 h-4 rounded border-white/20 bg-transparent text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                    />
-                    <span className="text-sm text-[var(--color-text-secondary)] group-hover:text-white transition-colors">
-                      {amenity.icon} {amenity.label}
-                    </span>
-                  </label>
-                ))}
+                <div className="space-y-1">
+                  {category.amenities.map((amenity) => (
+                    <label
+                      key={amenity.value}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[var(--color-bg-medium)]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={filters.amenities?.includes(amenity.value)}
+                        onChange={(e) => {
+                          const newAmenities = e.target.checked
+                            ? [...(filters.amenities || []), amenity.value]
+                            : filters.amenities?.filter((item) => item !== amenity.value);
+                          onFilterChange({ amenities: newAmenities });
+                        }}
+                        className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                      />
+                      <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                        {amenity.icon} {amenity.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </Section>
       </div>
-    </div>
+    </aside>
   );
 };
 

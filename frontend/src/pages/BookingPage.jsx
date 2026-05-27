@@ -1,57 +1,76 @@
-// pages/BookingPage.jsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { format, addDays, differenceInDays, isSameDay, startOfDay, isWithinInterval } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DateRange } from 'react-date-range';
+import { addDays, differenceInDays, format, isSameDay, startOfDay } from 'date-fns';
+import { loadStripe } from '@stripe/stripe-js';
+import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import {
-  HiCalendar,
-  HiUsers,
-  HiCreditCard,
-  HiShieldCheck,
-  HiCheck,
   HiArrowLeft,
   HiArrowRight,
-  HiTag,
-  HiX,
-  HiStar,
-  HiInformationCircle,
-  HiUser,
-  HiMail,
-  HiPhone,
-  HiHome,
+  HiCalendar,
+  HiCheck,
+  HiCreditCard,
   HiGlobeAlt,
-  HiPlus,
-  HiMinus,
+  HiHome,
+  HiInformationCircle,
   HiLocationMarker,
+  HiMail,
+  HiMinus,
+  HiPhone,
+  HiPlus,
+  HiShieldCheck,
+  HiStar,
+  HiTag,
+  HiUser,
+  HiUsers,
+  HiX,
 } from 'react-icons/hi';
-import SEOHead from '../components/common/SEOHead';
-import { useBooking } from '../contexts/BookingContext';
-import { useAuth } from '../contexts/AuthContext';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import apiService from '../config/api';
-import { formatCurrency, calculateNights, calculateDisplayPrice } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/common/SEOHead';
+import { useAuth } from '../contexts/AuthContext';
+import apiService from '../config/api';
+import { formatCurrency } from '../utils/helpers';
+import { THEME } from '../config/theme.config';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+const steps = [
+  { number: 1, title: 'Dates', icon: HiCalendar },
+  { number: 2, title: 'Guests', icon: HiUsers },
+  { number: 3, title: 'Payment', icon: HiCreditCard },
+];
+
+const currencyOrZero = (value) => formatCurrency(Math.max(0, value || 0));
+
+const buildDateList = (start, end, includeEnd = false) => {
+  const dates = [];
+  const currentDate = new Date(start);
+  const finalDate = new Date(end);
+
+  while (includeEnd ? currentDate <= finalDate : currentDate < finalDate) {
+    dates.push(startOfDay(new Date(currentDate)));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+};
+
 const BookingPage = () => {
   const { propertyId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  
-  const [property, setPropertyData] = useState(null);
+  const { user } = useAuth();
+
+  const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookedDates, setBookedDates] = useState([]);
   const [maintenanceDates, setMaintenanceDates] = useState([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
-  
-  // Date range state
+  const [step, setStep] = useState(1);
   const [dateRange, setDateRange] = useState([
     {
       startDate: addDays(new Date(), 1),
@@ -59,15 +78,11 @@ const BookingPage = () => {
       key: 'selection',
     },
   ]);
-  
-  // Guests state
-  const [guests, setGuestsState] = useState({
+  const [guests, setGuests] = useState({
     adults: 2,
     children: 0,
     infants: 0,
   });
-  
-  // Contact info state
   const [contactInfo, setContactInfo] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -79,182 +94,121 @@ const BookingPage = () => {
     country: 'US',
     specialRequests: '',
   });
-  
-  // Pricing state
-  const [pricing, setPricing] = useState(null);
-  
-  // Step state
-  const [step, setStep] = useState(1);
 
-  // Fetch property, booked dates, and maintenance dates
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBookingData = async () => {
       try {
         setLoading(true);
-        
-        // Fetch property details
         const propertyResponse = await apiService.getProperty(propertyId);
         const propertyData = propertyResponse.data.property;
-        setPropertyData(propertyData);
-        
-        // Fetch booked dates
+        setProperty(propertyData);
+
         const bookingsResponse = await apiService.getPropertyBookings(propertyId);
         const bookings = bookingsResponse.data.bookings || [];
-        
-        const booked = [];
-        bookings.forEach(booking => {
-          if (booking.status === 'confirmed' || booking.status === 'active') {
-            let currentDate = new Date(booking.checkIn);
-            const endDate = new Date(booking.checkOut);
-            while (currentDate < endDate) {
-              booked.push(startOfDay(new Date(currentDate)));
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          }
+        const booked = bookings.flatMap((booking) => {
+          if (!['confirmed', 'active', 'pending'].includes(booking.status)) return [];
+          return buildDateList(booking.checkIn, booking.checkOut);
         });
         setBookedDates(booked);
-        
-        // Fetch maintenance dates
+
         try {
-          const maintenanceResponse = await apiService.get(`/properties/${propertyId}/maintenance-dates`);
+          const maintenanceResponse = await apiService.getMaintenanceDates(propertyId);
           const maintenance = maintenanceResponse.data.maintenanceDates || [];
-          
-          const maintenanceBooked = [];
-          maintenance.forEach(md => {
-            const startDate = new Date(md.startDate);
-            const endDate = new Date(md.endDate);
-            let currentDate = new Date(startDate);
-            while (currentDate <= endDate) {
-              maintenanceBooked.push(startOfDay(new Date(currentDate)));
-              currentDate.setDate(currentDate.getDate() + 1);
-            }
-          });
+          const maintenanceBooked = maintenance.flatMap((item) =>
+            buildDateList(item.startDate, item.endDate, true)
+          );
           setMaintenanceDates(maintenanceBooked);
-        } catch (err) {
-          console.log('No maintenance dates found');
+        } catch {
+          setMaintenanceDates([]);
         }
-        
-        // Calculate initial pricing
-        updatePricing(propertyData, dateRange[0].startDate, dateRange[0].endDate);
       } catch (error) {
-        console.error('Error fetching property:', error);
-        toast.error('Failed to load property');
+        console.error('Error fetching booking data:', error);
+        toast.error('Failed to load booking details');
         navigate('/properties');
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchData();
-  }, [propertyId]);
 
-  // Update pricing when dates or guests change
-  const updatePricing = (propertyData, startDate, endDate) => {
-    if (!propertyData || !startDate || !endDate) return;
-    
-    const nights = differenceInDays(endDate, startDate);
-    const basePrice = propertyData.pricing?.basePrice || 0;
-    const cleaningFee = propertyData.pricing?.cleaningFee || 0;
-    const serviceFee = propertyData.pricing?.serviceFee || 0;
-    const taxRate = (propertyData.pricing?.taxRate || 13.5) / 100;
-    
-    const baseTotal = basePrice * nights;
-    const subtotal = baseTotal + cleaningFee + serviceFee;
-    const taxes = subtotal * taxRate;
-    const total = subtotal + taxes;
-    
-    setPricing({
-      nightlyRate: basePrice,
-      nights,
-      baseTotal: Math.round(baseTotal * 100) / 100,
-      cleaningFee: Math.round(cleaningFee * 100) / 100,
-      serviceFee: Math.round(serviceFee * 100) / 100,
-      taxes: Math.round(taxes * 100) / 100,
-      total: Math.round(total * 100) / 100,
-    });
+    fetchBookingData();
+  }, [navigate, propertyId]);
+
+  const unavailableDates = useMemo(
+    () => [...bookedDates, ...maintenanceDates],
+    [bookedDates, maintenanceDates]
+  );
+
+  const nights = Math.max(
+    0,
+    differenceInDays(dateRange[0].endDate, dateRange[0].startDate)
+  );
+  const totalGuests = guests.adults + guests.children;
+  const maxGuests = property?.details?.maxGuests || 10;
+  const basePrice = property?.pricing?.basePrice || 0;
+  const cleaningFee = property?.pricing?.cleaningFee || 0;
+  const serviceFee = property?.pricing?.serviceFee || 0;
+  const taxRate = (property?.pricing?.taxRate || 13.5) / 100;
+  const baseTotal = basePrice * nights;
+  const subtotal = baseTotal + cleaningFee + serviceFee;
+  const taxes = subtotal * taxRate;
+  const total = subtotal + taxes;
+  const discount = couponDiscount?.discount || 0;
+  const finalTotal = Math.max(0, total - discount);
+  const heroImage =
+    property?.images?.find((image) => image.isPrimary)?.url ||
+    property?.images?.[0]?.url ||
+    THEME.hero.heroImage;
+
+  const dateIsUnavailable = (date) =>
+    unavailableDates.some((unavailable) => isSameDay(unavailable, date));
+
+  const rangeHasUnavailableDate = (startDate, endDate) => {
+    const dates = buildDateList(startDate, endDate, false);
+    return dates.find((date) => dateIsUnavailable(date));
   };
 
-  // Update pricing when dates change
-  useEffect(() => {
-    if (property && dateRange[0].startDate && dateRange[0].endDate) {
-      updatePricing(property, dateRange[0].startDate, dateRange[0].endDate);
-    }
-  }, [dateRange, property]);
-
-  // Check if a date is booked
-  const isDateBooked = (date) => {
-    return bookedDates.some(bookedDate => isSameDay(bookedDate, date));
-  };
-
-  // Check if a date is under maintenance
-  const isDateUnderMaintenance = (date) => {
-    return maintenanceDates.some(mdDate => isSameDay(mdDate, date));
-  };
-
-  // Check if a date is unavailable (booked or maintenance)
-  const isDateUnavailable = (date) => {
-    return isDateBooked(date) || isDateUnderMaintenance(date);
-  };
-
-  // Handle date range change
   const handleDateRangeChange = (item) => {
-    const { startDate, endDate } = item.selection;
-    
-    if (startDate && endDate) {
-      // Check if any date in range is unavailable
-      let currentDate = new Date(startDate);
-      const unavailableDates = [];
-      
-      while (currentDate <= endDate) {
-        if (isDateUnavailable(currentDate)) {
-          const reason = isDateUnderMaintenance(currentDate) ? 'under maintenance' : 'booked';
-          unavailableDates.push({
-            date: currentDate,
-            reason
-          });
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      if (unavailableDates.length > 0) {
-        const firstUnavailable = unavailableDates[0];
-        toast.error(
-          `${format(firstUnavailable.date, 'MMM dd, yyyy')} is ${firstUnavailable.reason}. 
-           Please select different dates.`
-        );
-        return;
-      }
+    const nextRange = item.selection;
+    const blockedDate = rangeHasUnavailableDate(nextRange.startDate, nextRange.endDate);
+
+    if (blockedDate) {
+      const reason = maintenanceDates.some((date) => isSameDay(date, blockedDate))
+        ? 'under maintenance'
+        : 'already booked';
+      toast.error(`${format(blockedDate, 'MMM dd, yyyy')} is ${reason}. Choose another range.`);
+      return;
     }
-    
-    setDateRange([item.selection]);
+
+    setDateRange([nextRange]);
   };
 
-  // Handle guest count changes
   const updateGuests = (type, delta) => {
-    setGuestsState(prev => {
-      const newValue = prev[type] + delta;
-      if (type === 'adults' && newValue < 1) return prev;
-      if (newValue < 0) return prev;
-      if (property && (prev.adults + prev.children + (type === 'adults' ? delta : 0)) > property.details?.maxGuests) {
-        toast.error(`Maximum ${property.details?.maxGuests} guests allowed`);
+    setGuests((prev) => {
+      const nextValue = prev[type] + delta;
+      if (type === 'adults' && nextValue < 1) return prev;
+      if (nextValue < 0) return prev;
+
+      const next = { ...prev, [type]: nextValue };
+      if (next.adults + next.children > maxGuests) {
+        toast.error(`Maximum ${maxGuests} guests allowed`);
         return prev;
       }
-      return { ...prev, [type]: newValue };
+      if (next.infants > 5) return prev;
+      return next;
     });
   };
 
-  // Apply coupon
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     setCouponLoading(true);
     try {
       const response = await apiService.validateCoupon({
         code: couponCode,
-        bookingAmount: pricing?.baseTotal || 0,
+        bookingAmount: baseTotal,
       });
       if (response.data.success) {
         setCouponDiscount(response.data);
-        toast.success(`Coupon applied! You saved $${response.data.discount}`);
+        toast.success(`Coupon applied. You saved ${formatCurrency(response.data.discount)}`);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid coupon code');
@@ -264,27 +218,24 @@ const BookingPage = () => {
     }
   };
 
-  // Remove coupon
   const removeCoupon = () => {
     setCouponDiscount(null);
     setCouponCode('');
     toast.success('Coupon removed');
   };
 
-  // Proceed to next step
   const handleNextStep = () => {
     if (step === 1) {
-      if (!dateRange[0].startDate || !dateRange[0].endDate) {
-        toast.error('Please select your dates');
+      if (!dateRange[0].startDate || !dateRange[0].endDate || nights <= 0) {
+        toast.error('Please select valid check-in and check-out dates');
         return;
       }
-      const nights = differenceInDays(dateRange[0].endDate, dateRange[0].startDate);
       if (property?.pricing?.minimumStay && nights < property.pricing.minimumStay) {
         toast.error(`Minimum stay is ${property.pricing.minimumStay} nights`);
         return;
       }
     }
-    
+
     if (step === 2) {
       if (!contactInfo.firstName.trim()) {
         toast.error('Please enter your first name');
@@ -299,29 +250,18 @@ const BookingPage = () => {
         return;
       }
     }
-    
-    setStep(prev => prev + 1);
+
+    setStep((prev) => Math.min(3, prev + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Go back to previous step
-  const handlePrevStep = () => {
-    setStep(prev => prev - 1);
-  };
-
-  // Create booking and process payment
-  const handleCreateBooking = async (paymentMethodId) => {
-    if (!isAuthenticated) {
-      toast.error('Please login to complete your booking');
-      navigate('/login');
-      return;
-    }
-    
+  const handleCreateBooking = async () => {
     try {
       const bookingData = {
         propertyId: property._id,
         checkIn: dateRange[0].startDate,
         checkOut: dateRange[0].endDate,
-        guests: guests,
+        guests,
         couponCode: couponCode || undefined,
         specialRequests: contactInfo.specialRequests,
         guestDetails: {
@@ -333,11 +273,10 @@ const BookingPage = () => {
           city: contactInfo.city,
           postalCode: contactInfo.postalCode,
           country: contactInfo.country,
-        }
+        },
       };
-      
+
       const response = await apiService.createBooking(bookingData);
-      
       if (response.data.success) {
         toast.success('Booking confirmed!');
         navigate(`/booking/confirmation/${response.data.booking._id}`);
@@ -348,44 +287,31 @@ const BookingPage = () => {
     }
   };
 
-  // Custom day content renderer for calendar
   const renderDayContent = (date) => {
-    const isBooked = isDateBooked(date);
-    const isMaintenance = isDateUnderMaintenance(date);
-    const isSelected = dateRange[0].startDate && dateRange[0].endDate && 
-      isWithinInterval(date, { start: dateRange[0].startDate, end: dateRange[0].endDate });
-    
-    let statusClass = '';
-    let statusText = '';
-    
-    if (isMaintenance) {
-      statusClass = 'maintenance-date';
-      statusText = '🔧';
-    } else if (isBooked) {
-      statusClass = 'booked-date';
-      statusText = '❌';
-    }
-    
+    const booked = bookedDates.some((bookedDate) => isSameDay(bookedDate, date));
+    const maintenance = maintenanceDates.some((maintenanceDate) =>
+      isSameDay(maintenanceDate, date)
+    );
+
     return (
-      <div className={`day-cell ${statusClass}`}>
-        <span className="day-number">{format(date, 'd')}</span>
-        {statusText && <span className="status-indicator">{statusText}</span>}
-      </div>
+      <span className="booking-day-content">
+        <span>{format(date, 'd')}</span>
+        {(booked || maintenance) && (
+          <span className={maintenance ? 'booking-day-dot maintenance' : 'booking-day-dot booked'} />
+        )}
+      </span>
     );
   };
 
   if (loading) {
     return (
-      <div className="pt-24">
+      <div className="bg-[var(--color-bg-medium)] pt-28">
         <div className="container-custom py-12">
           <div className="animate-pulse space-y-8">
-            <div className="skeleton h-8 w-64" />
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-4">
-                <div className="skeleton h-96 rounded-2xl" />
-                <div className="skeleton h-64 rounded-2xl" />
-              </div>
-              <div className="skeleton h-96 rounded-2xl" />
+            <div className="skeleton h-10 w-72" />
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px]">
+              <div className="skeleton h-[560px] rounded-[26px]" />
+              <div className="skeleton h-[460px] rounded-[26px]" />
             </div>
           </div>
         </div>
@@ -393,433 +319,229 @@ const BookingPage = () => {
     );
   }
 
-  const totalGuests = guests.adults + guests.children;
-  const maxGuests = property?.details?.maxGuests || 10;
-
   return (
     <>
-      <SEOHead title="Complete Your Booking" />
+      <SEOHead title={`Book ${property?.name || 'Miami Stay'}`} />
 
-      <section className="pt-28 pb-16">
-        <div className="container-custom">
-          {/* Back button */}
+      <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
+        <img src={heroImage} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,20,76,0.94),rgba(7,20,76,0.74)_52%,rgba(7,20,76,0.36))]" />
+        <div className="absolute -right-24 top-20 h-80 w-80 rounded-full bg-[var(--color-primary)]/30 blur-3xl" />
+
+        <div className="container-custom relative z-10 pb-12">
           <Link
             to={`/properties/${property?.slug || propertyId}`}
-            className="inline-flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors mb-8"
+            className="mb-7 inline-flex items-center gap-2 text-sm font-bold text-white/78 transition-colors hover:text-white"
           >
-            <HiArrowLeft className="w-5 h-5" />
+            <HiArrowLeft className="h-5 w-5" />
             Back to property
           </Link>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-12 max-w-2xl mx-auto">
-            {[
-              { number: 1, title: 'Select Dates', icon: HiCalendar },
-              { number: 2, title: 'Guest Info', icon: HiUsers },
-              { number: 3, title: 'Payment', icon: HiCreditCard },
-            ].map((s) => (
-              <div key={s.number} className="flex-1 text-center">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition-all ${
-                    step >= s.number
-                      ? 'bg-[var(--color-primary)] text-[var(--color-bg-dark)]'
-                      : 'bg-white/10 text-white/40'
-                  }`}
-                >
-                  {step > s.number ? <HiCheck className="w-6 h-6" /> : <s.icon className="w-5 h-5" />}
-                </div>
-                <span className={`text-sm ${step >= s.number ? 'text-white' : 'text-white/40'}`}>
-                  {s.title}
-                </span>
-                {s.number < 3 && (
-                  <div className={`h-px w-full mt-6 ${step > s.number ? 'bg-[var(--color-primary)]' : 'bg-white/10'}`} />
-                )}
-              </div>
-            ))}
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl"
+          >
+            <p className="text-sm font-black uppercase text-[var(--color-primary)]">
+              FIFA World Cup 2026 booking
+            </p>
+            <h1 className="mt-3 font-hero text-5xl font-black uppercase leading-[0.94] sm:text-6xl lg:text-7xl">
+              Reserve your Miami stay
+            </h1>
+            <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-white/78">
+              Pick dates, confirm guests, and finish securely. Everything is tuned for
+              match-week travel, beach days, and local Miami support.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      <main className="bg-[var(--color-bg-medium)] py-10 lg:py-14">
+        <div className="container-custom">
+          <div className="mb-8 rounded-[24px] bg-white p-4 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {steps.map((item, index) => {
+                const Icon = item.icon;
+                const active = step === item.number;
+                const complete = step > item.number;
+                return (
+                  <button
+                    key={item.number}
+                    type="button"
+                    onClick={() => item.number < step && setStep(item.number)}
+                    className={`flex items-center gap-3 rounded-2xl px-4 py-4 text-left transition-all ${
+                      active
+                        ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[rgba(244,20,82,0.20)]'
+                        : complete
+                          ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                          : 'bg-[var(--color-bg-medium)] text-[var(--color-text-muted)]'
+                    }`}
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20">
+                      {complete ? <HiCheck className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
+                    </span>
+                    <span>
+                      <span className="block text-xs font-black uppercase opacity-75">
+                        Step {index + 1}
+                      </span>
+                      <span className="font-black">{item.title}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Step 1: Select Dates */}
-              {step === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass rounded-2xl p-6"
-                >
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-display font-bold text-white mb-2">
-                      Select Your Dates
-                    </h2>
-                    <p className="text-[var(--color-text-secondary)] text-sm">
-                      Choose your check-in and check-out dates
-                    </p>
-                  </div>
-                  
-                  <style jsx global>{`
-                    /* Calendar Container */
-                    .booking-calendar .rdrCalendarWrapper {
-                      background: transparent !important;
-                      width: 100% !important;
-                    }
-                    
-                    .booking-calendar .rdrMonth {
-                      background: transparent !important;
-                      width: 100% !important;
-                      padding: 0 !important;
-                    }
-                    
-                    .booking-calendar .rdrMonthName {
-                      color: white !important;
-                      font-size: 1.1rem !important;
-                      font-weight: 600 !important;
-                      padding: 0 0 1rem 0 !important;
-                      text-align: center !important;
-                    }
-                    
-                    .booking-calendar .rdrWeekDay {
-                      color: rgba(255, 255, 255, 0.6) !important;
-                      font-weight: 500 !important;
-                      font-size: 0.8rem !important;
-                      padding: 0.75rem 0 !important;
-                    }
-                    
-                    .booking-calendar .rdrDayNumber {
-                      font-weight: 500 !important;
-                    }
-                    
-                    .booking-calendar .rdrDayNumber span {
-                      color: white !important;
-                      font-size: 0.9rem !important;
-                    }
-                    
-                    /* Disabled Days */
-                    .booking-calendar .rdrDayDisabled {
-                      background: transparent !important;
-                    }
-                    
-                    .booking-calendar .rdrDayDisabled .rdrDayNumber span {
-                      color: rgba(255, 255, 255, 0.3) !important;
-                      text-decoration: line-through !important;
-                    }
-                    
-                    /* Today's Date */
-                    .booking-calendar .rdrDayToday .rdrDayNumber span:after {
-                      background: var(--color-primary) !important;
-                      height: 2px !important;
-                      bottom: -4px !important;
-                    }
-                    
-                    /* Selected Range Start & End */
-                    .booking-calendar .rdrStartEdge {
-                      background: var(--color-primary) !important;
-                      border-radius: 0.75rem 0 0 0.75rem !important;
-                    }
-                    
-                    .booking-calendar .rdrEndEdge {
-                      background: var(--color-primary) !important;
-                      border-radius: 0 0.75rem 0.75rem 0 !important;
-                    }
-                    
-                    .booking-calendar .rdrStartEdge .rdrDayNumber span,
-                    .booking-calendar .rdrEndEdge .rdrDayNumber span {
-                      color: var(--color-bg-dark) !important;
-                      font-weight: 600 !important;
-                    }
-                    
-                    /* In Range Dates */
-                    .booking-calendar .rdrInRange {
-                      background: rgba(200, 169, 126, 0.2) !important;
-                    }
-                    
-                    /* Hover Effect */
-                    .booking-calendar .rdrDay:hover:not(.rdrDayDisabled) {
-                      background: rgba(200, 169, 126, 0.15) !important;
-                      border-radius: 0.75rem !important;
-                    }
-                    
-                    /* Booked Dates */
-                    .booking-calendar .rdrDay:has(.booked-date) {
-                      background: rgba(239, 68, 68, 0.15) !important;
-                      border-radius: 0.75rem !important;
-                      cursor: not-allowed !important;
-                    }
-                    
-                    .booking-calendar .rdrDay:has(.booked-date):hover {
-                      background: rgba(239, 68, 68, 0.25) !important;
-                    }
-                    
-                    .booking-calendar .rdrDay:has(.booked-date) .rdrDayNumber span {
-                      color: #ef4444 !important;
-                      text-decoration: line-through !important;
-                    }
-                    
-                    /* Maintenance Dates */
-                    .booking-calendar .rdrDay:has(.maintenance-date) {
-                      background: rgba(245, 158, 11, 0.15) !important;
-                      border-radius: 0.75rem !important;
-                      cursor: not-allowed !important;
-                    }
-                    
-                    .booking-calendar .rdrDay:has(.maintenance-date):hover {
-                      background: rgba(245, 158, 11, 0.25) !important;
-                    }
-                    
-                    .booking-calendar .rdrDay:has(.maintenance-date) .rdrDayNumber span {
-                      color: #f59e0b !important;
-                      text-decoration: line-through !important;
-                    }
-                    
-                    /* Day Cells */
-                    .booking-calendar .rdrDay {
-                      padding: 0.5rem !important;
-                      transition: all 0.2s ease !important;
-                    }
-                    
-                    .booking-calendar .rdrDayPassive .rdrDayNumber span {
-                      color: rgba(255, 255, 255, 0.3) !important;
-                    }
-                    
-                    /* Navigation Buttons */
-                    .booking-calendar .rdrPprevButton,
-                    .booking-calendar .rdrNextButton {
-                      background: rgba(255, 255, 255, 0.1) !important;
-                      border-radius: 0.5rem !important;
-                      padding: 0.5rem !important;
-                    }
-                    
-                    .booking-calendar .rdrPprevButton:hover,
-                    .booking-calendar .rdrNextButton:hover {
-                      background: rgba(255, 255, 255, 0.2) !important;
-                    }
-                    
-                    /* Day Cell Styles */
-                    .day-cell {
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      justify-content: center;
-                      position: relative;
-                    }
-                    
-                    .day-number {
-                      font-size: 0.9rem;
-                      font-weight: 500;
-                    }
-                    
-                    .status-indicator {
-                      font-size: 0.65rem;
-                      margin-top: 2px;
-                    }
-                  `}</style>
-                  
-                  <div className="booking-calendar">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px]">
+            <div className="space-y-6">
+              <AnimatePresence mode="wait">
+                {step === 1 && (
+                  <motion.section
+                    key="dates"
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    className="booking-calendar-card rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7"
+                  >
+                    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                          One booking calendar
+                        </p>
+                        <h2 className="text-3xl font-black text-[var(--color-text-primary)]">
+                          Select your dates
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                          Booked and maintenance dates are visible and disabled.
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[var(--color-secondary-light)] px-4 py-3 text-sm font-bold text-[var(--color-text-primary)]">
+                        {format(dateRange[0].startDate, 'MMM dd')} -{' '}
+                        {format(dateRange[0].endDate, 'MMM dd, yyyy')}
+                      </div>
+                    </div>
+
                     <DateRange
-                      editableDateInputs={true}
-                      onChange={handleDateRangeChange}
-                      moveRangeOnFirstSelection={false}
-                      ranges={dateRange}
-                      minDate={addDays(new Date(), 1)}
-                      rangeColors={['#C8A97E']}
-                      months={1}
-                      direction="horizontal"
-                      showDateDisplay={false}
-                      showMonthAndYearPickers={true}
+                      className="booking-date-range"
                       dayContentRenderer={renderDayContent}
+                      disabledDates={unavailableDates}
+                      editableDateInputs
+                      minDate={addDays(new Date(), 1)}
+                      months={1}
+                      moveRangeOnFirstSelection={false}
+                      onChange={handleDateRangeChange}
+                      rangeColors={['#F41452']}
+                      ranges={dateRange}
+                      showDateDisplay={false}
+                      showMonthAndYearPickers
                     />
-                  </div>
-                  
-                  {/* Calendar Legend */}
-                  <div className="flex flex-wrap items-center justify-center gap-6 mt-8 pt-6 border-t border-white/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-red-500/50 border border-red-500"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Booked</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-yellow-500/50 border border-yellow-500"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Under Maintenance</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-[var(--color-primary)]"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Selected</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-white/20"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Available</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-white/10 ring-1 ring-[var(--color-primary)]"></div>
-                      <span className="text-xs text-[var(--color-text-muted)]">Today</span>
-                    </div>
-                  </div>
-                  
-                  {/* Selected Dates Summary */}
-                  {dateRange[0].startDate && dateRange[0].endDate && (
-                    <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent border border-[var(--color-primary)]/20">
-                      <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
-                            <HiCalendar className="w-5 h-5 text-[var(--color-primary)]" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-[var(--color-text-muted)]">Your Stay</p>
-                            <p className="text-white font-semibold">
-                              {format(dateRange[0].startDate, 'EEE, MMM dd')} - {format(dateRange[0].endDate, 'EEE, MMM dd, yyyy')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-[var(--color-text-muted)]">Duration</p>
-                          <p className="text-white font-semibold">
-                            {differenceInDays(dateRange[0].endDate, dateRange[0].startDate)} nights
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
 
-              {/* Step 2: Guest Info & Contact Details */}
-              {step === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  {/* Guests Section */}
-                  <div className="glass rounded-2xl p-6">
-                    <div className="text-center mb-6">
-                      <h2 className="text-2xl font-display font-bold text-white mb-2">
-                        Guest Information
+                    <div className="mt-6 grid gap-3 border-t border-[var(--color-border)] pt-5 sm:grid-cols-4">
+                      {[
+                        ['Selected', 'bg-[var(--color-primary)]'],
+                        ['Booked', 'bg-red-500'],
+                        ['Maintenance', 'bg-amber-400'],
+                        ['Available', 'bg-white border border-[var(--color-border)]'],
+                      ].map(([label, cls]) => (
+                        <div key={label} className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-secondary)]">
+                          <span className={`h-4 w-4 rounded-full ${cls}`} />
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.section>
+                )}
+
+                {step === 2 && (
+                  <motion.section
+                    key="guests"
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    className="space-y-6"
+                  >
+                    <div className="rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7">
+                      <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                        Guest count
+                      </p>
+                      <h2 className="mb-6 text-3xl font-black text-[var(--color-text-primary)]">
+                        Who is coming?
                       </h2>
-                      <p className="text-[var(--color-text-secondary)] text-sm">
-                        Tell us about your stay
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {/* Adults */}
-                      <div className="flex items-center justify-between py-3 border-b border-white/10">
-                        <div>
-                          <p className="text-white font-medium">Adults</p>
-                          <p className="text-xs text-[var(--color-text-muted)]">Age 13+</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => updateGuests('adults', -1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all disabled:opacity-30"
-                            disabled={guests.adults <= 1}
-                          >
-                            <HiMinus className="w-4 h-4" />
-                          </button>
-                          <span className="text-white font-semibold w-8 text-center text-lg">{guests.adults}</span>
-                          <button
-                            onClick={() => updateGuests('adults', 1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all"
-                            disabled={totalGuests + 1 > maxGuests}
-                          >
-                            <HiPlus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* Children */}
-                      <div className="flex items-center justify-between py-3 border-b border-white/10">
-                        <div>
-                          <p className="text-white font-medium">Children</p>
-                          <p className="text-xs text-[var(--color-text-muted)]">Ages 2-12</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => updateGuests('children', -1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all disabled:opacity-30"
-                            disabled={guests.children <= 0}
-                          >
-                            <HiMinus className="w-4 h-4" />
-                          </button>
-                          <span className="text-white font-semibold w-8 text-center text-lg">{guests.children}</span>
-                          <button
-                            onClick={() => updateGuests('children', 1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all"
-                            disabled={totalGuests + 1 > maxGuests}
-                          >
-                            <HiPlus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* Infants */}
-                      <div className="flex items-center justify-between py-3 border-b border-white/10">
-                        <div>
-                          <p className="text-white font-medium">Infants</p>
-                          <p className="text-xs text-[var(--color-text-muted)]">Under 2</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => updateGuests('infants', -1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all disabled:opacity-30"
-                            disabled={guests.infants <= 0}
-                          >
-                            <HiMinus className="w-4 h-4" />
-                          </button>
-                          <span className="text-white font-semibold w-8 text-center text-lg">{guests.infants}</span>
-                          <button
-                            onClick={() => updateGuests('infants', 1)}
-                            className="w-9 h-9 rounded-xl glass-light flex items-center justify-center text-white hover:bg-white/10 transition-all"
-                            disabled={guests.infants >= 5}
-                          >
-                            <HiPlus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 p-3 rounded-xl bg-white/5">
-                      <p className="text-sm text-[var(--color-text-muted)] text-center">
-                        Maximum {maxGuests} guests allowed
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Contact Information - Same as before */}
-                  <div className="glass rounded-2xl p-6">
-                    <h2 className="text-xl font-display font-bold text-white mb-5">
-                      Contact Details
-                    </h2>
-                    
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="input-label text-sm">First Name *</label>
-                          <div className="relative mt-1">
-                            <HiUser className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
-                            <input
-                              type="text"
-                              value={contactInfo.firstName}
-                              onChange={(e) => setContactInfo({ ...contactInfo, firstName: e.target.value })}
-                              className="input-field pl-10"
-                              placeholder="John"
-                            />
+                      {[
+                        ['adults', 'Adults', 'Age 13+'],
+                        ['children', 'Children', 'Ages 2-12'],
+                        ['infants', 'Infants', 'Under 2'],
+                      ].map(([key, title, subtitle]) => (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] py-4 last:border-b-0"
+                        >
+                          <div>
+                            <p className="font-black text-[var(--color-text-primary)]">{title}</p>
+                            <p className="text-sm text-[var(--color-text-muted)]">{subtitle}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => updateGuests(key, -1)}
+                              className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-primary)] disabled:opacity-35"
+                              disabled={(key === 'adults' && guests.adults <= 1) || (key !== 'adults' && guests[key] <= 0)}
+                            >
+                              <HiMinus className="h-4 w-4" />
+                            </button>
+                            <span className="w-8 text-center text-xl font-black text-[var(--color-text-primary)]">
+                              {guests[key]}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateGuests(key, 1)}
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] text-white disabled:opacity-35"
+                              disabled={
+                                key === 'infants'
+                                  ? guests.infants >= 5
+                                  : totalGuests + 1 > maxGuests
+                              }
+                            >
+                              <HiPlus className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
-                        <div>
-                          <label className="input-label text-sm">Last Name *</label>
+                      ))}
+
+                      <div className="mt-5 rounded-2xl bg-[var(--color-bg-medium)] px-4 py-3 text-sm font-bold text-[var(--color-text-secondary)]">
+                        Maximum {maxGuests} guests, not including infants.
+                      </div>
+                    </div>
+
+                    <div className="rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7">
+                      <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                        Contact details
+                      </p>
+                      <h2 className="mb-6 text-3xl font-black text-[var(--color-text-primary)]">
+                        Primary guest
+                      </h2>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field icon={HiUser} label="First Name *">
+                          <input
+                            type="text"
+                            value={contactInfo.firstName}
+                            onChange={(e) => setContactInfo({ ...contactInfo, firstName: e.target.value })}
+                            className="input-field pl-10"
+                            placeholder="John"
+                          />
+                        </Field>
+                        <Field label="Last Name *">
                           <input
                             type="text"
                             value={contactInfo.lastName}
                             onChange={(e) => setContactInfo({ ...contactInfo, lastName: e.target.value })}
-                            className="input-field mt-1"
+                            className="input-field"
                             placeholder="Doe"
                           />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="input-label text-sm">Email Address *</label>
-                        <div className="relative mt-1">
-                          <HiMail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                        </Field>
+                        <Field icon={HiMail} label="Email Address *">
                           <input
                             type="email"
                             value={contactInfo.email}
@@ -827,27 +549,17 @@ const BookingPage = () => {
                             className="input-field pl-10"
                             placeholder="john@example.com"
                           />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="input-label text-sm">Phone Number</label>
-                        <div className="relative mt-1">
-                          <HiPhone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                        </Field>
+                        <Field icon={HiPhone} label="Phone Number">
                           <input
                             type="tel"
                             value={contactInfo.phone}
                             onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
                             className="input-field pl-10"
-                            placeholder="+1 234 567 8900"
+                            placeholder="+1 305 123 4567"
                           />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="input-label text-sm">Street Address</label>
-                        <div className="relative mt-1">
-                          <HiHome className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                        </Field>
+                        <Field icon={HiHome} label="Street Address">
                           <input
                             type="text"
                             value={contactInfo.address}
@@ -855,40 +567,12 @@ const BookingPage = () => {
                             className="input-field pl-10"
                             placeholder="123 Main St"
                           />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="input-label text-sm">City</label>
-                          <input
-                            type="text"
-                            value={contactInfo.city}
-                            onChange={(e) => setContactInfo({ ...contactInfo, city: e.target.value })}
-                            className="input-field mt-1"
-                            placeholder="Miami"
-                          />
-                        </div>
-                        <div>
-                          <label className="input-label text-sm">Postal Code</label>
-                          <input
-                            type="text"
-                            value={contactInfo.postalCode}
-                            onChange={(e) => setContactInfo({ ...contactInfo, postalCode: e.target.value })}
-                            className="input-field mt-1"
-                            placeholder="33101"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="input-label text-sm">Country</label>
-                        <div className="relative mt-1">
-                          <HiGlobeAlt className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                        </Field>
+                        <Field icon={HiGlobeAlt} label="Country">
                           <select
                             value={contactInfo.country}
                             onChange={(e) => setContactInfo({ ...contactInfo, country: e.target.value })}
-                            className="input-field pl-10 appearance-none"
+                            className="input-field pl-10"
                           >
                             <option value="US">United States</option>
                             <option value="CA">Canada</option>
@@ -898,236 +582,259 @@ const BookingPage = () => {
                             <option value="FR">France</option>
                             <option value="IN">India</option>
                           </select>
-                        </div>
+                        </Field>
+                        <Field label="City">
+                          <input
+                            type="text"
+                            value={contactInfo.city}
+                            onChange={(e) => setContactInfo({ ...contactInfo, city: e.target.value })}
+                            className="input-field"
+                            placeholder="Miami"
+                          />
+                        </Field>
+                        <Field label="Postal Code">
+                          <input
+                            type="text"
+                            value={contactInfo.postalCode}
+                            onChange={(e) => setContactInfo({ ...contactInfo, postalCode: e.target.value })}
+                            className="input-field"
+                            placeholder="33101"
+                          />
+                        </Field>
                       </div>
-                      
-                      <div>
-                        <label className="input-label text-sm">Special Requests</label>
+
+                      <label className="mt-4 block">
+                        <span className="input-label">Special Requests</span>
                         <textarea
                           value={contactInfo.specialRequests}
                           onChange={(e) => setContactInfo({ ...contactInfo, specialRequests: e.target.value })}
-                          rows={3}
-                          className="input-field resize-none mt-1"
-                          placeholder="Any special requirements or preferences for your stay?"
+                          rows={4}
+                          className="input-field resize-none"
+                          placeholder="Arrival time, accessibility needs, concierge requests..."
                         />
-                      </div>
+                      </label>
                     </div>
-                  </div>
 
-                  {/* Coupon Code */}
-                  <div className="glass rounded-2xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                      <HiTag className="w-5 h-5 text-[var(--color-primary)]" />
-                      Promo Code
-                    </h3>
-                    {couponDiscount ? (
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30">
-                        <div>
-                          <p className="text-[var(--color-success)] font-medium">{couponCode}</p>
-                          <p className="text-sm text-[var(--color-text-muted)]">
-                            Saved ${couponDiscount.discount}
-                          </p>
+                    <div className="rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7">
+                      <h3 className="mb-4 flex items-center gap-2 text-xl font-black text-[var(--color-text-primary)]">
+                        <HiTag className="h-5 w-5 text-[var(--color-primary)]" />
+                        Promo Code
+                      </h3>
+                      {couponDiscount ? (
+                        <div className="flex items-center justify-between rounded-2xl bg-[#ECFDF3] p-4">
+                          <div>
+                            <p className="font-black text-[var(--color-accent)]">{couponCode}</p>
+                            <p className="text-sm text-[var(--color-text-muted)]">
+                              Saved {formatCurrency(couponDiscount.discount)}
+                            </p>
+                          </div>
+                          <button type="button" onClick={removeCoupon} className="text-[var(--color-text-muted)] hover:text-red-500">
+                            <HiX className="h-5 w-5" />
+                          </button>
                         </div>
-                        <button onClick={removeCoupon} className="text-white/50 hover:text-red-500 transition-colors">
-                          <HiX className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-3">
-                        <input
-                          type="text"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          placeholder="Enter promo code"
-                          className="flex-1 input-field uppercase"
-                        />
-                        <button
-                          onClick={handleApplyCoupon}
-                          disabled={!couponCode || couponLoading}
-                          className="btn-primary whitespace-nowrap disabled:opacity-50 px-6"
-                        >
-                          {couponLoading ? 'Applying...' : 'Apply'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Payment */}
-              {step === 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass rounded-2xl p-6"
-                >
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-display font-bold text-white mb-2">
-                      Payment Details
-                    </h2>
-                    <p className="text-[var(--color-text-secondary)] text-sm">
-                      Enter your payment information to confirm booking
-                    </p>
-                  </div>
-                  
-                  <Elements stripe={stripePromise}>
-                    <PaymentForm
-                      pricing={pricing}
-                      couponDiscount={couponDiscount}
-                      onSuccess={handleCreateBooking}
-                    />
-                  </Elements>
-                </motion.div>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between">
-                {step > 1 && (
-                  <button onClick={handlePrevStep} className="btn-outline flex items-center gap-2 px-6 py-3">
-                    <HiArrowLeft className="w-5 h-5" />
-                    Back
-                  </button>
-                )}
-                {step < 3 && (
-                  <button onClick={handleNextStep} className="btn-primary flex items-center gap-2 px-6 py-3 ml-auto">
-                    Continue
-                    <HiArrowRight className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Sidebar - Booking Summary */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 glass rounded-2xl p-6 space-y-5">
-                {/* Property Info */}
-                <div className="flex gap-3">
-                  <img
-                    src={property?.images?.find(img => img.isPrimary)?.url || property?.images?.[0]?.url || '/placeholder.jpg'}
-                    alt={property?.name}
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold line-clamp-2 text-sm">{property?.name}</h3>
-                    <div className="flex items-center gap-1 mt-1">
-                      <HiStar className="w-3 h-3 text-[var(--color-primary)]" />
-                      <span className="text-sm text-white">{property?.ratings?.average || 0}</span>
-                      <span className="text-xs text-[var(--color-text-muted)]">({property?.ratings?.count || 0})</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <HiLocationMarker className="w-3 h-3 text-[var(--color-text-muted)]" />
-                      <span className="text-xs text-[var(--color-text-muted)]">{property?.location?.neighborhood}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                {/* Selected Dates */}
-                {dateRange[0].startDate && dateRange[0].endDate && (
-                  <div className="space-y-2">
-                    <h4 className="text-white font-semibold text-sm">Your Stay</h4>
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <HiCalendar className="w-4 h-4 text-[var(--color-primary)]" />
-                      <span className="text-xs">
-                        {format(dateRange[0].startDate, 'MMM dd')} - {format(dateRange[0].endDate, 'MMM dd, yyyy')}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {differenceInDays(dateRange[0].endDate, dateRange[0].startDate)} nights
-                    </p>
-                  </div>
-                )}
-
-                {/* Guests */}
-                <div className="space-y-2">
-                  <h4 className="text-white font-semibold text-sm">Guests</h4>
-                  <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                    <HiUsers className="w-4 h-4 text-[var(--color-primary)]" />
-                    <span className="text-xs">
-                      {guests.adults} Adults
-                      {guests.children > 0 && `, ${guests.children} Children`}
-                      {guests.infants > 0 && `, ${guests.infants} Infants`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                {/* Price Breakdown */}
-                {pricing && (
-                  <div className="space-y-3">
-                    <h4 className="text-white font-semibold text-sm">Price Details</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between text-[var(--color-text-secondary)]">
-                        <span>{formatCurrency(pricing.nightlyRate)} x {pricing.nights} nights</span>
-                        <span>{formatCurrency(pricing.baseTotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-[var(--color-text-secondary)]">
-                        <span>Cleaning fee</span>
-                        <span>{formatCurrency(pricing.cleaningFee)}</span>
-                      </div>
-                      <div className="flex justify-between text-[var(--color-text-secondary)]">
-                        <span>Service fee</span>
-                        <span>{formatCurrency(pricing.serviceFee)}</span>
-                      </div>
-                      {couponDiscount && (
-                        <div className="flex justify-between text-[var(--color-success)]">
-                          <span>Discount</span>
-                          <span>-{formatCurrency(couponDiscount.discount)}</span>
+                      ) : (
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="Enter promo code"
+                            className="input-field uppercase"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyCoupon}
+                            disabled={!couponCode || couponLoading}
+                            className="btn-primary px-7 disabled:opacity-50"
+                          >
+                            {couponLoading ? 'Applying...' : 'Apply'}
+                          </button>
                         </div>
                       )}
-                      <div className="flex justify-between text-[var(--color-text-secondary)]">
-                        <span>Taxes</span>
-                        <span>{formatCurrency(pricing.taxes)}</span>
-                      </div>
-                      <div className="h-px bg-white/10 my-2" />
-                      <div className="flex justify-between text-white font-semibold">
-                        <span>Total</span>
-                        <span className="text-lg">{formatCurrency(couponDiscount ? pricing.total - couponDiscount.discount : pricing.total)}</span>
-                      </div>
                     </div>
-                  </div>
+                  </motion.section>
                 )}
 
-                {/* Trust Badges */}
-                <div className="space-y-2 pt-3 border-t border-white/10">
-                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                    <HiShieldCheck className="w-4 h-4 text-[var(--color-success)]" />
-                    Secure payment processing
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                    <HiCheck className="w-4 h-4 text-[var(--color-primary)]" />
-                    Free cancellation up to 30 days before check-in
-                  </div>
-                </div>
+                {step === 3 && (
+                  <motion.section
+                    key="payment"
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    className="rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7"
+                  >
+                    <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                      Secure checkout
+                    </p>
+                    <h2 className="mb-6 text-3xl font-black text-[var(--color-text-primary)]">
+                      Payment details
+                    </h2>
+                    <Elements stripe={stripePromise}>
+                      <PaymentForm
+                        finalTotal={finalTotal}
+                        onSuccess={handleCreateBooking}
+                      />
+                    </Elements>
+                  </motion.section>
+                )}
+              </AnimatePresence>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setStep((prev) => Math.max(1, prev - 1))}
+                    className="btn-outline flex items-center justify-center gap-2 px-6 py-3"
+                  >
+                    <HiArrowLeft className="h-5 w-5" />
+                    Back
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {step < 3 && (
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="btn-primary flex items-center justify-center gap-2 px-6 py-3"
+                  >
+                    Continue
+                    <HiArrowRight className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
+
+            <aside className="lg:sticky lg:top-28 lg:self-start">
+              <BookingSummary
+                property={property}
+                heroImage={heroImage}
+                dateRange={dateRange}
+                guests={guests}
+                pricing={{
+                  basePrice,
+                  cleaningFee,
+                  serviceFee,
+                  taxes,
+                  total,
+                  discount,
+                  finalTotal,
+                  baseTotal,
+                  nights,
+                }}
+              />
+            </aside>
           </div>
         </div>
-      </section>
+      </main>
     </>
   );
 };
 
-// Payment Form Component
-const PaymentForm = ({ pricing, couponDiscount, onSuccess }) => {
+const Field = ({ label, icon: Icon, children }) => (
+  <label className="block">
+    <span className="input-label">{label}</span>
+    <span className="relative mt-1 block">
+      {Icon && (
+        <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+      )}
+      {children}
+    </span>
+  </label>
+);
+
+const BookingSummary = ({ property, heroImage, dateRange, guests, pricing }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="overflow-hidden rounded-[26px] bg-white shadow-[0_24px_70px_rgba(8,19,76,0.12)] ring-1 ring-black/5"
+  >
+    <div className="relative h-44">
+      <img src={heroImage} alt={property?.name} className="h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,20,76,0.82)] to-transparent" />
+      <div className="absolute bottom-4 left-4 right-4">
+        <p className="text-xs font-black uppercase text-white/70">Booking summary</p>
+        <h3 className="line-clamp-2 text-lg font-black text-white">{property?.name}</h3>
+        <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-white/78">
+          <HiLocationMarker className="h-4 w-4 text-[var(--color-primary)]" />
+          {property?.location?.neighborhood}, {property?.location?.city}
+        </p>
+      </div>
+    </div>
+
+    <div className="space-y-5 p-6">
+      <div className="grid grid-cols-2 gap-3">
+        <SummaryTile
+          icon={HiCalendar}
+          label="Dates"
+          value={`${format(dateRange[0].startDate, 'MMM dd')} - ${format(dateRange[0].endDate, 'MMM dd')}`}
+        />
+        <SummaryTile
+          icon={HiUsers}
+          label="Guests"
+          value={`${guests.adults + guests.children} guests`}
+        />
+      </div>
+
+      <div className="rounded-2xl bg-[var(--color-bg-medium)] p-4">
+        <h4 className="mb-3 font-black text-[var(--color-text-primary)]">Price details</h4>
+        <div className="space-y-2 text-sm">
+          <PriceRow label={`${currencyOrZero(pricing.basePrice)} x ${pricing.nights} nights`} value={pricing.baseTotal} />
+          <PriceRow label="Cleaning fee" value={pricing.cleaningFee} />
+          <PriceRow label="Service fee" value={pricing.serviceFee} />
+          <PriceRow label="Taxes" value={pricing.taxes} />
+          {pricing.discount > 0 && (
+            <div className="flex justify-between font-bold text-[var(--color-accent)]">
+              <span>Discount</span>
+              <span>-{currencyOrZero(pricing.discount)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-[var(--color-border)] pt-3 text-lg font-black text-[var(--color-text-primary)]">
+            <span>Total</span>
+            <span>{currencyOrZero(pricing.finalTotal)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 text-xs font-bold text-[var(--color-text-secondary)]">
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-3">
+          <HiShieldCheck className="h-4 w-4 text-[var(--color-accent)]" />
+          Secure payment processing
+        </div>
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-3">
+          <HiCheck className="h-4 w-4 text-[var(--color-primary)]" />
+          Free cancellation up to 30 days before check-in
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const SummaryTile = ({ icon: Icon, label, value }) => (
+  <div className="rounded-2xl border border-[var(--color-border)] p-4">
+    <Icon className="mb-2 h-5 w-5 text-[var(--color-primary)]" />
+    <p className="text-xs font-black uppercase text-[var(--color-text-muted)]">{label}</p>
+    <p className="mt-1 text-sm font-black text-[var(--color-text-primary)]">{value}</p>
+  </div>
+);
+
+const PriceRow = ({ label, value }) => (
+  <div className="flex justify-between text-[var(--color-text-secondary)]">
+    <span>{label}</span>
+    <span>{currencyOrZero(value)}</span>
+  </div>
+);
+
+const PaymentForm = ({ finalTotal, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  const finalTotal = couponDiscount ? pricing?.total - couponDiscount.discount : pricing?.total;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!stripe || !elements) {
       setError('Stripe is not initialized');
-      return;
-    }
-
-    if (!pricing || !finalTotal) {
-      setError('Invalid payment amount');
       return;
     }
 
@@ -1136,20 +843,18 @@ const PaymentForm = ({ pricing, couponDiscount, onSuccess }) => {
 
     try {
       const cardElement = elements.getElement(CardElement);
-      
-      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+      const { error: stripeError } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
       });
 
       if (stripeError) {
         setError(stripeError.message);
-        setProcessing(false);
         return;
       }
 
-      await onSuccess(paymentMethod.id);
-    } catch (err) {
+      await onSuccess();
+    } catch {
       setError('Payment failed. Please try again.');
     } finally {
       setProcessing(false);
@@ -1159,18 +864,16 @@ const PaymentForm = ({ pricing, couponDiscount, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="input-label text-sm">Card Information</label>
-        <div className="p-4 rounded-xl border border-white/10 bg-[var(--color-bg-dark)] mt-2">
+        <label className="input-label">Card Information</label>
+        <div className="mt-2 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
           <CardElement
             options={{
               style: {
                 base: {
                   fontSize: '16px',
-                  color: '#F5F5F7',
-                  fontFamily: 'inherit',
-                  '::placeholder': {
-                    color: '#6B7280',
-                  },
+                  color: '#07144C',
+                  fontFamily: 'Inter, sans-serif',
+                  '::placeholder': { color: '#6A7392' },
                 },
                 invalid: {
                   color: '#EF4444',
@@ -1183,8 +886,8 @@ const PaymentForm = ({ pricing, couponDiscount, onSuccess }) => {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-sm flex items-center gap-2">
-          <HiInformationCircle className="w-5 h-5 flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-2xl border border-red-500/30 bg-red-50 p-4 text-sm font-semibold text-red-600">
+          <HiInformationCircle className="h-5 w-5 shrink-0" />
           {error}
         </div>
       )}
@@ -1192,23 +895,23 @@ const PaymentForm = ({ pricing, couponDiscount, onSuccess }) => {
       <button
         type="submit"
         disabled={!stripe || processing}
-        className="btn-primary w-full py-4 text-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+        className="btn-primary flex w-full items-center justify-center gap-2 py-4 text-base font-black disabled:opacity-50"
       >
         {processing ? (
           <>
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             Processing...
           </>
         ) : (
           <>
-            <HiCreditCard className="w-5 h-5" />
-            Confirm & Pay {formatCurrency(finalTotal || 0)}
+            <HiCreditCard className="h-5 w-5" />
+            Confirm & Pay {currencyOrZero(finalTotal)}
           </>
         )}
       </button>
-      
-      <p className="text-xs text-center text-[var(--color-text-muted)]">
-        By confirming your booking, you agree to our Terms of Service and Cancellation Policy
+
+      <p className="text-center text-xs text-[var(--color-text-muted)]">
+        By confirming your booking, you agree to our Terms of Service and Cancellation Policy.
       </p>
     </form>
   );

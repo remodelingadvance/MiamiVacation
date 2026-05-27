@@ -1,21 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  HiCheck,
   HiCalendar,
-  HiLocationMarker,
-  HiHome,
-  HiUsers,
+  HiCheck,
   HiDownload,
+  HiHome,
+  HiLocationMarker,
   HiMail,
   HiPhone,
+  HiShieldCheck,
+  HiUsers,
 } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 import SEOHead from '../components/common/SEOHead';
-import { useBooking } from '../contexts/BookingContext';
 import apiService from '../config/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import toast from 'react-hot-toast';
+import { THEME } from '../config/theme.config';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
@@ -28,21 +29,24 @@ const BookingConfirmationPage = () => {
         const response = await apiService.getBooking(bookingId);
         setBooking(response.data.booking);
       } catch (error) {
+        console.error('Booking lookup failed:', error);
         toast.error('Booking not found');
       } finally {
         setLoading(false);
       }
     };
+
     fetchBooking();
   }, [bookingId]);
 
   if (loading) {
     return (
-      <div className="pt-24">
+      <div className="bg-[var(--color-bg-medium)] pt-28">
         <div className="container-custom py-12">
-          <div className="animate-pulse space-y-4">
-            <div className="skeleton h-8 w-64 mx-auto" />
-            <div className="skeleton h-64 rounded-2xl" />
+          <div className="mx-auto max-w-4xl animate-pulse space-y-6">
+            <div className="skeleton mx-auto h-20 w-20 rounded-full" />
+            <div className="skeleton mx-auto h-10 w-80" />
+            <div className="skeleton h-96 rounded-[26px]" />
           </div>
         </div>
       </div>
@@ -51,180 +55,230 @@ const BookingConfirmationPage = () => {
 
   if (!booking) {
     return (
-      <div className="pt-24">
-        <div className="container-custom py-20 text-center">
-          <h1 className="text-3xl font-display font-bold text-white mb-4">Booking Not Found</h1>
-          <Link to="/properties" className="btn-primary">Browse Properties</Link>
+      <div className="bg-[var(--color-bg-medium)] pt-28">
+        <div className="container-custom py-24 text-center">
+          <h1 className="text-4xl font-black text-[var(--color-text-primary)]">
+            Booking Not Found
+          </h1>
+          <Link to="/properties" className="btn-primary mt-8">
+            Browse Properties
+          </Link>
         </div>
       </div>
     );
   }
 
+  const property = booking.property;
+  const image = property?.images?.[0]?.url || THEME.hero.heroImage;
+  const guests = (booking.guests?.adults || 0) + (booking.guests?.children || 0);
+
   return (
     <>
       <SEOHead title="Booking Confirmed" />
 
-      <section className="pt-28 pb-16">
-        <div className="container-custom max-w-3xl">
-          {/* Success header */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-            className="text-center mb-8"
-          >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center">
-              <HiCheck className="w-10 h-10 text-[var(--color-success)]" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">
-              Booking Confirmed!
-            </h1>
-            <p className="text-[var(--color-text-secondary)]">
-              Your booking has been confirmed. A confirmation email has been sent to your email address.
-            </p>
-          </motion.div>
+      <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
+        <img src={image} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,20,76,0.94),rgba(7,20,76,0.72)_52%,rgba(7,20,76,0.34))]" />
+        <div className="absolute -right-24 top-16 h-80 w-80 rounded-full bg-[var(--color-primary)]/30 blur-3xl" />
 
-          {/* Booking details card */}
+        <div className="container-custom relative z-10 pb-14">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass rounded-2xl p-8 space-y-6"
+            transition={{ duration: 0.55 }}
+            className="mx-auto max-w-4xl text-center"
           >
-            {/* Booking number */}
-            <div className="text-center pb-6 border-b border-white/10">
-              <p className="text-sm text-[var(--color-text-muted)] mb-1">Booking Number</p>
-              <p className="text-2xl font-bold text-[var(--color-primary)] font-mono">
-                {booking.bookingNumber}
-              </p>
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white text-[var(--color-accent)] shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
+              <HiCheck className="h-12 w-12" />
             </div>
-
-            {/* Property info */}
-            <div className="flex flex-col sm:flex-row gap-4 pb-6 border-b border-white/10">
-              {booking.property?.images?.[0] && (
-                <img
-                  src={booking.property.images[0].url}
-                  alt={booking.property.name}
-                  className="w-full sm:w-48 h-32 object-cover rounded-xl"
-                />
-              )}
-              <div>
-                <h3 className="text-xl font-display font-bold text-white">
-                  {booking.property?.name}
-                </h3>
-                <div className="flex items-center gap-1 text-[var(--color-text-secondary)] mt-1">
-                  <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />
-                  <span className="text-sm">{booking.property?.location?.neighborhood}</span>
-                </div>
-                <div className="flex items-center gap-1 text-[var(--color-text-secondary)] mt-1">
-                  <HiHome className="w-4 h-4 text-[var(--color-primary)]" />
-                  <span className="text-sm capitalize">{booking.property?.type}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stay details */}
-            <div className="grid sm:grid-cols-2 gap-4 pb-6 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <HiCalendar className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Check-in</p>
-                  <p className="text-white font-medium">{formatDate(booking.checkIn)}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">After {booking.property?.houseRules?.checkIn || '15:00'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <HiCalendar className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Check-out</p>
-                  <p className="text-white font-medium">{formatDate(booking.checkOut)}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">Before {booking.property?.houseRules?.checkOut || '11:00'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <HiUsers className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Guests</p>
-                  <p className="text-white font-medium">
-                    {booking.guests?.adults + booking.guests?.children} guests
-                    {booking.guests?.infants > 0 && ` (+ ${booking.guests.infants} infants)`}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-[var(--color-text-muted)]">Duration</p>
-                <p className="text-white font-medium">{booking.pricing?.nights} nights</p>
-              </div>
-            </div>
-
-            {/* Price summary */}
-            <div className="space-y-2 pb-6 border-b border-white/10">
-              <h4 className="text-white font-semibold">Payment Summary</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between text-[var(--color-text-secondary)]">
-                  <span>${booking.pricing?.nightlyRate} x {booking.pricing?.nights} nights</span>
-                  <span>${booking.pricing?.baseTotal}</span>
-                </div>
-                <div className="flex justify-between text-[var(--color-text-secondary)]">
-                  <span>Cleaning fee</span>
-                  <span>${booking.pricing?.cleaningFee}</span>
-                </div>
-                <div className="flex justify-between text-[var(--color-text-secondary)]">
-                  <span>Service fee</span>
-                  <span>${booking.pricing?.serviceFee}</span>
-                </div>
-                <div className="flex justify-between text-[var(--color-text-secondary)]">
-                  <span>Taxes</span>
-                  <span>${booking.pricing?.taxes}</span>
-                </div>
-                {booking.pricing?.discount > 0 && (
-                  <div className="flex justify-between text-[var(--color-success)]">
-                    <span>Discount</span>
-                    <span>-${booking.pricing?.discount}</span>
-                  </div>
-                )}
-                <div className="pt-2 border-t border-white/10 flex justify-between text-white font-semibold">
-                  <span>Total Paid</span>
-                  <span>${booking.pricing?.total}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link to="/my-bookings" className="btn-primary flex-1 text-center">
-                View My Bookings
-              </Link>
-              <button className="btn-outline flex-1 flex items-center justify-center gap-2">
-                <HiDownload className="w-5 h-5" />
-                Download Invoice
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Need help */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-center mt-8 p-6 rounded-2xl glass-light"
-          >
-            <p className="text-[var(--color-text-secondary)] mb-3">Need help with your booking?</p>
-            <div className="flex items-center justify-center gap-6">
-              <a href="tel:+13051234567" className="flex items-center gap-2 text-[var(--color-primary)] hover:text-[var(--color-primary-light)] transition-colors">
-                <HiPhone className="w-5 h-5" />
-                +1 (305) 123-4567
-              </a>
-              <a href="mailto:support@miamiluxuryrentals.com" className="flex items-center gap-2 text-[var(--color-primary)] hover:text-[var(--color-primary-light)] transition-colors">
-                <HiMail className="w-5 h-5" />
-                Email Support
-              </a>
-            </div>
+            <p className="text-sm font-black uppercase text-[var(--color-primary)]">
+              Booking confirmed
+            </p>
+            <h1 className="mt-3 font-hero text-5xl font-black uppercase leading-[0.95] sm:text-6xl lg:text-7xl">
+              Miami is waiting
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-white/80">
+              Your FIFA World Cup 2026 stay is confirmed. We sent the details to your email.
+            </p>
           </motion.div>
         </div>
       </section>
+
+      <main className="bg-[var(--color-bg-medium)] py-10 lg:py-14">
+        <div className="container-custom">
+          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <motion.section
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="overflow-hidden rounded-[26px] bg-white shadow-[0_24px_70px_rgba(8,19,76,0.12)] ring-1 ring-black/5"
+            >
+              <div className="border-b border-[var(--color-border)] p-6 text-center">
+                <p className="text-xs font-black uppercase text-[var(--color-text-muted)]">
+                  Booking Number
+                </p>
+                <p className="mt-2 font-mono text-2xl font-black text-[var(--color-primary)]">
+                  {booking.bookingNumber}
+                </p>
+              </div>
+
+              <div className="p-6">
+                <div className="flex flex-col gap-5 sm:flex-row">
+                  <img
+                    src={image}
+                    alt={property?.name}
+                    className="h-48 w-full rounded-2xl object-cover sm:h-36 sm:w-56"
+                  />
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-black text-[var(--color-text-primary)]">
+                      {property?.name}
+                    </h2>
+                    <div className="mt-3 space-y-2 text-sm font-semibold text-[var(--color-text-secondary)]">
+                      <p className="flex items-center gap-2">
+                        <HiLocationMarker className="h-4 w-4 text-[var(--color-primary)]" />
+                        {property?.location?.neighborhood}, {property?.location?.city}
+                      </p>
+                      <p className="flex items-center gap-2 capitalize">
+                        <HiHome className="h-4 w-4 text-[var(--color-secondary)]" />
+                        {property?.type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  <InfoTile
+                    icon={HiCalendar}
+                    label="Check-in"
+                    value={formatDate(booking.checkIn)}
+                    helper={`After ${property?.houseRules?.checkIn || '15:00'}`}
+                  />
+                  <InfoTile
+                    icon={HiCalendar}
+                    label="Check-out"
+                    value={formatDate(booking.checkOut)}
+                    helper={`Before ${property?.houseRules?.checkOut || '11:00'}`}
+                  />
+                  <InfoTile
+                    icon={HiUsers}
+                    label="Guests"
+                    value={`${guests} guests${booking.guests?.infants > 0 ? ` (+ ${booking.guests.infants} infants)` : ''}`}
+                  />
+                  <InfoTile
+                    icon={HiShieldCheck}
+                    label="Duration"
+                    value={`${booking.pricing?.nights || 0} nights`}
+                  />
+                </div>
+
+                <div className="mt-8 rounded-2xl bg-[var(--color-bg-medium)] p-5">
+                  <h3 className="mb-4 text-xl font-black text-[var(--color-text-primary)]">
+                    Payment Summary
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <PriceRow
+                      label={`${formatCurrency(booking.pricing?.nightlyRate || 0)} x ${booking.pricing?.nights || 0} nights`}
+                      value={booking.pricing?.baseTotal}
+                    />
+                    <PriceRow label="Cleaning fee" value={booking.pricing?.cleaningFee} />
+                    <PriceRow label="Service fee" value={booking.pricing?.serviceFee} />
+                    <PriceRow label="Taxes" value={booking.pricing?.taxes} />
+                    {booking.pricing?.discount > 0 && (
+                      <div className="flex justify-between font-bold text-[var(--color-accent)]">
+                        <span>Discount</span>
+                        <span>-{formatCurrency(booking.pricing.discount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-[var(--color-border)] pt-3 text-lg font-black text-[var(--color-text-primary)]">
+                      <span>Total Paid</span>
+                      <span>{formatCurrency(booking.pricing?.total || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Link to="/my-bookings" className="btn-primary flex-1 text-center">
+                    View My Bookings
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn-outline flex flex-1 items-center justify-center gap-2"
+                  >
+                    <HiDownload className="h-5 w-5" />
+                    Download Invoice
+                  </button>
+                </div>
+              </div>
+            </motion.section>
+
+            <motion.aside
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-5"
+            >
+              <div className="rounded-[26px] bg-white p-6 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5">
+                <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                  Next steps
+                </p>
+                <div className="mt-4 space-y-4">
+                  {[
+                    'Save your booking number for arrival.',
+                    'Watch your inbox for check-in instructions.',
+                    'Contact concierge for match-day transport or dining.',
+                  ].map((item) => (
+                    <div key={item} className="flex gap-3">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#ECFDF3] text-[var(--color-accent)]">
+                        <HiCheck className="h-4 w-4" />
+                      </span>
+                      <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                        {item}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[26px] bg-white p-6 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5">
+                <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                  Need help?
+                </p>
+                <h3 className="mt-1 text-xl font-black text-[var(--color-text-primary)]">
+                  Miami concierge support
+                </h3>
+                <div className="mt-4 space-y-3 text-sm font-bold text-[var(--color-text-secondary)]">
+                  <a href="tel:+13051234567" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                    <HiPhone className="h-4 w-4 text-[var(--color-primary)]" />
+                    +1 (305) 123-4567
+                  </a>
+                  <a href="mailto:support@miamiluxuryrentals.com" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                    <HiMail className="h-4 w-4 text-[var(--color-primary)]" />
+                    Email Support
+                  </a>
+                </div>
+              </div>
+            </motion.aside>
+          </div>
+        </div>
+      </main>
     </>
   );
 };
+
+const InfoTile = ({ icon: Icon, label, value, helper }) => (
+  <div className="rounded-2xl border border-[var(--color-border)] p-4">
+    <Icon className="mb-3 h-6 w-6 text-[var(--color-primary)]" />
+    <p className="text-xs font-black uppercase text-[var(--color-text-muted)]">{label}</p>
+    <p className="mt-1 font-black text-[var(--color-text-primary)]">{value}</p>
+    {helper && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{helper}</p>}
+  </div>
+);
+
+const PriceRow = ({ label, value }) => (
+  <div className="flex justify-between text-[var(--color-text-secondary)]">
+    <span>{label}</span>
+    <span>{formatCurrency(value || 0)}</span>
+  </div>
+);
 
 export default BookingConfirmationPage;

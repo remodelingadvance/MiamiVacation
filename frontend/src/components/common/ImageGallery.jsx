@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiX, HiChevronLeft, HiChevronRight, HiPhotograph } from 'react-icons/hi';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -19,12 +19,23 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
     setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   }, [images.length]);
 
-  // Keyboard navigation
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft') goToPrevious();
-    if (e.key === 'ArrowRight') goToNext();
-    if (e.key === 'Escape') closeLightbox();
-  };
+  useEffect(() => {
+    if (selectedIndex === null) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'ArrowLeft') goToPrevious();
+      if (event.key === 'ArrowRight') goToNext();
+      if (event.key === 'Escape') closeLightbox();
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [goToNext, goToPrevious, selectedIndex]);
 
   const handleImageLoad = (index) => {
     setLoadedImages((prev) => new Set([...prev, index]));
@@ -44,9 +55,13 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
   return (
     <>
       {/* Gallery grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-2xl overflow-hidden">
+      <div className="grid grid-cols-1 gap-2 overflow-hidden rounded-2xl md:grid-cols-4">
         {/* Main image */}
-        <div className="md:col-span-2 md:row-span-2 relative cursor-pointer group" onClick={() => openLightbox(0)}>
+        <button
+          type="button"
+          className="group relative cursor-pointer text-left md:col-span-2 md:row-span-2"
+          onClick={() => openLightbox(0)}
+        >
           <LazyLoadImage
             src={images[0]?.url}
             alt={images[0]?.alt || alt}
@@ -55,11 +70,16 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
             afterLoad={() => handleImageLoad(0)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-        </div>
+        </button>
 
         {/* Secondary images */}
         {images.slice(1, 5).map((image, index) => (
-          <div key={index + 1} className="relative cursor-pointer group hidden md:block" onClick={() => openLightbox(index + 1)}>
+          <button
+            key={index + 1}
+            type="button"
+            className="group relative hidden cursor-pointer text-left md:block"
+            onClick={() => openLightbox(index + 1)}
+          >
             <LazyLoadImage
               src={image.url}
               alt={image.alt || alt}
@@ -72,12 +92,12 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
             {/* Show all photos button on last visible image */}
             {index === 3 && images.length > 5 && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <button className="px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white font-semibold text-sm">
+                <span className="rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
                   +{images.length - 5} more photos
-                </button>
+                </span>
               </div>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -88,28 +108,36 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(7,20,76,0.96)] p-4"
             onClick={closeLightbox}
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Property photo gallery"
           >
             {/* Close button */}
             <button
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:text-[var(--color-primary)] transition-colors"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                closeLightbox();
+              }}
+              className="absolute right-4 top-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[var(--color-text-primary)] shadow-xl transition-colors hover:text-[var(--color-primary)]"
+              aria-label="Close gallery"
             >
               <HiX className="w-6 h-6" />
             </button>
 
             {/* Image counter */}
-            <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-full glass text-white text-sm">
+            <div className="absolute left-4 top-4 z-10 rounded-full bg-white px-3 py-1.5 text-sm font-black text-[var(--color-text-primary)] shadow-xl">
               {selectedIndex + 1} / {images.length}
             </div>
 
             {/* Previous button */}
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-              className="absolute left-4 z-10 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:text-[var(--color-primary)] transition-colors"
+              className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[var(--color-text-primary)] shadow-xl transition-colors hover:text-[var(--color-primary)]"
+              aria-label="Previous photo"
             >
               <HiChevronLeft className="w-6 h-6" />
             </button>
@@ -122,27 +150,34 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
               exit={{ opacity: 0, scale: 0.9 }}
               src={images[selectedIndex]?.url}
               alt={images[selectedIndex]?.alt || alt}
-              className="max-w-[90vw] max-h-[90vh] object-contain"
+              className="max-h-[78vh] w-auto max-w-[min(92vw,1400px)] rounded-2xl object-contain shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
 
             {/* Next button */}
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); goToNext(); }}
-              className="absolute right-4 z-10 w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:text-[var(--color-primary)] transition-colors"
+              className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[var(--color-text-primary)] shadow-xl transition-colors hover:text-[var(--color-primary)]"
+              aria-label="Next photo"
             >
               <HiChevronRight className="w-6 h-6" />
             </button>
 
             {/* Thumbnails */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto pb-2">
+            <div
+              className="absolute bottom-4 left-1/2 flex max-w-[min(92vw,1400px)] -translate-x-1/2 gap-2 overflow-x-auto rounded-2xl bg-white/12 p-2 backdrop-blur"
+              onClick={(event) => event.stopPropagation()}
+            >
               {images.map((image, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); setSelectedIndex(index); }}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === selectedIndex ? 'border-[var(--color-primary)]' : 'border-transparent opacity-60 hover:opacity-100'
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                    index === selectedIndex ? 'border-[var(--color-primary)] opacity-100' : 'border-transparent opacity-65 hover:opacity-100'
                   }`}
+                  aria-label={`Open photo ${index + 1}`}
                 >
                   <img src={image.url} alt="" className="w-full h-full object-cover" />
                 </button>

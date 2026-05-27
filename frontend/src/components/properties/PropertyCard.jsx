@@ -1,115 +1,132 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiStar, HiLocationMarker, HiHeart, HiUsers } from 'react-icons/hi';
-import { FaBed, FaBath } from 'react-icons/fa';
-import { useWishlist } from '../../contexts/WishlistContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { formatCurrency } from '../../utils/helpers';
+import {
+  HiHeart,
+  HiLocationMarker,
+  HiShieldCheck,
+  HiSparkles,
+  HiStar,
+  HiUsers,
+} from 'react-icons/hi';
+import { FaBath, FaBed } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { useWishlist } from '../../contexts/WishlistContext';
+import { formatCurrency } from '../../utils/helpers';
 
 const PropertyCard = ({ property }) => {
   const { isAuthenticated } = useAuth();
   const { isFavorite, toggleFavorite } = useWishlist();
   const fav = isFavorite(property._id);
 
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleFavoriteClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     if (!isAuthenticated) {
       toast.error('Please login to save favorites');
       return;
     }
-    
+
     toggleFavorite(property._id);
   };
 
   return (
-    <Link
-      to={`/properties/${property.slug}`}
-      className="group block glass rounded-2xl overflow-hidden card-hover"
+    <motion.article
+      whileHover={{ y: -6 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+      className="h-full"
     >
-      {/* Image */}
-      <div className="relative h-64 overflow-hidden">
-        <img
-          src={property.images?.[0]?.url || '/placeholder-property.jpg'}
-          alt={property.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          loading="lazy"
-        />
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-        
-        {/* Wishlist button */}
-        <button
-          onClick={handleFavoriteClick}
-          className={`absolute top-4 right-4 w-10 h-10 rounded-full glass-strong flex items-center justify-center transition-all hover:scale-110 ${
-            fav ? 'text-red-500' : 'text-white/70 hover:text-white'
-          }`}
-        >
-          <HiHeart className={`w-5 h-5 ${fav ? 'fill-current' : ''}`} />
-        </button>
-
-        {/* Price */}
-        <div className="absolute top-4 left-4">
-          <div className="px-3 py-1.5 rounded-lg glass-strong">
-            <span className="text-white font-bold text-lg">
-              {formatCurrency(property.pricing?.basePrice)}
+      <Link
+        to={`/properties/${property.slug}`}
+        className="group flex h-full flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_18px_48px_rgba(8,19,76,0.10)] ring-1 ring-black/5 transition-shadow hover:shadow-[0_24px_64px_rgba(8,19,76,0.16)]"
+      >
+        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--color-bg-light)]">
+          <img
+            src={property.images?.[0]?.url || '/images/miami-world-cup-hero.png'}
+            alt={property.name}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07144c]/88 via-[#07144c]/12 to-transparent" />
+          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/92 px-3 py-1 text-xs font-black uppercase text-[var(--color-primary)] shadow-lg">
+              {property.type}
             </span>
-            <span className="text-white/70 text-sm">/night</span>
+            {property.featured && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-3 py-1 text-xs font-black uppercase text-white shadow-lg">
+                <HiSparkles className="h-3.5 w-3.5" />
+                Featured
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/92 shadow-lg backdrop-blur transition-all hover:scale-110 ${
+              fav ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-primary)]'
+            }`}
+            aria-label={fav ? 'Remove from wishlist' : 'Save to wishlist'}
+          >
+            <HiHeart className={`h-5 w-5 ${fav ? 'fill-current' : ''}`} />
+          </button>
+
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase text-white/80">From</p>
+              <p className="text-2xl font-black leading-none text-white">
+                {formatCurrency(property.pricing?.basePrice)}
+                <span className="text-sm font-semibold text-white/78"> / night</span>
+              </p>
+            </div>
+            {property.ratings?.average > 0 && (
+              <div className="flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold text-[var(--color-text-primary)] shadow-lg">
+                <HiStar className="h-4 w-4 text-[var(--color-primary)]" />
+                {property.ratings.average}
+                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                  ({property.ratings.count})
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Rating */}
-        {property.ratings?.average > 0 && (
-          <div className="absolute bottom-4 left-4 flex items-center gap-1 px-2 py-1 rounded-lg glass-strong">
-            <HiStar className="w-4 h-4 text-[var(--color-primary)]" />
-            <span className="text-white text-sm font-medium">{property.ratings.average}</span>
-            <span className="text-white/60 text-xs">({property.ratings.count})</span>
-          </div>
-        )}
-
-        {/* Property type badge */}
-        <div className="absolute bottom-4 right-4">
-          <span className="badge badge-primary capitalize">{property.type}</span>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-5">
-        <h3 className="text-white font-display font-bold text-lg mb-2 group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
-          {property.name}
-        </h3>
-        
-        <div className="flex items-center gap-1 text-[var(--color-text-muted)] text-sm mb-4">
-          <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)] flex-shrink-0" />
-          <span className="truncate">{property.location?.neighborhood}, {property.location?.city}</span>
-        </div>
-
-        <div className="flex items-center justify-between pt-4 border-t border-white/10">
-          <div className="flex items-center gap-4 text-sm text-[var(--color-text-secondary)]">
-            <div className="flex items-center gap-1">
-              <FaBed className="w-4 h-4 text-[var(--color-primary)]" />
-              <span>{property.details?.bedrooms} beds</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <FaBath className="w-4 h-4 text-[var(--color-primary)]" />
-              <span>{property.details?.bathrooms} baths</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <HiUsers className="w-4 h-4 text-[var(--color-primary)]" />
-              <span>{property.details?.maxGuests}</span>
+        <div className="flex flex-1 flex-col p-5">
+          <div className="mb-4">
+            <h3 className="line-clamp-2 text-xl font-black leading-tight text-[var(--color-text-primary)] transition-colors group-hover:text-[var(--color-primary)]">
+              {property.name}
+            </h3>
+            <div className="mt-3 flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+              <HiLocationMarker className="h-4 w-4 shrink-0 text-[var(--color-primary)]" />
+              <span className="truncate">
+                {property.location?.neighborhood}, {property.location?.city}
+              </span>
             </div>
           </div>
-          
-          {property.featured && (
-            <span className="text-xs text-[var(--color-primary)] font-medium uppercase tracking-wider">
-              Featured
-            </span>
-          )}
+
+          <div className="mt-auto grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-4">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)]">
+              <FaBed className="h-4 w-4 text-[var(--color-primary)]" />
+              {property.details?.bedrooms || 0}
+            </div>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)]">
+              <FaBath className="h-4 w-4 text-[var(--color-secondary)]" />
+              {property.details?.bathrooms || 0}
+            </div>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)]">
+              <HiUsers className="h-4 w-4 text-[var(--color-accent)]" />
+              {property.details?.maxGuests || 0}
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--color-secondary-light)] px-3 py-2 text-xs font-bold text-[var(--color-text-primary)]">
+            <HiShieldCheck className="h-4 w-4 text-[var(--color-accent)]" />
+            Verified Miami stay for match week
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.article>
   );
 };
 

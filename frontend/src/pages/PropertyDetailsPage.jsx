@@ -1,709 +1,638 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    HiStar,
-    HiUsers,
-    HiHome,
-    HiCalendar,
-    HiLocationMarker,
-    HiCheck,
-    HiHeart,
-    HiShare,
-    HiShieldCheck,
-    HiSparkles,
-    HiWifi,
-    HiCreditCard,
-    HiPhone,
-    HiMail,
-    HiClock,
-    HiX,
-    HiThumbUp,
-    HiThumbDown,
-    HiBadgeCheck,
+  HiBadgeCheck,
+  HiCalendar,
+  HiCheck,
+  HiHeart,
+  HiLocationMarker,
+  HiMail,
+  HiPhone,
+  HiShare,
+  HiShieldCheck,
+  HiSparkles,
+  HiStar,
+  HiUsers,
+  HiWifi,
 } from 'react-icons/hi';
-import { FaBed, FaBath, FaRulerCombined, FaParking, FaUtensils, FaTv, FaSoap, FaShieldAlt } from 'react-icons/fa';
-import { PiSwimmingPoolBold } from "react-icons/pi";
-import { FaCar } from "react-icons/fa";
+import {
+  FaBath,
+  FaBed,
+  FaCar,
+  FaRulerCombined,
+  FaShieldAlt,
+  FaSoap,
+  FaTv,
+  FaUtensils,
+} from 'react-icons/fa';
+import { PiSwimmingPoolBold } from 'react-icons/pi';
+import toast from 'react-hot-toast';
 import SEOHead from '../components/common/SEOHead';
 import ImageGallery from '../components/common/ImageGallery';
 import SkeletonLoader from '../components/common/SkeletonLoader';
+import AvailabilityCalendar from '../components/common/AvailabilityCalendar';
 import PropertyCard from '../components/properties/PropertyCard';
 import BookingWidget from '../components/booking/BookingWidget';
-import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import apiService from '../config/api';
-import { formatCurrency, formatTimeAgo } from '../utils/helpers';
-import toast from 'react-hot-toast';
-import AvailabilityCalendar from '../components/common/AvailabilityCalendar';
+import { formatTimeAgo } from '../utils/helpers';
+import { THEME } from '../config/theme.config';
 
-// Icon mapping for amenities
+const tabs = ['overview', 'amenities', 'availability', 'policies', 'reviews', 'location'];
+
 const getAmenityIcon = (category) => {
-    const icons = {
-        basic: <HiWifi className="w-5 h-5" />,
-        kitchen: <FaUtensils className="w-5 h-5" />,
-        bathroom: <FaSoap className="w-5 h-5" />,
-        outdoor: <PiSwimmingPoolBold className="w-5 h-5" />,
-        entertainment: <FaTv className="w-5 h-5" />,
-        safety: <FaShieldAlt className="w-5 h-5" />,
-        accessibility: <FaCar className="w-5 h-5" />,
-        other: <HiSparkles className="w-5 h-5" />,
-    };
-    return icons[category] || <HiSparkles className="w-5 h-5" />;
+  const iconClass = 'h-5 w-5';
+  const icons = {
+    basic: <HiWifi className={iconClass} />,
+    kitchen: <FaUtensils className={iconClass} />,
+    bathroom: <FaSoap className={iconClass} />,
+    outdoor: <PiSwimmingPoolBold className={iconClass} />,
+    entertainment: <FaTv className={iconClass} />,
+    safety: <FaShieldAlt className={iconClass} />,
+    accessibility: <FaCar className={iconClass} />,
+    other: <HiSparkles className={iconClass} />,
+  };
+  return icons[category] || icons.other;
 };
 
-// Review Card Component
-const ReviewCardComponent = ({ review }) => {
-    const { isAuthenticated } = useAuth();
-    const [helpfulVote, setHelpfulVote] = useState(null);
-    const [voting, setVoting] = useState(false);
+const MetricCard = ({ icon: Icon, label, value, color = 'var(--color-primary)' }) => (
+  <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 text-center shadow-sm">
+    <Icon className="mx-auto mb-2 h-6 w-6" style={{ color }} />
+    <p className="text-xl font-black text-[var(--color-text-primary)]">{value || 0}</p>
+    <p className="text-xs font-bold uppercase text-[var(--color-text-muted)]">{label}</p>
+  </div>
+);
 
-    const handleVote = async (vote) => {
-        if (!isAuthenticated) {
-            toast.error('Please login to vote');
-            return;
-        }
-        if (voting) return;
-        try {
-            setVoting(true);
-            await apiService.markHelpful(review._id, vote);
-            setHelpfulVote(vote);
-            toast.success('Thank you for your feedback!');
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Vote failed');
-        } finally {
-            setVoting(false);
-        }
-    };
-
-    const ratings = review.ratings || {};
-
-    return (
-        <div className="glass rounded-xl p-6">
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
-                        <span className="text-[var(--color-primary)] font-semibold">
-                            {review.user?.firstName?.[0]}{review.user?.lastName?.[0]}
-                        </span>
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h4 className="text-white font-medium">
-                                {review.user?.firstName} {review.user?.lastName}
-                            </h4>
-                            {review.verified && (
-                                <HiBadgeCheck className="w-4 h-4 text-[var(--color-primary)]" title="Verified Stay" />
-                            )}
-                        </div>
-                        <p className="text-xs text-[var(--color-text-muted)]">
-                            {formatTimeAgo(review.createdAt)}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1">
-                    <HiStar className="w-5 h-5 text-[var(--color-primary)]" />
-                    <span className="text-white font-semibold">{review.rating}</span>
-                </div>
-            </div>
-
-            {review.title && (
-                <h5 className="text-white font-semibold mb-2">{review.title}</h5>
-            )}
-
-            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-4">
-                {review.content}
-            </p>
-
-            {Object.keys(ratings).length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                    {Object.entries(ratings).map(([key, value]) => (
-                        <div key={key} className="text-center">
-                            <p className="text-xs text-[var(--color-text-muted)] capitalize mb-1">{key}</p>
-                            <div className="flex items-center justify-center gap-1">
-                                <HiStar className="w-3 h-3 text-[var(--color-primary)]" />
-                                <span className="text-xs text-white">{value}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {review.response?.text && (
-                <div className="mt-4 p-4 rounded-lg glass-light border-l-2 border-[var(--color-primary)]">
-                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Response from Miami Luxury Rentals</p>
-                    <p className="text-sm text-[var(--color-text-secondary)]">{review.response.text}</p>
-                </div>
-            )}
-
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10">
-                <span className="text-xs text-[var(--color-text-muted)]">Was this helpful?</span>
-                <button
-                    onClick={() => handleVote('yes')}
-                    disabled={voting || helpfulVote}
-                    className={`flex items-center gap-1 text-xs transition-colors ${
-                        helpfulVote === 'yes'
-                            ? 'text-[var(--color-success)]'
-                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-success)]'
-                    }`}
-                >
-                    <HiThumbUp className="w-4 h-4" />
-                    Yes ({review.helpful?.yes || 0})
-                </button>
-                <button
-                    onClick={() => handleVote('no')}
-                    disabled={voting || helpfulVote}
-                    className={`flex items-center gap-1 text-xs transition-colors ${
-                        helpfulVote === 'no'
-                            ? 'text-red-500'
-                            : 'text-[var(--color-text-muted)] hover:text-red-500'
-                    }`}
-                >
-                    <HiThumbDown className="w-4 h-4" />
-                    No ({review.helpful?.no || 0})
-                </button>
-            </div>
+const ReviewCard = ({ review }) => (
+  <motion.article
+    initial={{ opacity: 0, y: 16 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+  >
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-sm font-black text-[var(--color-primary)]">
+          {review.user?.firstName?.[0]}
+          {review.user?.lastName?.[0]}
         </div>
-    );
-};
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="font-black text-[var(--color-text-primary)]">
+              {review.user?.firstName} {review.user?.lastName}
+            </h4>
+            {review.verified && (
+              <HiBadgeCheck className="h-4 w-4 text-[var(--color-accent)]" />
+            )}
+          </div>
+          <p className="text-xs font-medium text-[var(--color-text-muted)]">
+            {formatTimeAgo(review.createdAt)}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-sm font-black text-[var(--color-text-primary)]">
+        <HiStar className="h-4 w-4 text-[var(--color-primary)]" />
+        {review.rating}
+      </div>
+    </div>
+
+    {review.title && (
+      <h5 className="mt-4 font-black text-[var(--color-text-primary)]">{review.title}</h5>
+    )}
+    <p className="mt-2 text-sm leading-7 text-[var(--color-text-secondary)]">
+      {review.content}
+    </p>
+
+    {review.response?.text && (
+      <div className="mt-4 rounded-xl border-l-4 border-[var(--color-primary)] bg-[var(--color-bg-medium)] p-4">
+        <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+          Response from Miami Stay
+        </p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          {review.response.text}
+        </p>
+      </div>
+    )}
+  </motion.article>
+);
+
+const SectionShell = ({ title, eyebrow, children }) => (
+  <motion.section
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.35 }}
+    className="rounded-[26px] bg-white p-5 shadow-[0_18px_48px_rgba(8,19,76,0.08)] ring-1 ring-black/5 sm:p-7"
+  >
+    {eyebrow && (
+      <p className="mb-2 text-xs font-black uppercase text-[var(--color-primary)]">
+        {eyebrow}
+      </p>
+    )}
+    <h2 className="mb-5 text-2xl font-black text-[var(--color-text-primary)]">{title}</h2>
+    {children}
+  </motion.section>
+);
 
 const PropertyDetailsPage = () => {
-    const { slug } = useParams();
-    const { isAuthenticated } = useAuth();
-    const { isFavorite, toggleFavorite } = useWishlist();
-    const [property, setProperty] = useState(null);
-    const [similarProperties, setSimilarProperties] = useState([]);
-    const [reviews, setReviews] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+  const { slug } = useParams();
+  const { isAuthenticated } = useAuth();
+  const { isFavorite, toggleFavorite } = useWishlist();
+  const [property, setProperty] = useState(null);
+  const [similarProperties, setSimilarProperties] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
-    useEffect(() => {
-        const fetchProperty = async () => {
-            try {
-                setLoading(true);
-                const response = await apiService.getPropertyBySlug(slug);
-                const propertyData = response.data.property;
-                setProperty(propertyData);
-                setSimilarProperties(response.data.similarProperties || []);
+  useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getPropertyBySlug(slug);
+        const propertyData = response.data.property;
+        setProperty(propertyData);
+        setSimilarProperties(response.data.similarProperties || []);
 
-                if (propertyData._id) {
-                    await fetchReviews(propertyData._id);
-                }
-            } catch (error) {
-                console.error('Failed to fetch property:', error);
-                toast.error('Property not found');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProperty();
-        window.scrollTo(0, 0);
-    }, [slug]);
-
-    const fetchReviews = async (propertyId) => {
-        try {
-            const reviewsResponse = await apiService.getPropertyReviews(propertyId);
-            let fetchedReviews = [];
-            
-            if (reviewsResponse.data.reviews) {
-                fetchedReviews = reviewsResponse.data.reviews;
-            } else if (reviewsResponse.data.data) {
-                fetchedReviews = reviewsResponse.data.data;
-            } else if (Array.isArray(reviewsResponse.data)) {
-                fetchedReviews = reviewsResponse.data;
-            }
-            
-            const approvedReviews = fetchedReviews.filter(r => r.status === 'approved' || !r.status);
-            setReviews(approvedReviews);
-        } catch (error) {
-            console.error('Failed to fetch reviews:', error);
-            setReviews([]);
+        if (propertyData._id) {
+          const reviewsResponse = await apiService.getPropertyReviews(propertyData._id);
+          const fetchedReviews =
+            reviewsResponse.data.reviews ||
+            reviewsResponse.data.data ||
+            (Array.isArray(reviewsResponse.data) ? reviewsResponse.data : []);
+          setReviews(fetchedReviews.filter((review) => review.status === 'approved' || !review.status));
         }
+      } catch (error) {
+        console.error('Failed to fetch property:', error);
+        toast.error('Property not found');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const getOverallStats = () => {
-        if (reviews.length === 0) {
-            return {
-                average: property?.ratings?.average || 0,
-                total: property?.ratings?.count || 0,
-                breakdown: property?.ratings?.breakdown || {},
-            };
-        }
-        
-        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-        const avgRating = totalRating / reviews.length;
-        
-        const breakdown = {
-            cleanliness: 0,
-            accuracy: 0,
-            communication: 0,
-            location: 0,
-            checkIn: 0,
-            value: 0,
-        };
-        
-        let reviewCount = 0;
-        reviews.forEach(review => {
-            if (review.ratings && Object.keys(review.ratings).length > 0) {
-                reviewCount++;
-                if (review.ratings.cleanliness) breakdown.cleanliness += review.ratings.cleanliness;
-                if (review.ratings.accuracy) breakdown.accuracy += review.ratings.accuracy;
-                if (review.ratings.communication) breakdown.communication += review.ratings.communication;
-                if (review.ratings.location) breakdown.location += review.ratings.location;
-                if (review.ratings.checkIn) breakdown.checkIn += review.ratings.checkIn;
-                if (review.ratings.value) breakdown.value += review.ratings.value;
-            }
-        });
-        
-        if (reviewCount > 0) {
-            Object.keys(breakdown).forEach(key => {
-                breakdown[key] = Math.round((breakdown[key] / reviewCount) * 10) / 10;
-            });
-        }
-        
-        return {
-            average: Math.round(avgRating * 10) / 10,
-            total: reviews.length,
-            breakdown: breakdown,
-        };
-    };
+    fetchProperty();
+    window.scrollTo(0, 0);
+  }, [slug]);
 
-    if (loading) {
-        return (
-            <div className="pt-24">
-                <div className="container-custom py-8">
-                    <SkeletonLoader type="detail" />
-                </div>
-            </div>
-        );
-    }
-
-    if (!property) {
-        return (
-            <div className="pt-24">
-                <div className="container-custom py-20 text-center">
-                    <h1 className="text-3xl font-display font-bold text-white mb-4">Property Not Found</h1>
-                    <p className="text-[var(--color-text-secondary)] mb-8">The property you're looking for doesn't exist.</p>
-                    <Link to="/properties" className="btn-primary">Browse Properties</Link>
-                </div>
-            </div>
-        );
-    }
-
-    const isFav = isFavorite(property._id);
-    const stats = getOverallStats();
-    const averageRating = stats.average;
-    const totalReviews = stats.total;
-    const overallBreakdown = stats.breakdown;
-
+  if (loading) {
     return (
-        <>
-            <SEOHead
-                title={property.name}
-                description={property.description?.short}
-                image={property.images?.[0]?.url}
-                type="property"
-            />
-
-            {/* Header */}
-            <section className="pt-24 pb-0">
-                <div className="container-custom py-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <span className="badge badge-primary capitalize">{property.type}</span>
-                                {property.featured && (
-                                    <span className="badge badge-warning">Featured</span>
-                                )}
-                                <span className="badge badge-success capitalize">{property.status}</span>
-                            </div>
-                            <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">
-                                {property.name}
-                            </h1>
-                            <div className="flex flex-wrap items-center gap-4 text-[var(--color-text-secondary)]">
-                                <div className="flex items-center gap-1">
-                                    <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />
-                                    <span>{property.location?.address}, {property.location?.neighborhood}, {property.location?.city}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <HiStar className="w-4 h-4 text-[var(--color-primary)]" />
-                                    <span>{averageRating} ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <HiUsers className="w-4 h-4 text-[var(--color-primary)]" />
-                                    <span>Up to {property.details?.maxGuests} guests</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => {
-                                    if (isAuthenticated) {
-                                        toggleFavorite(property._id);
-                                    } else {
-                                        toast.error('Please login to save favorites');
-                                    }
-                                }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${isFav
-                                        ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
-                                        : 'glass-light text-white/70 hover:text-white'
-                                    }`}
-                            >
-                                <HiHeart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
-                                Save
-                            </button>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(window.location.href);
-                                    toast.success('Link copied!');
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg glass-light text-white/70 hover:text-white transition-all"
-                            >
-                                <HiShare className="w-5 h-5" />
-                                Share
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Image Gallery */}
-            {property.images && property.images.length > 0 && (
-                <section className="pb-8">
-                    <div className="container-custom">
-                        <ImageGallery images={property.images} alt={property.name} />
-                    </div>
-                </section>
-            )}
-
-            {/* Content */}
-            <section className="py-8">
-                <div className="container-custom">
-                    <div className="grid lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-8">
-                            {/* Tabs */}
-                            <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
-                                {['overview', 'amenities', 'policies', 'reviews', 'availability', 'location'].map((tab) => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize ${activeTab === tab
-                                                ? 'bg-[var(--color-primary)] text-[var(--color-bg-dark)]'
-                                                : 'text-[var(--color-text-secondary)] hover:text-white'
-                                            }`}
-                                    >
-                                        {tab}
-                                        {tab === 'reviews' && totalReviews > 0 && (
-                                            <span className="ml-1 text-xs">({totalReviews})</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Overview Tab */}
-                            {activeTab === 'overview' && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                                    <div>
-                                        <h2 className="text-2xl font-display font-bold text-white mb-4">About this property</h2>
-                                        <p className="text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-line">
-                                            {property.description?.full || property.description?.short}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-xl font-display font-bold text-white mb-4">Property Details</h3>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                            <div className="p-4 rounded-xl glass-light text-center">
-                                                <FaBed className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                <p className="text-white font-semibold">{property.details?.bedrooms}</p>
-                                                <p className="text-xs text-[var(--color-text-muted)]">Bedrooms</p>
-                                            </div>
-                                            <div className="p-4 rounded-xl glass-light text-center">
-                                                <FaBath className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                <p className="text-white font-semibold">{property.details?.bathrooms}</p>
-                                                <p className="text-xs text-[var(--color-text-muted)]">Bathrooms</p>
-                                            </div>
-                                            <div className="p-4 rounded-xl glass-light text-center">
-                                                <HiUsers className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                <p className="text-white font-semibold">{property.details?.maxGuests}</p>
-                                                <p className="text-xs text-[var(--color-text-muted)]">Max Guests</p>
-                                            </div>
-                                            <div className="p-4 rounded-xl glass-light text-center">
-                                                <FaRulerCombined className="w-6 h-6 text-[var(--color-primary)] mx-auto mb-2" />
-                                                <p className="text-white font-semibold">{property.details?.size || 'N/A'} {property.details?.size ? 'sq ft' : ''}</p>
-                                                <p className="text-xs text-[var(--color-text-muted)]">Size</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* Amenities Tab */}
-                            {activeTab === 'amenities' && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Amenities & Features</h2>
-                                    {property.amenities && property.amenities.length > 0 ? (
-                                        <div className="grid sm:grid-cols-2 gap-4">
-                                            {property.amenities.map((amenity, index) => (
-                                                <div key={index} className="flex items-start gap-3 p-3 rounded-lg glass-light">
-                                                    <div className="text-[var(--color-primary)] text-xl">{getAmenityIcon(amenity.category)}</div>
-                                                    <div>
-                                                        <p className="text-white font-medium">{amenity.name}</p>
-                                                        {amenity.description && <p className="text-[var(--color-text-muted)] text-sm mt-1">{amenity.description}</p>}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-[var(--color-text-muted)]">No amenities listed</p>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {/* Policies Tab */}
-                            {activeTab === 'policies' && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Policies & Important Notes</h2>
-                                    {property.policiesAndNotes && property.policiesAndNotes.length > 0 ? (
-                                        <div className="space-y-6">
-                                            {property.policiesAndNotes.map((policy, index) => (
-                                                <div key={index} className="p-5 rounded-xl glass-light">
-                                                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                                                        <HiShieldCheck className="w-5 h-5 text-[var(--color-primary)]" />
-                                                        {policy.title}
-                                                    </h3>
-                                                    <ul className="space-y-2">
-                                                        {policy.points.map((point, pointIndex) => (
-                                                            <li key={pointIndex} className="flex items-start gap-2 text-[var(--color-text-secondary)]">
-                                                                <HiCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 flex-shrink-0" />
-                                                                <span>{point}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-[var(--color-text-muted)]">No policies listed</p>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {/* Reviews Tab */}
-                            {activeTab === 'reviews' && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                                    <div className="flex items-center justify-between flex-wrap gap-4">
-                                        <h2 className="text-2xl font-display font-bold text-white">Guest Reviews</h2>
-                                        <div className="flex items-center gap-2">
-                                            <HiStar className="w-6 h-6 text-[var(--color-primary)]" />
-                                            <span className="text-2xl font-bold text-white">{averageRating}</span>
-                                            <span className="text-[var(--color-text-muted)]">· {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}</span>
-                                        </div>
-                                    </div>
-
-                                    {overallBreakdown && Object.keys(overallBreakdown).length > 0 && (
-                                        <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Cleanliness</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.cleanliness / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.cleanliness.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Accuracy</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.accuracy / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.accuracy.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Communication</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.communication / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.communication.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Location</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.location / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.location.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Check-in</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.checkIn / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.checkIn.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[var(--color-text-secondary)] capitalize">Value</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[var(--color-primary)] rounded-full" style={{ width: `${(overallBreakdown.value / 5) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-white text-sm font-medium">{overallBreakdown.value.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {reviews.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {reviews.map((review) => (
-                                                <ReviewCardComponent key={review._id} review={review} />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-12 glass rounded-2xl">
-                                            <HiStar className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4 opacity-50" />
-                                            <p className="text-[var(--color-text-muted)] text-lg">No reviews yet</p>
-                                            <p className="text-sm text-[var(--color-text-muted)] mt-1">Be the first to share your experience!</p>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {/* Availability Tab */}
-                            {activeTab === 'availability' && (
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">Availability Calendar</h2>
-                                    <p className="text-[var(--color-text-secondary)] mb-6">Select your dates to check availability. Booked dates are marked in red.</p>
-                                    <AvailabilityCalendar propertyId={property._id} />
-                                </motion.div>
-                            )}
-
-                            {/* Location Tab - WITH NEARBY PLACES RESTORED */}
-                            {activeTab === 'location' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-6"
-                                >
-                                    <h2 className="text-2xl font-display font-bold text-white mb-4">
-                                        Location
-                                    </h2>
-
-                                    {/* Address Information */}
-                                    <div className="p-4 rounded-xl glass-light">
-                                        <p className="text-[var(--color-text-secondary)]">
-                                            <strong className="text-white">Address:</strong> {property.location?.address}
-                                        </p>
-                                        <p className="text-[var(--color-text-secondary)] mt-1">
-                                            <strong className="text-white">Neighborhood:</strong> {property.location?.neighborhood}
-                                        </p>
-                                        <p className="text-[var(--color-text-secondary)] mt-1">
-                                            <strong className="text-white">City:</strong> {property.location?.city}, {property.location?.state} {property.location?.zipCode}
-                                        </p>
-                                    </div>
-
-                                    {/* Map */}
-                                    {property.location?.coordinates?.coordinates && (
-                                        <div className="h-[400px] rounded-2xl overflow-hidden">
-                                            <MapContainer
-                                                center={[
-                                                    property.location.coordinates.coordinates[1],
-                                                    property.location.coordinates.coordinates[0],
-                                                ]}
-                                                zoom={14}
-                                                scrollWheelZoom={false}
-                                                className="w-full h-full"
-                                            >
-                                                <TileLayer
-                                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                />
-                                                <Marker
-                                                    position={[
-                                                        property.location.coordinates.coordinates[1],
-                                                        property.location.coordinates.coordinates[0],
-                                                    ]}
-                                                >
-                                                    <Popup>
-                                                        <strong>{property.name}</strong>
-                                                        <br />
-                                                        {property.location.address}
-                                                    </Popup>
-                                                </Marker>
-                                            </MapContainer>
-                                        </div>
-                                    )}
-
-                                    {/* Nearby Places - RESTORED */}
-                                    {property.location?.nearbyPlaces && property.location.nearbyPlaces.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
-                                                <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
-                                                Nearby Places
-                                            </h3>
-                                            <div className="grid sm:grid-cols-2 gap-3">
-                                                {property.location.nearbyPlaces.map((place, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 rounded-lg glass-light">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
-                                                                {place.type === 'airport' && <FaCar className="w-4 h-4 text-[var(--color-primary)]" />}
-                                                                {place.type === 'beach' && <PiSwimmingPoolBold className="w-4 h-4 text-[var(--color-primary)]" />}
-                                                                {place.type === 'metro' && <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />}
-                                                                {(place.type === 'restaurant' || place.type === 'shopping') && <HiStar className="w-4 h-4 text-[var(--color-primary)]" />}
-                                                                {!place.type && <HiLocationMarker className="w-4 h-4 text-[var(--color-primary)]" />}
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-white font-medium">{place.name}</p>
-                                                                <p className="text-xs text-[var(--color-text-muted)] capitalize">{place.type?.replace('_', ' ')}</p>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[var(--color-primary)] text-sm font-medium bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
-                                                            {place.distance}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </div>
-
-                        {/* Sidebar */}
-                        <div className="lg:col-span-1">
-                            <div className="sticky top-24">
-                                <BookingWidget property={property} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Similar properties */}
-            {similarProperties.length > 0 && (
-                <section className="py-16 bg-[var(--color-bg-medium)]">
-                    <div className="container-custom">
-                        <h2 className="section-title text-white text-center mb-12">Similar Properties</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                            {similarProperties.slice(0, 4).map((property) => (
-                                <PropertyCard key={property._id} property={property} />
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
-        </>
+      <div className="bg-[var(--color-bg-medium)] pt-28">
+        <div className="mx-auto max-w-[1400px] px-6 py-10 sm:px-8">
+          <SkeletonLoader type="detail" />
+        </div>
+      </div>
     );
+  }
+
+  if (!property) {
+    return (
+      <div className="bg-[var(--color-bg-medium)] pt-28">
+        <div className="mx-auto max-w-[1400px] px-6 py-24 text-center sm:px-8">
+          <h1 className="text-4xl font-black text-[var(--color-text-primary)]">
+            Property Not Found
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-[var(--color-text-secondary)]">
+            The property you're looking for does not exist or is no longer available.
+          </p>
+          <Link to="/properties" className="btn-primary mt-8">
+            Browse Properties
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isFav = isFavorite(property._id);
+  const averageRating = reviews.length
+    ? Math.round((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length) * 10) / 10
+    : property.ratings?.average || 0;
+  const totalReviews = reviews.length || property.ratings?.count || 0;
+  const heroImage = property.images?.[0]?.url || THEME.hero.heroImage;
+
+  return (
+    <>
+      <SEOHead
+        title={property.name}
+        description={property.description?.short}
+        image={heroImage}
+        type="property"
+      />
+
+      <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
+        <img
+          src={heroImage}
+          alt={property.name}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,20,76,0.94),rgba(7,20,76,0.72)_48%,rgba(7,20,76,0.22))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,20,76,0.08),rgba(7,20,76,0.84))]" />
+        <div className="absolute -right-24 top-20 h-72 w-72 rounded-full bg-[var(--color-primary)]/30 blur-3xl" />
+
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 pb-12 sm:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55 }}
+            className="max-w-5xl"
+          >
+            <div className="mb-5 flex flex-wrap gap-2">
+              <span className="badge bg-white/16 text-white backdrop-blur capitalize">
+                {property.type}
+              </span>
+              {property.featured && (
+                <span className="badge bg-[var(--color-primary)] text-white">
+                  Featured
+                </span>
+              )}
+              <span className="badge bg-white/16 text-white backdrop-blur">
+                FIFA World Cup 2026
+              </span>
+            </div>
+
+            <h1 className="max-w-4xl font-hero text-5xl font-black uppercase leading-[0.92] sm:text-6xl lg:text-7xl">
+              {property.name}
+            </h1>
+            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm font-semibold text-white/82">
+              <span className="flex items-center gap-2">
+                <HiLocationMarker className="h-5 w-5 text-[var(--color-primary)]" />
+                {property.location?.address}, {property.location?.neighborhood}, {property.location?.city}
+              </span>
+              <span className="flex items-center gap-2">
+                <HiStar className="h-5 w-5 text-[#FFC83D]" />
+                {averageRating} ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
+              </span>
+              <span className="flex items-center gap-2">
+                <HiUsers className="h-5 w-5 text-[var(--color-accent)]" />
+                Up to {property.details?.maxGuests} guests
+              </span>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isAuthenticated) {
+                    toggleFavorite(property._id);
+                  } else {
+                    toast.error('Please login to save favorites');
+                  }
+                }}
+                className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-black shadow-lg transition-all ${
+                  isFav
+                    ? 'bg-[var(--color-primary)] text-white'
+                    : 'bg-white text-[var(--color-text-primary)]'
+                }`}
+              >
+                <HiHeart className={`h-5 w-5 ${isFav ? 'fill-current' : ''}`} />
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success('Link copied!');
+                }}
+                className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[var(--color-text-primary)] shadow-lg"
+              >
+                <HiShare className="h-5 w-5" />
+                Share
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <main className="bg-[var(--color-bg-medium)] pb-16">
+        {property.images?.length > 0 && (
+          <section className="relative z-20 mx-auto -mt-8 max-w-[1400px] px-6 pb-8 sm:px-8">
+            <div className="rounded-[26px] bg-white p-2 shadow-[0_22px_64px_rgba(8,19,76,0.16)]">
+              <ImageGallery images={property.images} alt={property.name} />
+            </div>
+          </section>
+        )}
+
+        <section className="mx-auto max-w-[1400px] px-6 sm:px-8">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px]">
+            <div className="space-y-8">
+              <div className="sticky top-[76px] z-30 -mx-6 overflow-x-auto border-y border-[var(--color-border)] bg-white/95 px-6 py-3 backdrop-blur lg:top-[96px] lg:mx-0 lg:rounded-2xl lg:border lg:shadow-sm">
+                <div className="flex min-w-max gap-2 lg:min-w-0 lg:flex-wrap">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`rounded-full px-4 py-2 text-sm font-black capitalize transition-all ${
+                        activeTab === tab
+                          ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[rgba(244,20,82,0.20)]'
+                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]'
+                      }`}
+                    >
+                      {tab}
+                      {tab === 'reviews' && totalReviews > 0 && (
+                        <span className="ml-1">({totalReviews})</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {activeTab === 'overview' && (
+                  <SectionShell key="overview" title="About this Miami stay" eyebrow="Overview">
+                    <p className="whitespace-pre-line text-base leading-8 text-[var(--color-text-secondary)]">
+                      {property.description?.full || property.description?.short}
+                    </p>
+
+                    <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      <MetricCard icon={FaBed} label="Bedrooms" value={property.details?.bedrooms} />
+                      <MetricCard icon={FaBath} label="Bathrooms" value={property.details?.bathrooms} color="var(--color-secondary)" />
+                      <MetricCard icon={HiUsers} label="Guests" value={property.details?.maxGuests} color="var(--color-accent)" />
+                      <MetricCard icon={FaRulerCombined} label="Sq Ft" value={property.details?.squareFeet} color="#FFB82E" />
+                    </div>
+
+                    <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-[var(--color-primary-light)] p-5">
+                        <HiCalendar className="mb-3 h-6 w-6 text-[var(--color-primary)]" />
+                        <p className="font-black text-[var(--color-text-primary)]">Match ready dates</p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">June 11 - July 19, 2026</p>
+                      </div>
+                      <div className="rounded-2xl bg-[var(--color-secondary-light)] p-5">
+                        <HiShieldCheck className="mb-3 h-6 w-6 text-[var(--color-secondary)]" />
+                        <p className="font-black text-[var(--color-text-primary)]">Verified stay</p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Quality checked before arrival</p>
+                      </div>
+                      <div className="rounded-2xl bg-[#ECFDF3] p-5">
+                        <HiPhone className="mb-3 h-6 w-6 text-[var(--color-accent)]" />
+                        <p className="font-black text-[var(--color-text-primary)]">Local concierge</p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Miami help around the clock</p>
+                      </div>
+                    </div>
+                  </SectionShell>
+                )}
+
+                {activeTab === 'amenities' && (
+                  <SectionShell key="amenities" title="Amenities" eyebrow="Comforts">
+                    {property.amenities?.length > 0 ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {property.amenities.map((amenity, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start gap-4 rounded-2xl border border-[var(--color-border)] p-4"
+                          >
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+                              {getAmenityIcon(amenity.category)}
+                            </div>
+                            <div>
+                              <p className="font-black text-[var(--color-text-primary)]">
+                                {amenity.name}
+                              </p>
+                              {amenity.description && (
+                                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                                  {amenity.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[var(--color-text-muted)]">No amenities listed.</p>
+                    )}
+                  </SectionShell>
+                )}
+
+                {activeTab === 'availability' && (
+                  <SectionShell key="availability" title="Availability calendar" eyebrow="Plan your dates">
+                    <p className="mb-6 max-w-2xl text-sm leading-7 text-[var(--color-text-secondary)]">
+                      Check open nights before starting checkout. Booked and maintenance dates
+                      are disabled here; final date selection happens on the booking page.
+                    </p>
+                    <AvailabilityCalendar propertyId={property._id} />
+                    <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-[var(--color-bg-medium)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-black text-[var(--color-text-primary)]">
+                          Ready to reserve?
+                        </p>
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                          Continue to checkout to select dates and guests.
+                        </p>
+                      </div>
+                      <Link to={`/booking/${property._id}`} className="btn-primary">
+                        Start Booking
+                      </Link>
+                    </div>
+                  </SectionShell>
+                )}
+
+                {activeTab === 'policies' && (
+                  <SectionShell key="policies" title="Policies & important notes" eyebrow="Guest info">
+                    {property.policiesAndNotes?.length > 0 ? (
+                      <div className="space-y-4">
+                        {property.policiesAndNotes.map((policy, index) => (
+                          <div key={index} className="rounded-2xl border border-[var(--color-border)] p-5">
+                            <h3 className="flex items-center gap-2 font-black text-[var(--color-text-primary)]">
+                              <HiShieldCheck className="h-5 w-5 text-[var(--color-primary)]" />
+                              {policy.title}
+                            </h3>
+                            <ul className="mt-3 space-y-2">
+                              {policy.points.map((point, pointIndex) => (
+                                <li
+                                  key={pointIndex}
+                                  className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
+                                >
+                                  <HiCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+                                  {point}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[var(--color-text-muted)]">No policies listed.</p>
+                    )}
+                  </SectionShell>
+                )}
+
+                {activeTab === 'reviews' && (
+                  <SectionShell key="reviews" title="Guest reviews" eyebrow="Social proof">
+                    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl bg-[var(--color-bg-medium)] p-5">
+                      <div className="flex items-center gap-2">
+                        <HiStar className="h-8 w-8 text-[var(--color-primary)]" />
+                        <span className="text-4xl font-black text-[var(--color-text-primary)]">
+                          {averageRating}
+                        </span>
+                      </div>
+                      <p className="font-semibold text-[var(--color-text-secondary)]">
+                        Based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+                      </p>
+                    </div>
+
+                    {reviews.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <ReviewCard key={review._id} review={review} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-[var(--color-border)] p-10 text-center">
+                        <HiStar className="mx-auto mb-4 h-14 w-14 text-[var(--color-text-muted)] opacity-40" />
+                        <p className="text-lg font-black text-[var(--color-text-primary)]">No reviews yet</p>
+                        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                          Be the first to share this Miami stay experience.
+                        </p>
+                      </div>
+                    )}
+                  </SectionShell>
+                )}
+
+                {activeTab === 'location' && (
+                  <SectionShell key="location" title="Location" eyebrow="Miami neighborhood">
+                    <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-[var(--color-bg-medium)] p-4">
+                        <p className="text-xs font-black uppercase text-[var(--color-primary)]">Address</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                          {property.location?.address}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[var(--color-bg-medium)] p-4">
+                        <p className="text-xs font-black uppercase text-[var(--color-primary)]">Neighborhood</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                          {property.location?.neighborhood}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-[var(--color-bg-medium)] p-4">
+                        <p className="text-xs font-black uppercase text-[var(--color-primary)]">City</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                          {property.location?.city}, {property.location?.state}
+                        </p>
+                      </div>
+                    </div>
+
+                    {property.location?.coordinates?.coordinates && (
+                      <div className="h-[380px] overflow-hidden rounded-[22px] ring-1 ring-black/5">
+                        <MapContainer
+                          center={[
+                            property.location.coordinates.coordinates[1],
+                            property.location.coordinates.coordinates[0],
+                          ]}
+                          zoom={14}
+                          scrollWheelZoom={false}
+                          className="h-full w-full"
+                        >
+                          <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          />
+                          <Marker
+                            position={[
+                              property.location.coordinates.coordinates[1],
+                              property.location.coordinates.coordinates[0],
+                            ]}
+                          >
+                            <Popup>
+                              <strong>{property.name}</strong>
+                              <br />
+                              {property.location.address}
+                            </Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                    )}
+
+                    {property.location?.nearbyPlaces?.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="mb-4 text-xl font-black text-[var(--color-text-primary)]">
+                          Nearby places
+                        </h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {property.location.nearbyPlaces.map((place, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] p-4"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+                                  {place.type === 'airport' && <FaCar className="h-4 w-4" />}
+                                  {place.type === 'beach' && <PiSwimmingPoolBold className="h-4 w-4" />}
+                                  {place.type === 'metro' && <HiLocationMarker className="h-4 w-4" />}
+                                  {(place.type === 'restaurant' || place.type === 'shopping') && (
+                                    <HiStar className="h-4 w-4" />
+                                  )}
+                                  {!place.type && <HiLocationMarker className="h-4 w-4" />}
+                                </div>
+                                <div>
+                                  <p className="font-black text-[var(--color-text-primary)]">
+                                    {place.name}
+                                  </p>
+                                  <p className="text-xs capitalize text-[var(--color-text-muted)]">
+                                    {place.type?.replace('_', ' ')}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-sm font-black text-[var(--color-primary)]">
+                                {place.distance}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </SectionShell>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <aside className="lg:sticky lg:top-28 lg:self-start">
+              <BookingWidget property={property} />
+              <div className="mt-5 rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                  Local support
+                </p>
+                <h3 className="mt-1 text-lg font-black text-[var(--color-text-primary)]">
+                  Need help planning?
+                </h3>
+                <div className="mt-4 space-y-3 text-sm font-semibold text-[var(--color-text-secondary)]">
+                  <a href="tel:+13051234567" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                    <HiPhone className="h-4 w-4 text-[var(--color-primary)]" />
+                    +1 (305) 123-4567
+                  </a>
+                  <a href="mailto:support@miamistay.com" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                    <HiMail className="h-4 w-4 text-[var(--color-primary)]" />
+                    support@miamistay.com
+                  </a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        {similarProperties.length > 0 && (
+          <section className="mx-auto max-w-[1400px] px-6 pt-16 sm:px-8">
+            <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase text-[var(--color-primary)]">
+                  More Miami options
+                </p>
+                <h2 className="text-3xl font-black text-[var(--color-text-primary)]">
+                  Similar properties
+                </h2>
+              </div>
+              <Link to="/properties" className="text-sm font-black text-[var(--color-primary)]">
+                View all stays
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {similarProperties.slice(0, 4).map((similar) => (
+                <PropertyCard key={similar._id} property={similar} />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </>
+  );
 };
 
 export default PropertyDetailsPage;
