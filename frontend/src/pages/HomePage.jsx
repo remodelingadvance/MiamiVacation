@@ -14,6 +14,7 @@ import CTASection from '../components/home/CTASection';
 import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
+import AboutBanner from '../components/home/AboutBanner';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -46,6 +47,8 @@ const HomePage = () => {
 
       {/* Stats Section */}
       <StatsSection />
+
+      <AboutBanner />
 
       {/* Featured Properties */}
       <section className="py-20 bg-[var(--color-bg-medium)]">
