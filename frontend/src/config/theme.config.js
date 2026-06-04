@@ -37,7 +37,7 @@ export const THEME = {
       { label: 'About', path: '/about' },
       { label: 'Contact', path: '/contact' },
     ],
-    ctaLabel: 'List Your Property',
+    ctaLabel: 'Book Now',
     ctaPath: '/list-property',
   },
 
