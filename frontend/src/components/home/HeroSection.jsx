@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -9,13 +9,27 @@ import {
   HiUsers,
 } from "react-icons/hi";
 import { DateRange } from "react-date-range";
-import { format, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { THEME } from "../../config/theme.config";
 import MiamiVideo from "../../assets/miami.mp4";
 
+const getSafeDate = (date, fallback) => {
+  if (date instanceof Date && isValid(date)) return date;
+
+  const parsed = parseISO(date);
+  return isValid(parsed) ? parsed : fallback;
+};
+
 const HeroSection = () => {
   const navigate = useNavigate();
-  const datePickerRef = useRef(null);
+  const pickerWrapperRef = useRef(null);
+
+  const today = new Date();
+  const defaultStart = getSafeDate(THEME.hero.defaultDateStart, today);
+  const defaultEnd = getSafeDate(
+    THEME.hero.defaultDateEnd,
+    new Date(today.getTime() + 24 * 60 * 60 * 1000)
+  );
 
   const [selectedLocation, setSelectedLocation] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -24,39 +38,61 @@ const HeroSection = () => {
 
   const [dateRange, setDateRange] = useState([
     {
-      startDate: parseISO(THEME.hero.defaultDateStart),
-      endDate: parseISO(THEME.hero.defaultDateEnd),
+      startDate: defaultStart,
+      endDate: defaultEnd,
       key: "selection",
     },
   ]);
 
-  const formattedRange = `${format(dateRange[0].startDate, "MMM d")} - ${format(
-    dateRange[0].endDate,
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        pickerWrapperRef.current &&
+        !pickerWrapperRef.current.contains(event.target)
+      ) {
+        setShowDatePicker(false);
+        setShowGuestDrop(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const startDate = dateRange[0]?.startDate || today;
+  const endDate = dateRange[0]?.endDate || startDate;
+
+  const formattedRange = `${format(startDate, "MMM d")} - ${format(
+    endDate,
     "MMM d, yyyy"
   )}`;
 
-  const closePickers = () => {
-    setShowDatePicker(false);
-    setShowGuestDrop(false);
+  const handleDateChange = (item) => {
+    const selection = item.selection;
+
+    setDateRange([
+      {
+        startDate: selection.startDate || startDate,
+        endDate: selection.endDate || selection.startDate || endDate,
+        key: "selection",
+      },
+    ]);
   };
 
   const handleSearch = () => {
     const params = new URLSearchParams({
-      checkIn: format(dateRange[0].startDate, "yyyy-MM-dd"),
-      checkOut: format(dateRange[0].endDate, "yyyy-MM-dd"),
+      checkIn: format(startDate, "yyyy-MM-dd"),
+      checkOut: format(endDate, "yyyy-MM-dd"),
       guests: guests.toString(),
     });
 
-    if (selectedLocation) {
-      params.set("search", selectedLocation);
-    }
+    if (selectedLocation) params.set("search", selectedLocation);
 
     navigate(`/properties?${params.toString()}`);
   };
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-black">
-      {/* Background Video */}
       <video
         className="absolute inset-0 h-full w-full object-cover"
         src={MiamiVideo}
@@ -66,16 +102,11 @@ const HeroSection = () => {
         playsInline
       />
 
-      {/* Light Overlay - video remains clear */}
       <div className="absolute inset-0 bg-black/25" />
-
-      {/* Bottom Gradient */}
       <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-      {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-24 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl text-center">
-          {/* Welcome Message */}
           <motion.div
             initial={{ opacity: 0, y: 35 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,15 +126,14 @@ const HeroSection = () => {
             </p>
           </motion.div>
 
-          {/* Search Box */}
           <motion.div
+            ref={pickerWrapperRef}
             initial={{ opacity: 0, y: 35 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, delay: 0.25, ease: "easeOut" }}
-            className="mx-auto mt-10 w-full max-w-5xl rounded-3xl bg-white/95 p-4 text-left shadow-[0_30px_90px_rgba(0,0,0,0.25)] ring-1 ring-white/40 backdrop-blur-sm sm:p-5"
+            className="relative z-20 mx-auto mt-10 w-full max-w-5xl rounded-3xl bg-white/95 p-4 text-left shadow-[0_30px_90px_rgba(0,0,0,0.25)] ring-1 ring-white/40 backdrop-blur-sm sm:p-5"
           >
             <div className="grid gap-3 lg:grid-cols-[1.3fr_1.4fr_1fr_auto]">
-              {/* Location */}
               <div className="flex min-h-[66px] items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 transition hover:bg-white hover:shadow-md">
                 <HiLocationMarker className="h-6 w-6 shrink-0 text-[var(--color-primary)]" />
 
@@ -130,12 +160,11 @@ const HeroSection = () => {
                 </div>
               </div>
 
-              {/* Date Picker */}
-              <div className="relative" ref={datePickerRef}>
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => {
-                    setShowDatePicker((open) => !open);
+                    setShowDatePicker((prev) => !prev);
                     setShowGuestDrop(false);
                   }}
                   className="flex min-h-[66px] w-full items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 text-left transition hover:bg-white hover:shadow-md"
@@ -162,13 +191,13 @@ const HeroSection = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 12 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute left-0 top-full z-50 mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
+                      className="fixed left-1/2 top-28 z-[10000] w-[calc(100vw-24px)] max-w-[360px] -translate-x-1/2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl sm:absolute sm:left-0 sm:top-full sm:mt-3 sm:w-auto sm:max-w-none sm:translate-x-0"
                     >
                       <DateRange
                         editableDateInputs
-                        minDate={new Date()}
+                        minDate={today}
                         moveRangeOnFirstSelection={false}
-                        onChange={(item) => setDateRange([item.selection])}
+                        onChange={handleDateChange}
                         rangeColors={["#FF4F7B"]}
                         ranges={dateRange}
                       />
@@ -187,12 +216,11 @@ const HeroSection = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Guests */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => {
-                    setShowGuestDrop((open) => !open);
+                    setShowGuestDrop((prev) => !prev);
                     setShowDatePicker(false);
                   }}
                   className="flex min-h-[66px] w-full items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 text-left transition hover:bg-white hover:shadow-md"
@@ -219,7 +247,7 @@ const HeroSection = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 12 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full z-50 mt-3 w-64 rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl"
+                      className="absolute right-0 top-full z-[10000] mt-3 w-64 rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl"
                     >
                       <p className="mb-4 text-xs font-bold uppercase text-gray-500">
                         Number of guests
@@ -263,29 +291,21 @@ const HeroSection = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Search Button */}
               <button
                 type="button"
                 onClick={handleSearch}
-                className="flex min-h-[66px] items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-7 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--color-primary-dark)] hover:shadow-xl sm:text-base"
+                className="group relative flex min-h-[66px] items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-primary)] px-7 text-sm font-black text-white transition hover:-translate-y-0.5 hover:shadow-xl sm:text-base"
               >
-                <HiSearch className="h-5 w-5" />
-                Find Stays
+                <span className="absolute inset-y-0 left-0 w-0 bg-gray-950 transition-all duration-500 ease-out group-hover:w-full" />
+                <span className="relative z-10 flex items-center gap-2">
+                  <HiSearch className="h-5 w-5" />
+                  Find Stays
+                </span>
               </button>
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* Close Dropdowns */}
-      {(showDatePicker || showGuestDrop) && (
-        <button
-          type="button"
-          aria-label="Close filters"
-          className="fixed inset-0 z-20 cursor-default bg-transparent"
-          onClick={closePickers}
-        />
-      )}
     </section>
   );
 };
