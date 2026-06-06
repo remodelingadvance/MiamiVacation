@@ -124,7 +124,7 @@ export default function StatsBanner() {
               <span className="block">We're your local host in Miami.</span>
             </h3>
             <p className="text-white/80 leading-relaxed">
-              From sunny beaches to electric fan zones, from luxury villas to cozy beach houses—Miami Stay is your gateway to the ultimate World Cup experience.
+              From sunny beaches to skyline dining, from luxury villas to cozy beach houses, Miami Stay is your gateway to a polished Miami vacation.
             </p>
             <div className="font-display text-3xl lg:text-4xl italic text-[#F41452]">
               Welcome to Miami!

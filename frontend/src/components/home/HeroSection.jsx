@@ -1,82 +1,38 @@
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  HiArrowRight,
   HiCalendar,
   HiChevronDown,
   HiLocationMarker,
-  HiOfficeBuilding,
-  HiPhone,
-  HiShieldCheck,
-  HiTag,
+  HiSearch,
   HiUsers,
-} from 'react-icons/hi';
-import { GiSoccerBall, GiTrophyCup } from 'react-icons/gi';
-import { DateRange } from 'react-date-range';
-import { format, parseISO } from 'date-fns';
-import { THEME } from '../../config/theme.config';
-
-const StatIcon = ({ iconKey, color }) => {
-  const iconClass = 'h-8 w-8';
-  const icons = {
-    stadium: <HiOfficeBuilding className={iconClass} />,
-    calendar: <HiCalendar className={iconClass} />,
-    shield: <HiShieldCheck className={iconClass} />,
-    ticket: <HiTag className={iconClass} />,
-    headset: <HiPhone className={iconClass} />,
-  };
-
-  return (
-    <span className="flex items-center justify-center" style={{ color }}>
-      {icons[iconKey] ?? icons.shield}
-    </span>
-  );
-};
-
-const HeroVisual = () => (
-  <div className="pointer-events-none absolute bottom-[128px] right-[-6vw] top-[-18px] z-0 hidden w-[58vw] max-w-[900px] lg:block">
-    <div className="hero-ribbon hero-ribbon-pink" />
-    <div className="hero-ribbon hero-ribbon-white" />
-    <div className="hero-ribbon hero-ribbon-blue" />
-    <div className="hero-ribbon hero-ribbon-sky" />
-    <div className="hero-ribbon hero-ribbon-green" />
-    <div className="hero-ribbon hero-ribbon-yellow" />
-
-    <div className="absolute right-[10%] top-0 h-[76%] w-[76%]">
-      <span className="hero-number-shadow">26</span>
-      <span className="hero-number-main">26</span>
-      <div className="hero-trophy">
-        <GiTrophyCup aria-hidden="true" />
-        <span>FIFA</span>
-      </div>
-    </div>
-
-    <div className="hero-ball">
-      <GiSoccerBall aria-hidden="true" />
-    </div>
-  </div>
-);
+} from "react-icons/hi";
+import { DateRange } from "react-date-range";
+import { format, parseISO } from "date-fns";
+import { THEME } from "../../config/theme.config";
+import MiamiVideo from "../../assets/miami.mp4";
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const datePickerRef = useRef(null);
 
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGuestDrop, setShowGuestDrop] = useState(false);
   const [guests, setGuests] = useState(2);
+
   const [dateRange, setDateRange] = useState([
     {
       startDate: parseISO(THEME.hero.defaultDateStart),
       endDate: parseISO(THEME.hero.defaultDateEnd),
-      key: 'selection',
+      key: "selection",
     },
   ]);
 
-  const formattedRange = `${format(dateRange[0].startDate, 'MMM d')} - ${format(
+  const formattedRange = `${format(dateRange[0].startDate, "MMM d")} - ${format(
     dateRange[0].endDate,
-    'MMM d, yyyy'
+    "MMM d, yyyy"
   )}`;
 
   const closePickers = () => {
@@ -86,89 +42,81 @@ const HeroSection = () => {
 
   const handleSearch = () => {
     const params = new URLSearchParams({
-      checkIn: format(dateRange[0].startDate, 'yyyy-MM-dd'),
-      checkOut: format(dateRange[0].endDate, 'yyyy-MM-dd'),
+      checkIn: format(dateRange[0].startDate, "yyyy-MM-dd"),
+      checkOut: format(dateRange[0].endDate, "yyyy-MM-dd"),
       guests: guests.toString(),
     });
 
-    if (selectedLocation) params.set('search', selectedLocation);
+    if (selectedLocation) {
+      params.set("search", selectedLocation);
+    }
+
     navigate(`/properties?${params.toString()}`);
   };
 
   return (
-    <section className="world-cup-hero relative isolate overflow-hidden bg-white lg:min-h-[970px]">
-      <img
-        src={THEME.hero.heroImage}
-        alt="Miami beachfront vacation stays"
-        className="absolute inset-0 h-full w-full object-cover object-center"
-        onError={(e) => {
-          e.currentTarget.style.display = 'none';
-        }}
+    <section className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* Background Video */}
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        src={MiamiVideo}
+        autoPlay
+        muted
+        loop
+        playsInline
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.88)_28%,rgba(255,255,255,0.36)_58%,rgba(255,255,255,0.06)_100%)]" />
-      {/* <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.16)_34%,rgba(255,255,255,0.9)_100%)]" /> */}
 
-      <HeroVisual />
+      {/* Light Overlay - video remains clear */}
+      <div className="absolute inset-0 bg-black/25" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1500px] px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 26 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
-          className="max-w-[860px] pb-12 pt-28 sm:pt-36 lg:pb-[268px] lg:pt-[174px]"
-        >
-          <div className="mb-6 flex flex-wrap items-center gap-2 font-bold uppercase text-[15px] leading-none sm:text-xl">
-            <span style={{ color: THEME.colors.textDark }}>
-              {THEME.hero.badge.prefix}
-            </span>
-            <span style={{ color: THEME.colors.primary }}>
-              {THEME.hero.badge.highlight}
-            </span>
-          </div>
+      {/* Bottom Gradient */}
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          <h1
-            className="font-hero text-[4.15rem] font-black uppercase leading-[0.86] sm:text-[5.8rem] lg:text-[7.15rem] 2xl:text-[7.65rem]"
-            style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
+      {/* Content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-24 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl text-center">
+          {/* Welcome Message */}
+          <motion.div
+            initial={{ opacity: 0, y: 35 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, ease: "easeOut" }}
           >
-            {THEME.hero.heading.line1}
-            <br />
-            <span style={{ color: THEME.colors.primary }}>
-              {THEME.hero.heading.line2Primary}
-            </span>
-            <span className="hero-heading-blue">
-              {THEME.hero.heading.line2Secondary}
-            </span>
-          </h1>
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.35em] text-white drop-shadow-md sm:text-base">
+              Welcome to StayWise
+            </p>
 
-          <p
-            className="mt-7 max-w-[720px] text-lg font-medium leading-8 sm:text-[1.45rem] sm:leading-10"
-            style={{ color: THEME.colors.textDark }}
-          >
-            {THEME.hero.subtext}
-          </p>
+            <h1 className="mx-auto max-w-5xl font-hero text-5xl font-black uppercase leading-none text-white drop-shadow-lg sm:text-7xl lg:text-8xl">
+              Find Your Perfect Stay
+            </h1>
 
-          <div
-            className="world-cup-search relative z-20 mt-8 w-full max-w-[830px] overflow-visible rounded-2xl bg-white shadow-[0_18px_44px_rgba(8,19,76,0.14)] ring-1 ring-black/5"
+            <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-7 text-white/95 drop-shadow-md sm:text-lg">
+              Discover beautiful stays, compare comfort, and book your next trip
+              wisely.
+            </p>
+          </motion.div>
+
+          {/* Search Box */}
+          <motion.div
+            initial={{ opacity: 0, y: 35 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, delay: 0.25, ease: "easeOut" }}
+            className="mx-auto mt-10 w-full max-w-5xl rounded-3xl bg-white/95 p-4 text-left shadow-[0_30px_90px_rgba(0,0,0,0.25)] ring-1 ring-white/40 backdrop-blur-sm sm:p-5"
           >
-            <div className="grid divide-y divide-gray-100 sm:grid-cols-[1.12fr_1.35fr_1fr_auto] sm:divide-x sm:divide-y-0">
-              <div className="flex min-h-[88px] items-center gap-4 px-5 sm:px-6">
-                <HiLocationMarker
-                  className="h-8 w-8 shrink-0"
-                  style={{ color: THEME.colors.primary }}
-                />
+            <div className="grid gap-3 lg:grid-cols-[1.3fr_1.4fr_1fr_auto]">
+              {/* Location */}
+              <div className="flex min-h-[66px] items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 transition hover:bg-white hover:shadow-md">
+                <HiLocationMarker className="h-6 w-6 shrink-0 text-[var(--color-primary)]" />
+
                 <div className="min-w-0 flex-1">
-                  <p
-                    className="text-xs font-bold uppercase"
-                    style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
-                  >
+                  <p className="text-xs font-bold uppercase text-gray-500">
                     Location
                   </p>
-                  <div className="relative mt-1">
+
+                  <div className="relative">
                     <select
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full appearance-none bg-transparent pr-7 text-base font-medium leading-6 outline-none"
-                      style={{ color: THEME.colors.textDark }}
+                      className="w-full appearance-none bg-transparent pr-7 text-sm font-semibold text-gray-900 outline-none sm:text-base"
                     >
                       {THEME.locations.map((loc) => (
                         <option key={loc.value} value={loc.value}>
@@ -176,11 +124,13 @@ const HeroSection = () => {
                         </option>
                       ))}
                     </select>
-                    <HiChevronDown className="pointer-events-none absolute right-0 top-1 h-4 w-4" />
+
+                    <HiChevronDown className="pointer-events-none absolute right-0 top-1 h-4 w-4 text-gray-500" />
                   </div>
                 </div>
               </div>
 
+              {/* Date Picker */}
               <div className="relative" ref={datePickerRef}>
                 <button
                   type="button"
@@ -188,52 +138,46 @@ const HeroSection = () => {
                     setShowDatePicker((open) => !open);
                     setShowGuestDrop(false);
                   }}
-                  className="flex min-h-[88px] w-full items-center gap-4 px-5 text-left transition-colors hover:bg-gray-50 sm:px-6"
+                  className="flex min-h-[66px] w-full items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 text-left transition hover:bg-white hover:shadow-md"
                 >
-                  <HiCalendar
-                    className="h-8 w-8 shrink-0"
-                    style={{ color: THEME.colors.primary }}
-                  />
+                  <HiCalendar className="h-6 w-6 shrink-0 text-[var(--color-primary)]" />
+
                   <span className="min-w-0 flex-1">
-                    <span
-                      className="block text-xs font-bold uppercase"
-                      style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
-                    >
-                      Check In - Out
+                    <span className="block text-xs font-bold uppercase text-gray-500">
+                      Check In - Check Out
                     </span>
-                    <span
-                      className="mt-1 block truncate text-base font-medium leading-6"
-                      style={{ color: THEME.colors.textDark }}
-                    >
+
+                    <span className="block truncate text-sm font-semibold text-gray-900 sm:text-base">
                       {formattedRange}
                     </span>
                   </span>
-                  <HiChevronDown className="h-4 w-4 shrink-0" />
+
+                  <HiChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
                 </button>
 
                 <AnimatePresence>
                   {showDatePicker && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.18 }}
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{ duration: 0.2 }}
                       className="absolute left-0 top-full z-50 mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
-                      style={{ minWidth: 330 }}
                     >
                       <DateRange
                         editableDateInputs
                         minDate={new Date()}
                         moveRangeOnFirstSelection={false}
                         onChange={(item) => setDateRange([item.selection])}
-                        rangeColors={[THEME.colors.primary]}
+                        rangeColors={["#FF4F7B"]}
                         ranges={dateRange}
                       />
-                      <div className="flex justify-end border-t border-gray-100 bg-white px-4 py-3">
+
+                      <div className="flex justify-end border-t border-gray-100 px-4 py-3">
                         <button
                           type="button"
                           onClick={() => setShowDatePicker(false)}
-                          className="btn-primary px-5 py-2 text-xs"
+                          className="rounded-xl bg-[var(--color-primary)] px-5 py-2 text-sm font-bold text-white transition hover:bg-[var(--color-primary-dark)]"
                         >
                           Done
                         </button>
@@ -243,6 +187,7 @@ const HeroSection = () => {
                 </AnimatePresence>
               </div>
 
+              {/* Guests */}
               <div className="relative">
                 <button
                   type="button"
@@ -250,78 +195,66 @@ const HeroSection = () => {
                     setShowGuestDrop((open) => !open);
                     setShowDatePicker(false);
                   }}
-                  className="flex min-h-[88px] w-full items-center gap-4 px-5 text-left transition-colors hover:bg-gray-50 sm:px-6"
+                  className="flex min-h-[66px] w-full items-center gap-3 rounded-2xl bg-[var(--color-primary-light)] px-4 text-left transition hover:bg-white hover:shadow-md"
                 >
-                  <HiUsers
-                    className="h-8 w-8 shrink-0"
-                    style={{ color: THEME.colors.primary }}
-                  />
+                  <HiUsers className="h-6 w-6 shrink-0 text-[var(--color-primary)]" />
+
                   <span className="min-w-0 flex-1">
-                    <span
-                      className="block text-xs font-bold uppercase"
-                      style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
-                    >
+                    <span className="block text-xs font-bold uppercase text-gray-500">
                       Guests
                     </span>
-                    <span
-                      className="mt-1 block text-base font-medium leading-6"
-                      style={{ color: THEME.colors.textDark }}
-                    >
-                      {guests} {guests === 1 ? 'Guest' : 'Guests'}
+
+                    <span className="block text-sm font-semibold text-gray-900 sm:text-base">
+                      {guests} {guests === 1 ? "Guest" : "Guests"}
                     </span>
                   </span>
-                  <HiChevronDown className="h-4 w-4 shrink-0" />
+
+                  <HiChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
                 </button>
 
                 <AnimatePresence>
                   {showGuestDrop && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.18 }}
-                      className="absolute right-0 top-full z-50 mt-3 w-56 rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl"
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full z-50 mt-3 w-64 rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl"
                     >
-                      <p
-                        className="mb-4 text-xs font-bold uppercase"
-                        style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
-                      >
+                      <p className="mb-4 text-xs font-bold uppercase text-gray-500">
                         Number of guests
                       </p>
+
                       <div className="flex items-center justify-between">
                         <button
                           type="button"
-                          onClick={() => setGuests((value) => Math.max(1, value - 1))}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border-2 text-xl font-bold transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                          style={{
-                            borderColor: THEME.colors.border,
-                            color: THEME.colors.textDark,
-                          }}
+                          onClick={() =>
+                            setGuests((value) => Math.max(1, value - 1))
+                          }
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-xl font-bold text-gray-800 transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                         >
                           -
                         </button>
-                        <span
-                          className="text-2xl font-black"
-                          style={{ color: THEME.colors.textDark }}
-                        >
+
+                        <span className="text-2xl font-black text-gray-900">
                           {guests}
                         </span>
+
                         <button
                           type="button"
-                          onClick={() => setGuests((value) => Math.min(20, value + 1))}
-                          className="flex h-10 w-10 items-center justify-center rounded-full border-2 text-xl font-bold transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                          style={{
-                            borderColor: THEME.colors.border,
-                            color: THEME.colors.textDark,
-                          }}
+                          onClick={() =>
+                            setGuests((value) => Math.min(20, value + 1))
+                          }
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-xl font-bold text-gray-800 transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                         >
                           +
                         </button>
                       </div>
+
                       <button
                         type="button"
                         onClick={() => setShowGuestDrop(false)}
-                        className="btn-primary mt-5 w-full py-2 text-xs"
+                        className="mt-5 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-bold text-white transition hover:bg-[var(--color-primary-dark)]"
                       >
                         Done
                       </button>
@@ -330,79 +263,29 @@ const HeroSection = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="flex min-h-[88px] items-center p-3">
-                <button
-                  type="button"
-                  onClick={handleSearch}
-                  className="flex h-[58px] w-full items-center justify-center gap-3 rounded-lg px-6 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-[152px]"
-                  style={{
-                    background: THEME.colors.primary,
-                    boxShadow: `0 10px 20px ${THEME.colors.primary}33`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = THEME.colors.primaryHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = THEME.colors.primary;
-                  }}
-                >
-                  {THEME.hero.searchCta}
-                  <HiArrowRight className="h-5 w-5" />
-                </button>
-              </div>
+              {/* Search Button */}
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="flex min-h-[66px] items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-7 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--color-primary-dark)] hover:shadow-xl sm:text-base"
+              >
+                <HiSearch className="h-5 w-5" />
+                Find Stays
+              </button>
             </div>
-          </div>
-
-          {(showDatePicker || showGuestDrop) && (
-            <button
-              type="button"
-              aria-label="Close filters"
-              className="fixed inset-0 z-10 cursor-default bg-transparent"
-              onClick={closePickers}
-            />
-          )}
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 22 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.35 }}
-        className="relative z-20 mx-auto w-full max-w-[1490px] px-6 pb-8 lg:absolute lg:left-0 lg:right-0 lg:top-[812px] lg:px-8 lg:pb-0"
-      >
-        <div className="grid overflow-hidden rounded-[26px] bg-white/95 shadow-[0_20px_55px_rgba(8,19,76,0.12)] ring-1 ring-black/5 backdrop-blur-md sm:grid-cols-2 lg:grid-cols-5">
-          {THEME.stats.map((stat, index) => (
-            <div
-              key={stat.label}
-              className={`flex min-h-[120px] items-center gap-5 px-7 py-6 ${
-                index > 0 ? 'lg:border-l' : ''
-              } ${index > 1 ? 'sm:border-t lg:border-t-0' : ''}`}
-              style={{ borderColor: THEME.colors.border }}
-            >
-              <div
-                className="flex h-[70px] w-[70px] shrink-0 items-center justify-center rounded-full"
-                style={{ background: `${stat.iconColor}1A` }}
-              >
-                <StatIcon color={stat.iconColor} iconKey={stat.iconKey} />
-              </div>
-              <div className="min-w-0">
-                <p
-                  className="text-[0.95rem] font-black uppercase leading-tight"
-                  style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
-                >
-                  {stat.label}
-                </p>
-                <p
-                  className="mt-1 text-sm font-medium leading-snug"
-                  style={{ color: THEME.colors.textMedium }}
-                >
-                  {stat.value}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
+      {/* Close Dropdowns */}
+      {(showDatePicker || showGuestDrop) && (
+        <button
+          type="button"
+          aria-label="Close filters"
+          className="fixed inset-0 z-20 cursor-default bg-transparent"
+          onClick={closePickers}
+        />
+      )}
     </section>
   );
 };

@@ -34,7 +34,7 @@ const ForgotPasswordPage = () => {
     <>
       <SEOHead title="Forgot Password" />
 
-      <section className="min-h-screen flex items-center justify-center px-4">
+      <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -59,7 +59,7 @@ const ForgotPasswordPage = () => {
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center">
                   <HiCheck className="w-8 h-8 text-[var(--color-success)]" />
                 </div>
-                <h2 className="text-xl font-display font-bold text-white mb-2">Email Sent!</h2>
+                <h2 className="mb-2 text-xl font-display font-bold text-[var(--color-text-primary)]">Email Sent!</h2>
                 <p className="text-[var(--color-text-secondary)] text-sm mb-6">
                   Check your email for a password reset link. If you don't see it, check your spam folder.
                 </p>
@@ -69,7 +69,7 @@ const ForgotPasswordPage = () => {
               </motion.div>
             ) : (
               <>
-                <h1 className="text-2xl font-display font-bold text-white mb-2 text-center">
+                <h1 className="mb-2 text-center text-2xl font-display font-bold text-[var(--color-text-primary)]">
                   Forgot Password
                 </h1>
                 <p className="text-[var(--color-text-secondary)] text-sm text-center mb-6">

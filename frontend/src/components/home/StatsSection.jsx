@@ -18,7 +18,7 @@ const StatsSection = () => {
   });
 
   return (
-    <section className="py-16 bg-gradient-to-b from-[var(--color-bg-dark)] to-[var(--color-bg-medium)]">
+    <section className="bg-gradient-to-b from-[var(--color-bg-dark)] to-[var(--color-bg-medium)] py-16">
       <div className="container-custom" ref={ref}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
           {stats.map((stat, index) => (
@@ -27,12 +27,12 @@ const StatsSection = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: index * 0.1 }}
-              className="text-center"
+              className="rounded-lg bg-white p-5 text-center shadow-[0_12px_34px_rgba(8,51,68,0.07)] ring-1 ring-black/5"
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl glass-light flex items-center justify-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--color-primary-light)]">
                 <stat.icon className="w-7 h-7 text-[var(--color-primary)]" />
               </div>
-              <div className="text-3xl font-bold text-white mb-1">
+              <div className="mb-1 text-3xl font-bold text-[var(--color-text-primary)]">
                 {inView && (
                   <CountUp
                     end={stat.value}
@@ -42,7 +42,7 @@ const StatsSection = () => {
                   />
                 )}
               </div>
-              <p className="text-sm text-[var(--color-text-muted)]">{stat.label}</p>
+              <p className="text-sm font-semibold text-[var(--color-text-muted)]">{stat.label}</p>
             </motion.div>
           ))}
         </div>

@@ -246,7 +246,7 @@ const PropertyDetailsPage = () => {
                 </span>
               )}
               <span className="badge bg-white/16 text-white backdrop-blur">
-                FIFA World Cup 2026
+                Verified Miami stay
               </span>
             </div>
 
@@ -354,8 +354,8 @@ const PropertyDetailsPage = () => {
                     <div className="mt-8 grid gap-4 sm:grid-cols-3">
                       <div className="rounded-2xl bg-[var(--color-primary-light)] p-5">
                         <HiCalendar className="mb-3 h-6 w-6 text-[var(--color-primary)]" />
-                        <p className="font-black text-[var(--color-text-primary)]">Match ready dates</p>
-                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">June 11 - July 19, 2026</p>
+                        <p className="font-black text-[var(--color-text-primary)]">Flexible stay dates</p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Weekend escapes and extended stays</p>
                       </div>
                       <div className="rounded-2xl bg-[var(--color-secondary-light)] p-5">
                         <HiShieldCheck className="mb-3 h-6 w-6 text-[var(--color-secondary)]" />

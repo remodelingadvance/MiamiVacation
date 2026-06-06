@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
   FaArrowRight,
   FaPlay,
@@ -201,10 +202,9 @@ const AboutBanner = () => {
                 leading-[2]
               "
             >
-              Miami Stay connects travelers from around the world
-              with unforgettable luxury homes, beachfront villas,
-              and authentic Miami experiences during FIFA World Cup
-              2026™ and beyond.
+              Miami Stay connects discerning travelers with unforgettable
+              luxury homes, beachfront villas, skyline condos, and authentic
+              local experiences across the city.
             </motion.p>
 
             {/* BUTTONS */}
@@ -221,14 +221,15 @@ const AboutBanner = () => {
             >
 
               {/* PRIMARY BUTTON */}
-              <button
+              <Link
+                to="/properties"
                 className="
                   group
                   relative
                   overflow-hidden
                   px-9
                   py-4
-                  rounded-2xl
+                  rounded-lg
                   bg-gradient-to-r
                   from-pink-500
                   to-rose-500
@@ -254,7 +255,7 @@ const AboutBanner = () => {
 
                 </span>
 
-              </button>
+              </Link>
 
               {/* SECONDARY BUTTON */}
               {/* <button
@@ -442,7 +443,7 @@ const AboutBanner = () => {
                 <div>
 
                   <p className="text-slate-500 text-sm">
-                    Official Host City
+                    Miami home base
                   </p>
 
                   <h4

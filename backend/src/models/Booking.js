@@ -86,6 +86,14 @@ const bookingSchema = new mongoose.Schema({
         },
         subtotal: Number,
         total: Number,
+        dailyRates: [{
+            date: Date,
+            price: Number,
+            source: {
+                type: String,
+                enum: ['base', 'weekend', 'seasonal', 'custom']
+            }
+        }],
         currency: {
             type: String,
             default: 'USD'

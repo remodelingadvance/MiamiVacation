@@ -8,7 +8,7 @@ const NotFoundPage = () => {
     <>
       <SEOHead title="404 - Page Not Found" />
 
-      <section className="min-h-screen flex items-center justify-center px-4 pt-20">
+      <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -59,18 +59,13 @@ const NotFoundPage = () => {
             </div>
           </motion.div>
 
-          {/* Decorative elements */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[var(--color-primary)]/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[var(--color-accent)]/5 rounded-full blur-3xl" />
-          </div>
         </motion.div>
       </section>
 
       {/* Suggested links */}
-      <section className="py-16">
+      <section className="bg-[var(--color-bg-medium)] py-16">
         <div className="container-custom">
-          <h3 className="text-xl font-display font-bold text-white text-center mb-8">
+          <h3 className="mb-8 text-center text-xl font-display font-bold text-[var(--color-text-primary)]">
             You might be looking for
           </h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -87,7 +82,7 @@ const NotFoundPage = () => {
               <Link
                 key={link.label}
                 to={link.to}
-                className="glass-light rounded-xl p-4 text-center text-[var(--color-text-secondary)] hover:text-white hover:bg-white/5 transition-all"
+                className="rounded-lg border border-[var(--color-border)] bg-white p-4 text-center text-[var(--color-text-secondary)] shadow-sm transition-all hover:text-[var(--color-primary)]"
               >
                 {link.label}
               </Link>

@@ -3,10 +3,14 @@ import { Booking, Property, Coupon, User, Notification } from '../models/index.j
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
-import { calculateTotalPrice, generateBookingNumber } from '../utils/helpers.js';
+import { generateBookingNumber } from '../utils/helpers.js';
+import {
+  calculatePriceBreakdown,
+  calculateStayPricing,
+  dateKeyToUTCDate,
+} from '../utils/rateCalendar.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
-import mongoose from 'mongoose';
 
 // @desc    Create booking
 // @route   POST /api/v1/bookings
@@ -90,17 +94,24 @@ export const createBooking = catchAsync(async (req, res, next) => {
     return next(new AppError(`Maximum guests allowed is ${property.details.maxGuests}`, 400));
   }
 
-  // Calculate nights
-  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-  
-  // Check minimum stay
-  if (nights < property.pricing.minimumStay) {
-    return next(new AppError(`Minimum stay is ${property.pricing.minimumStay} nights`, 400));
+  // Calculate day-wise pricing from the property rate calendar
+  const stayPricing = calculateStayPricing(property, checkIn, checkOut);
+  const nights = stayPricing.nights;
+
+  const blockedDay = stayPricing.dailyRates.find((day) => day.isAvailable === false);
+  if (blockedDay) {
+    return next(new AppError(
+      `Property is unavailable on ${blockedDay.date}. Please choose different dates.`,
+      400
+    ));
   }
 
-  // Calculate pricing
-  const basePrice = property.pricing.basePrice;
-  let pricing = calculateTotalPrice(basePrice, nights, {
+  // Check minimum stay, including day-specific overrides
+  if (nights < stayPricing.minimumStay) {
+    return next(new AppError(`Minimum stay is ${stayPricing.minimumStay} nights`, 400));
+  }
+
+  let pricing = calculatePriceBreakdown(stayPricing.baseTotal, nights, {
     cleaningFee: property.pricing.cleaningFee || 0,
     serviceFee: property.pricing.serviceFee || 0,
     taxRate: property.pricing.taxRate || 13.5,
@@ -109,11 +120,14 @@ export const createBooking = catchAsync(async (req, res, next) => {
   // Apply coupon if provided
   let coupon = null;
   if (couponCode) {
+    const now = new Date();
     coupon = await Coupon.findOne({ 
       code: couponCode.toUpperCase(),
       status: 'active',
-      validFrom: { $lte: new Date() },
-      validUntil: { $gte: new Date() },
+      $or: [
+        { startDate: { $lte: now }, endDate: { $gte: now } },
+        { validFrom: { $lte: now }, validUntil: { $gte: now } },
+      ],
     });
 
     if (coupon) {
@@ -124,8 +138,9 @@ export const createBooking = catchAsync(async (req, res, next) => {
         discountAmount = coupon.value;
       }
       
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
+      const maxDiscount = coupon.maximumDiscount || coupon.maxDiscount;
+      if (maxDiscount && discountAmount > maxDiscount) {
+        discountAmount = maxDiscount;
       }
       
       pricing.discount = Math.round(discountAmount * 100) / 100;
@@ -138,11 +153,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Generate booking number
-  const year = new Date().getFullYear().toString().slice(-2);
-  const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  const bookingNumber = `MIA${year}${month}${random}`;
+  const bookingNumber = generateBookingNumber();
 
   // Create booking with guest details
   const booking = await Booking.create({
@@ -164,7 +175,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
       paidAt: new Date(),
     },
     pricing: {
-      nightlyRate: basePrice,
+      nightlyRate: pricing.nightlyRate,
       nights: nights,
       baseTotal: pricing.baseTotal,
       cleaningFee: pricing.cleaningFee,
@@ -174,6 +185,12 @@ export const createBooking = catchAsync(async (req, res, next) => {
       coupon: pricing.coupon,
       subtotal: pricing.subtotal,
       total: pricing.total,
+      dailyRates: stayPricing.dailyRates.map((day) => ({
+        date: dateKeyToUTCDate(day.date),
+        price: day.price,
+        source: day.source,
+      })),
+      currency: stayPricing.currency,
     },
     specialRequests: specialRequests || '',
     guestsInfo: {
@@ -562,6 +579,39 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
 
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
+  const stayPricing = calculateStayPricing(property, checkIn, checkOut);
+  const blockedDay = stayPricing.dailyRates.find((day) => day.isAvailable === false);
+
+  if (blockedDay) {
+    return res.status(200).json({
+      success: true,
+      isAvailable: false,
+      reason: 'blocked',
+      message: `Property is unavailable on ${blockedDay.date}`,
+      pricing: {
+        nights: stayPricing.nights,
+        baseTotal: stayPricing.baseTotal,
+        averageNightlyRate: stayPricing.averageNightlyRate,
+        dailyRates: stayPricing.dailyRates,
+      },
+    });
+  }
+
+  if (stayPricing.nights < stayPricing.minimumStay) {
+    return res.status(200).json({
+      success: true,
+      isAvailable: false,
+      reason: 'minimum_stay',
+      message: `Minimum stay is ${stayPricing.minimumStay} nights`,
+      minimumStay: stayPricing.minimumStay,
+      pricing: {
+        nights: stayPricing.nights,
+        baseTotal: stayPricing.baseTotal,
+        averageNightlyRate: stayPricing.averageNightlyRate,
+        dailyRates: stayPricing.dailyRates,
+      },
+    });
+  }
 
   // Check maintenance dates
   const maintenanceDates = property.maintenanceDates || [];
@@ -576,7 +626,13 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
       success: true,
       isAvailable: false,
       reason: 'maintenance',
-      message: 'Property is under maintenance during selected dates'
+      message: 'Property is under maintenance during selected dates',
+      pricing: {
+        nights: stayPricing.nights,
+        baseTotal: stayPricing.baseTotal,
+        averageNightlyRate: stayPricing.averageNightlyRate,
+        dailyRates: stayPricing.dailyRates,
+      },
     });
   }
 
@@ -599,6 +655,13 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
     isAvailable,
     reason: isAvailable ? null : 'booked',
     conflictingBookings: conflictingBookings.length,
+    minimumStay: stayPricing.minimumStay,
+    pricing: {
+      nights: stayPricing.nights,
+      baseTotal: stayPricing.baseTotal,
+      averageNightlyRate: stayPricing.averageNightlyRate,
+      dailyRates: stayPricing.dailyRates,
+    },
     maintenanceDates: maintenanceDates.filter(md => 
       (checkInDate <= new Date(md.endDate) && checkOutDate >= new Date(md.startDate))
     )

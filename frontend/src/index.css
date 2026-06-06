@@ -15,25 +15,27 @@
 @layer base {
   :root {
     /* Brand */
-    --color-primary:        #F41452;
-    --color-primary-dark:   #D90E45;
-    --color-primary-light:  #FFF0F5;
-    --color-secondary:      #245BFF;
-    --color-secondary-light:#EAF0FF;
-    --color-accent:         #20B967;
+    --color-primary:        #FF4F7B;
+    --color-primary-dark:   #E73968;
+    --color-primary-light:  #FFF1F5;
+    --color-secondary:      #00A9C8;
+    --color-secondary-light:#E7FAFE;
+    --color-accent:         #18B27E;
+    --color-sun:            #FFD166;
+    --color-violet:         #6C63FF;
 
     /* Backgrounds */
-    --color-bg-dark:    #FFFFFF;
-    --color-bg-medium:  #F7F8FA;
-    --color-bg-light:   #F0F2F5;
+    --color-bg-dark:    #FFFDFB;
+    --color-bg-medium:  #F5FBFC;
+    --color-bg-light:   #EAF4F6;
 
     /* Text */
-    --color-text-primary:   #07144C;
-    --color-text-secondary: #31406B;
-    --color-text-muted:     #6A7392;
+    --color-text-primary:   #083344;
+    --color-text-secondary: #315466;
+    --color-text-muted:     #6B8794;
 
     /* Borders */
-    --color-border: #E6EAF2;
+    --color-border: #DCEAF0;
 
     /* Status */
     --color-success: #10B981;
@@ -60,7 +62,8 @@
 
   body {
     font-family: var(--font-body);
-    background-color: var(--color-bg-dark);
+    background:
+      linear-gradient(180deg, #fffdfb 0%, #f5fbfc 46%, #fffdfb 100%);
     color: var(--color-text-primary);
     line-height: 1.6;
     overflow-x: hidden;
@@ -103,7 +106,7 @@
 
   /* Text gradient */
   .text-gradient {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 55%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -121,7 +124,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
     color: #ffffff;
     padding: 12px 28px;
     border-radius: 8px;
@@ -135,9 +138,9 @@
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-dark);
+    background: linear-gradient(135deg, var(--color-primary-dark), #008FAA);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(232, 0, 61, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 169, 200, 0.22);
   }
 
   .btn-outline {
@@ -158,10 +161,10 @@
   }
 
   .btn-outline:hover {
-    background: var(--color-primary);
+    background: var(--color-text-primary);
     color: #ffffff;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(232, 0, 61, 0.2);
+    box-shadow: 0 8px 24px rgba(8, 51, 68, 0.12);
   }
 
   /* Card hover */
@@ -294,69 +297,70 @@
   .img-zoom img { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
   .img-zoom:hover img { transform: scale(1.08); }
 
-  .event-logo-mark {
+  .miami-brand-mark {
     position: relative;
     display: inline-flex;
-    width: 72px;
+    width: 58px;
     height: 58px;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    gap: 1px;
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: 8px;
     background:
-      linear-gradient(90deg, #ff185b 0 49%, #245bff 49% 100%);
-    box-shadow: 0 14px 28px rgba(8, 19, 76, 0.12);
+      linear-gradient(135deg, #ff4f7b 0%, #00a9c8 52%, #18b27e 100%);
+    box-shadow: 0 14px 28px rgba(8, 51, 68, 0.12);
     color: #ffffff;
     font-family: var(--font-hero);
-    font-size: 2.5rem;
+    font-size: 2.65rem;
     font-weight: 900;
     line-height: 1;
     letter-spacing: 0;
   }
 
-  .event-logo-mark::before {
+  .miami-brand-mark::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 72% 14%, rgba(255, 200, 61, 0.9) 0 12%, transparent 13%),
+      radial-gradient(circle at 78% 16%, rgba(255, 209, 102, 0.95) 0 13%, transparent 14%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 48%);
     opacity: 0.9;
   }
 
-  .event-logo-mark > * {
+  .miami-brand-mark > * {
     position: relative;
     z-index: 1;
   }
 
-  .event-logo-mark svg {
-    width: 24px;
-    height: 24px;
-    margin: 0 -4px;
-    color: #ffc83d;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.24));
+  .miami-brand-mark svg {
+    position: absolute;
+    bottom: 7px;
+    right: 7px;
+    width: 18px;
+    height: 18px;
+    color: #ffffff;
+    opacity: 0.9;
   }
 
-  .event-logo-mark-sm {
-    width: 56px;
-    height: 46px;
-    border-radius: 13px;
-    font-size: 1.95rem;
+  .miami-brand-mark-sm {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    font-size: 2.15rem;
   }
 
-  .event-logo-mark-sm svg {
-    width: 19px;
-    height: 19px;
+  .miami-brand-mark-sm svg {
+    width: 15px;
+    height: 15px;
   }
 
-  .world-cup-hero {
+  .miami-hero {
     min-height: 100vh;
   }
 
   .hero-heading-blue {
-    background: linear-gradient(90deg, #245bff 0%, #2045e8 58%, #062dbf 100%);
+    background: linear-gradient(90deg, #00a9c8 0%, #18b27e 58%, #083344 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -515,13 +519,13 @@
     width: 52%;
   }
 
-  .world-cup-search {
+  .miami-search {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
 
   @media (max-width: 1023px) {
-    .world-cup-hero {
+    .miami-hero {
       min-height: auto;
     }
   }
@@ -572,7 +576,7 @@
   }
 
   .booking-calendar-card .rdrDay {
-    height: 3.25rem;
+    height: 4rem;
   }
 
   .booking-calendar-card .rdrDayNumber span {
@@ -619,15 +623,40 @@
   .booking-day-content {
     position: relative;
     display: inline-flex;
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 3.25rem;
+    height: 3rem;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+    gap: 0.14rem;
+  }
+
+  .booking-day-number {
+    line-height: 1;
+  }
+
+  .booking-day-price {
+    color: var(--color-primary) !important;
+    font-size: 0.66rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .booking-calendar-card .rdrDayDisabled .booking-day-price,
+  .booking-calendar-card .rdrDayPassive .booking-day-price {
+    color: #a9b1c4 !important;
+  }
+
+  .booking-calendar-card .rdrStartEdge + .rdrDayNumber .booking-day-price,
+  .booking-calendar-card .rdrEndEdge + .rdrDayNumber .booking-day-price,
+  .booking-calendar-card .rdrDayStartOfMonth .rdrStartEdge + .rdrDayNumber .booking-day-price,
+  .booking-calendar-card .rdrDayEndOfMonth .rdrEndEdge + .rdrDayNumber .booking-day-price {
+    color: #ffffff !important;
   }
 
   .booking-day-dot {
     position: absolute;
-    bottom: 0.18rem;
+    bottom: 0.08rem;
     width: 0.36rem;
     height: 0.36rem;
     border-radius: 999px;
@@ -639,6 +668,10 @@
 
   .booking-day-dot.maintenance {
     background: #f59e0b;
+  }
+
+  .booking-day-dot.blocked {
+    background: #64748b;
   }
 
   .availability-calendar .react-calendar {
@@ -687,10 +720,24 @@
 
   .availability-calendar .react-calendar__tile {
     border-radius: 12px;
-    padding: 0.92rem 0.35rem;
+    min-height: 4.4rem;
+    padding: 0.76rem 0.35rem;
     color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.16rem;
     font-weight: 800;
     transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+  }
+
+  .availability-day-price {
+    display: block;
+    color: var(--color-primary);
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1;
   }
 
   .availability-calendar .react-calendar__tile:enabled:hover,
@@ -709,6 +756,12 @@
   .availability-calendar .range-end {
     background: var(--color-primary) !important;
     color: #ffffff !important;
+  }
+
+  .availability-calendar .react-calendar__tile--active .availability-day-price,
+  .availability-calendar .range-start .availability-day-price,
+  .availability-calendar .range-end .availability-day-price {
+    color: #ffffff;
   }
 
   .availability-calendar .range-middle {
@@ -730,10 +783,21 @@
     cursor: not-allowed;
   }
 
+  .availability-calendar .blocked-date {
+    background: rgba(100, 116, 139, 0.14) !important;
+    color: #475569 !important;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
   .availability-calendar .react-calendar__tile:disabled {
     background: #f5f7fb;
     color: #a9b1c4;
     cursor: not-allowed;
+  }
+
+  .availability-calendar .react-calendar__tile:disabled .availability-day-price {
+    color: #a9b1c4;
   }
 
   @media (max-width: 640px) {
@@ -742,8 +806,23 @@
     }
 
     .availability-calendar .react-calendar__tile {
-      padding: 0.72rem 0.2rem;
+      min-height: 3.85rem;
+      padding: 0.56rem 0.16rem;
       font-size: 0.82rem;
+    }
+
+    .availability-day-price,
+    .booking-day-price {
+      font-size: 0.6rem;
+    }
+
+    .booking-calendar-card .rdrDay {
+      height: 3.7rem;
+    }
+
+    .booking-day-content {
+      width: 2.86rem;
+      height: 2.78rem;
     }
   }
 }

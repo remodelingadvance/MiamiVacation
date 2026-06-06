@@ -4,7 +4,7 @@ import { HiArrowRight, HiPhone, HiMail, HiCalendar } from 'react-icons/hi';
 
 const CTASection = () => {
   return (
-    <section className="py-20 bg-[var(--color-bg-medium)]">
+    <section className="bg-[#062B3A] py-20">
       <div className="container-custom">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Left content */}
@@ -49,7 +49,7 @@ const CTASection = () => {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <div className="glass rounded-2xl p-8">
+            <div className="rounded-lg border border-white/10 bg-white/[0.08] p-8 backdrop-blur">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center flex-shrink-0">
                   <HiPhone className="w-7 h-7 text-[var(--color-primary)]" />
@@ -71,7 +71,7 @@ const CTASection = () => {
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-8">
+            <div className="rounded-lg border border-white/10 bg-white/[0.08] p-8 backdrop-blur">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center flex-shrink-0">
                   <HiMail className="w-7 h-7 text-[var(--color-primary)]" />
@@ -100,7 +100,7 @@ const CTASection = () => {
                 'Secure Booking',
                 '24/7 Support',
               ].map((badge) => (
-                <div key={badge} className="glass-light rounded-xl p-4 text-center">
+                <div key={badge} className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-center">
                   <p className="text-white text-sm font-medium">{badge}</p>
                 </div>
               ))}

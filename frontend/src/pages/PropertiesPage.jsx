@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  HiAdjustments,
-  HiCalendar,
   HiLocationMarker,
   HiSearch,
   HiShieldCheck,
@@ -37,7 +35,6 @@ const PropertiesPage = () => {
     setCurrentPage,
   } = useSearch();
 
-  const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -55,8 +52,8 @@ const PropertiesPage = () => {
   return (
     <>
       <SEOHead
-        title="Miami World Cup Vacation Rentals"
-        description="Browse professional Miami vacation homes for FIFA World Cup 2026 stays, match weeks, beach days, and local concierge support."
+        title="Miami Luxury Vacation Rentals"
+        description="Browse professional Miami vacation homes for beach weekends, family trips, extended stays, and local concierge support."
       />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
@@ -78,17 +75,17 @@ const PropertiesPage = () => {
           >
             <div className="mb-5 flex flex-wrap gap-3">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/14 px-4 py-2 text-sm font-black uppercase backdrop-blur">
-                <HiCalendar className="h-4 w-4 text-[#FFC83D]" />
-                June 11 - July 19, 2026
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/14 px-4 py-2 text-sm font-black uppercase backdrop-blur">
                 <HiLocationMarker className="h-4 w-4 text-[var(--color-primary)]" />
                 Miami, Florida
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/14 px-4 py-2 text-sm font-black uppercase backdrop-blur">
+                <HiShieldCheck className="h-4 w-4 text-[var(--color-accent)]" />
+                Verified luxury stays
               </span>
             </div>
 
             <p className="text-sm font-black uppercase text-[var(--color-primary)]">
-              FIFA World Cup 2026 Stays
+              Miami Luxury Rentals
             </p>
             <h1 className="mt-3 font-hero text-6xl font-black uppercase leading-[0.9] sm:text-7xl lg:text-8xl">
               Stay Close.
@@ -96,8 +93,9 @@ const PropertiesPage = () => {
               Live Miami.
             </h1>
             <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/82 sm:text-xl">
-              Curated vacation homes for match days, beach mornings, and late-night Miami
-              energy. Filter verified stays by neighborhood, group size, amenities, and price.
+              Curated vacation homes for beach mornings, dining nights, family trips,
+              and extended escapes. Filter verified stays by neighborhood, group size,
+              amenities, and price.
             </p>
           </motion.div>
         </div>
@@ -114,26 +112,12 @@ const PropertiesPage = () => {
                 </p>
                 <h2 className="text-2xl font-black text-[var(--color-text-primary)]">
                   {totalResults > 0
-                    ? `${totalResults} Miami stays ready for World Cup guests`
-                    : 'Find your Miami match-week home'}
+                    ? `${totalResults} curated Miami stays available`
+                    : 'Find your Miami home base'}
                 </h2>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(true)}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[var(--color-text-primary)] px-4 py-3 text-sm font-black text-white transition-colors hover:bg-[var(--color-primary)] lg:hidden"
-                >
-                  <HiAdjustments className="h-5 w-5" />
-                  Filters
-                  {activeFilters.length > 0 && (
-                    <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs">
-                      {activeFilters.length}
-                    </span>
-                  )}
-                </button>
-
                 <label className="relative block min-w-[230px]">
                   <span className="sr-only">Sort properties</span>
                   <select
@@ -196,22 +180,19 @@ const PropertiesPage = () => {
             )}
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <div className="hidden lg:block">
-              <div className="sticky top-28">
-                <PropertyFilters
-                  filters={filters}
-                  onFilterChange={updateFilters}
-                  onReset={resetFilters}
-                />
-              </div>
-            </div>
+          <div className="mb-8">
+            <PropertyFilters
+              filters={filters}
+              onFilterChange={updateFilters}
+              onReset={resetFilters}
+            />
+          </div>
 
-            <div>
+          <div>
               <div className="mb-6 grid gap-4 sm:grid-cols-3">
                 {[
                   ['Verified homes', HiShieldCheck, 'Quality checked for guests'],
-                  ['Game day access', HiSparkles, 'Stay close. Live loud.'],
+                  ['Guest perks', HiSparkles, 'Beach kits, dining tips, add-ons'],
                   ['Miami concierge', HiLocationMarker, 'Local support around the clock'],
                 ].map(([title, Icon, text]) => (
                   <div
@@ -286,54 +267,9 @@ const PropertiesPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
           </div>
         </div>
       </section>
-
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 lg:hidden"
-          >
-            <button
-              type="button"
-              aria-label="Close filters"
-              className="absolute inset-0 bg-[rgba(7,20,76,0.55)] backdrop-blur-sm"
-              onClick={() => setShowFilters(false)}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="absolute bottom-0 right-0 top-0 w-full max-w-sm overflow-y-auto bg-[var(--color-bg-medium)] p-5 shadow-2xl"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-black text-[var(--color-text-primary)]">
-                  Filter stays
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-text-primary)] shadow-sm"
-                  aria-label="Close filters"
-                >
-                  <HiX className="h-5 w-5" />
-                </button>
-              </div>
-              <PropertyFilters
-                filters={filters}
-                onFilterChange={updateFilters}
-                onReset={resetFilters}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 };

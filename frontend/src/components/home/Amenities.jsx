@@ -75,7 +75,7 @@ const Amenities = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="section-title text-white">
+          <h2 className="section-title">
             Premium Amenities
           </h2>
           <p className="section-subtitle mx-auto">
@@ -92,11 +92,11 @@ const Amenities = () => {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -5 }}
-              className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${amenity.color} p-6 glass border border-white/5 hover:border-[var(--color-primary)]/30 transition-all`}
+              className={`group relative overflow-hidden rounded-lg bg-gradient-to-br ${amenity.color} border border-white p-6 shadow-[0_14px_34px_rgba(8,51,68,0.08)] transition-all hover:border-[var(--color-primary)]/30`}
             >
               <div className="relative z-10">
                 <amenity.icon className="w-10 h-10 text-[var(--color-primary)] mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-white font-display font-bold text-lg mb-2">{amenity.title}</h3>
+                <h3 className="mb-2 text-lg font-display font-bold text-[var(--color-text-primary)]">{amenity.title}</h3>
                 <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{amenity.description}</p>
               </div>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />

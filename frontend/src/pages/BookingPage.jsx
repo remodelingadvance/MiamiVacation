@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateRange } from 'react-date-range';
-import { addDays, differenceInDays, format, isSameDay, startOfDay } from 'date-fns';
+import { addDays, addMonths, differenceInDays, format, isSameDay, startOfDay } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import {
@@ -67,6 +67,7 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [bookedDates, setBookedDates] = useState([]);
   const [maintenanceDates, setMaintenanceDates] = useState([]);
+  const [rateCalendar, setRateCalendar] = useState([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -103,6 +104,17 @@ const BookingPage = () => {
         const propertyData = propertyResponse.data.property;
         setProperty(propertyData);
 
+        const today = new Date();
+        try {
+          const rateCalendarResponse = await apiService.getPropertyRateCalendar(propertyId, {
+            startDate: format(today, 'yyyy-MM-dd'),
+            endDate: format(addMonths(today, 18), 'yyyy-MM-dd'),
+          });
+          setRateCalendar(rateCalendarResponse.data.days || []);
+        } catch {
+          setRateCalendar([]);
+        }
+
         const bookingsResponse = await apiService.getPropertyBookings(propertyId);
         const bookings = bookingsResponse.data.bookings || [];
         const booked = bookings.flatMap((booking) => {
@@ -133,9 +145,22 @@ const BookingPage = () => {
     fetchBookingData();
   }, [navigate, propertyId]);
 
+  const rateMap = useMemo(
+    () => new Map(rateCalendar.map((day) => [day.date, day])),
+    [rateCalendar]
+  );
+
+  const blockedRateDates = useMemo(
+    () =>
+      rateCalendar
+        .filter((day) => day.status === 'blocked')
+        .map((day) => startOfDay(new Date(`${day.date}T00:00:00`))),
+    [rateCalendar]
+  );
+
   const unavailableDates = useMemo(
-    () => [...bookedDates, ...maintenanceDates],
-    [bookedDates, maintenanceDates]
+    () => [...bookedDates, ...maintenanceDates, ...blockedRateDates],
+    [blockedRateDates, bookedDates, maintenanceDates]
   );
 
   const nights = Math.max(
@@ -148,7 +173,30 @@ const BookingPage = () => {
   const cleaningFee = property?.pricing?.cleaningFee || 0;
   const serviceFee = property?.pricing?.serviceFee || 0;
   const taxRate = (property?.pricing?.taxRate || 13.5) / 100;
-  const baseTotal = basePrice * nights;
+  const selectedNightDates = useMemo(
+    () => buildDateList(dateRange[0].startDate, dateRange[0].endDate),
+    [dateRange]
+  );
+  const dailyRates = useMemo(
+    () =>
+      selectedNightDates.map((date) => {
+        const dateKey = format(date, 'yyyy-MM-dd');
+        const rate = rateMap.get(dateKey);
+        return {
+          date: dateKey,
+          price: rate?.price ?? basePrice,
+          status: rate?.status || 'available',
+          minimumStay: rate?.minimumStay || property?.pricing?.minimumStay || 1,
+        };
+      }),
+    [basePrice, property?.pricing?.minimumStay, rateMap, selectedNightDates]
+  );
+  const minimumStay = dailyRates.reduce(
+    (max, day) => Math.max(max, day.minimumStay || 1),
+    property?.pricing?.minimumStay || 1
+  );
+  const baseTotal = dailyRates.reduce((sum, day) => sum + day.price, 0);
+  const averageNightlyRate = nights ? baseTotal / nights : basePrice;
   const subtotal = baseTotal + cleaningFee + serviceFee;
   const taxes = subtotal * taxRate;
   const total = subtotal + taxes;
@@ -174,12 +222,18 @@ const BookingPage = () => {
     if (blockedDate) {
       const reason = maintenanceDates.some((date) => isSameDay(date, blockedDate))
         ? 'under maintenance'
-        : 'already booked';
+        : blockedRateDates.some((date) => isSameDay(date, blockedDate))
+          ? 'closed for booking'
+          : 'already booked';
       toast.error(`${format(blockedDate, 'MMM dd, yyyy')} is ${reason}. Choose another range.`);
       return;
     }
 
     setDateRange([nextRange]);
+    if (couponDiscount) {
+      setCouponDiscount(null);
+      setCouponCode('');
+    }
   };
 
   const updateGuests = (type, delta) => {
@@ -205,6 +259,8 @@ const BookingPage = () => {
       const response = await apiService.validateCoupon({
         code: couponCode,
         bookingAmount: baseTotal,
+        nights,
+        propertyId,
       });
       if (response.data.success) {
         setCouponDiscount(response.data);
@@ -230,8 +286,8 @@ const BookingPage = () => {
         toast.error('Please select valid check-in and check-out dates');
         return;
       }
-      if (property?.pricing?.minimumStay && nights < property.pricing.minimumStay) {
-        toast.error(`Minimum stay is ${property.pricing.minimumStay} nights`);
+      if (minimumStay && nights < minimumStay) {
+        toast.error(`Minimum stay is ${minimumStay} nights`);
         return;
       }
     }
@@ -259,8 +315,8 @@ const BookingPage = () => {
     try {
       const bookingData = {
         propertyId: property._id,
-        checkIn: dateRange[0].startDate,
-        checkOut: dateRange[0].endDate,
+        checkIn: format(dateRange[0].startDate, 'yyyy-MM-dd'),
+        checkOut: format(dateRange[0].endDate, 'yyyy-MM-dd'),
         guests,
         couponCode: couponCode || undefined,
         specialRequests: contactInfo.specialRequests,
@@ -288,16 +344,29 @@ const BookingPage = () => {
   };
 
   const renderDayContent = (date) => {
+    const rate = rateMap.get(format(date, 'yyyy-MM-dd'));
     const booked = bookedDates.some((bookedDate) => isSameDay(bookedDate, date));
     const maintenance = maintenanceDates.some((maintenanceDate) =>
       isSameDay(maintenanceDate, date)
     );
+    const blocked = rate?.status === 'blocked';
 
     return (
       <span className="booking-day-content">
-        <span>{format(date, 'd')}</span>
-        {(booked || maintenance) && (
-          <span className={maintenance ? 'booking-day-dot maintenance' : 'booking-day-dot booked'} />
+        <span className="booking-day-number">{format(date, 'd')}</span>
+        <span className="booking-day-price">
+          {formatCurrency(rate?.price ?? basePrice).replace('.00', '')}
+        </span>
+        {(booked || maintenance || blocked) && (
+          <span
+            className={
+              maintenance
+                ? 'booking-day-dot maintenance'
+                : blocked
+                  ? 'booking-day-dot blocked'
+                  : 'booking-day-dot booked'
+            }
+          />
         )}
       </span>
     );
@@ -343,14 +412,14 @@ const BookingPage = () => {
             className="max-w-4xl"
           >
             <p className="text-sm font-black uppercase text-[var(--color-primary)]">
-              FIFA World Cup 2026 booking
+              Secure Miami booking
             </p>
             <h1 className="mt-3 font-hero text-5xl font-black uppercase leading-[0.94] sm:text-6xl lg:text-7xl">
               Reserve your Miami stay
             </h1>
             <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-white/78">
               Pick dates, confirm guests, and finish securely. Everything is tuned for
-              match-week travel, beach days, and local Miami support.
+              beach days, city nights, and local Miami support.
             </p>
           </motion.div>
         </div>
@@ -713,6 +782,7 @@ const BookingPage = () => {
                 guests={guests}
                 pricing={{
                   basePrice,
+                  averageNightlyRate,
                   cleaningFee,
                   serviceFee,
                   taxes,
@@ -721,6 +791,7 @@ const BookingPage = () => {
                   finalTotal,
                   baseTotal,
                   nights,
+                  dailyRates,
                 }}
               />
             </aside>
@@ -779,7 +850,13 @@ const BookingSummary = ({ property, heroImage, dateRange, guests, pricing }) => 
       <div className="rounded-2xl bg-[var(--color-bg-medium)] p-4">
         <h4 className="mb-3 font-black text-[var(--color-text-primary)]">Price details</h4>
         <div className="space-y-2 text-sm">
-          <PriceRow label={`${currencyOrZero(pricing.basePrice)} x ${pricing.nights} nights`} value={pricing.baseTotal} />
+          <PriceRow label={`Nightly rates (${pricing.nights} nights)`} value={pricing.baseTotal} />
+          {pricing.nights > 1 && (
+            <div className="flex justify-between text-xs font-bold text-[var(--color-text-muted)]">
+              <span>Average per night</span>
+              <span>{currencyOrZero(pricing.averageNightlyRate)}</span>
+            </div>
+          )}
           <PriceRow label="Cleaning fee" value={pricing.cleaningFee} />
           <PriceRow label="Service fee" value={pricing.serviceFee} />
           <PriceRow label="Taxes" value={pricing.taxes} />

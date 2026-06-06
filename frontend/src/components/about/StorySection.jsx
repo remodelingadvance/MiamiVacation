@@ -102,12 +102,12 @@ const StorySection = () => {
             </h2>
 
             <p className="mt-6 text-[#5E6985] leading-[1.9] text-[15px] max-w-xl">
-              When the world comes to Miami for the FIFA World Cup
-              2026™, we’re here to make every stay exceptional.
+              When guests come to Miami for sunshine, design, food,
+              and waterfront energy, we make every stay exceptional.
               Founded by locals who love this city, Miami Stay was
               created to offer handpicked homes, seamless service,
-              and authentic Miami experiences — so you can live the
-              game, your way.
+              and authentic Miami experiences, so every trip feels
+              personal from the first message.
             </p>
 
           </motion.div>
@@ -203,7 +203,7 @@ const StorySection = () => {
             "
             style={{
               backgroundImage:
-                "url('/images/miami-world-cup-hero.png')",
+                "url('/images/miami-luxury-hero.png')",
             }}
           />
 
@@ -296,9 +296,9 @@ const StorySection = () => {
               </h3>
 
               <p className="mt-6 text-white/80 leading-[1.9] max-w-xl">
-                From sunny beaches to electric fan zones, from
-                luxury villas to cozy beach houses — Miami Stay is
-                your gateway to the ultimate World Cup experience.
+                From sunny beaches to skyline dining, from
+                luxury villas to cozy beach houses, Miami Stay is
+                your gateway to a polished Miami vacation.
               </p>
 
               <motion.h4

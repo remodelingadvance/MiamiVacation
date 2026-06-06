@@ -98,7 +98,7 @@ const BookingConfirmationPage = () => {
               Miami is waiting
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-white/80">
-              Your FIFA World Cup 2026 stay is confirmed. We sent the details to your email.
+              Your Miami stay is confirmed. We sent the details to your email.
             </p>
           </motion.div>
         </div>
@@ -225,7 +225,7 @@ const BookingConfirmationPage = () => {
                   {[
                     'Save your booking number for arrival.',
                     'Watch your inbox for check-in instructions.',
-                    'Contact concierge for match-day transport or dining.',
+                    'Contact concierge for transport, dining, or beach plans.',
                   ].map((item) => (
                     <div key={item} className="flex gap-3">
                       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#ECFDF3] text-[var(--color-accent)]">

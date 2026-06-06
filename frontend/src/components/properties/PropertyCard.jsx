@@ -39,11 +39,11 @@ const PropertyCard = ({ property }) => {
     >
       <Link
         to={`/properties/${property.slug}`}
-        className="group flex h-full flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_18px_48px_rgba(8,19,76,0.10)] ring-1 ring-black/5 transition-shadow hover:shadow-[0_24px_64px_rgba(8,19,76,0.16)]"
+        className="group flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-[0_18px_48px_rgba(8,51,68,0.10)] ring-1 ring-black/5 transition-shadow hover:shadow-[0_24px_64px_rgba(8,51,68,0.16)]"
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--color-bg-light)]">
           <img
-            src={property.images?.[0]?.url || '/images/miami-world-cup-hero.png'}
+            src={property.images?.[0]?.url || '/images/miami-luxury-hero.png'}
             alt={property.name}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             loading="lazy"
@@ -120,9 +120,9 @@ const PropertyCard = ({ property }) => {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--color-secondary-light)] px-3 py-2 text-xs font-bold text-[var(--color-text-primary)]">
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--color-secondary-light)] px-3 py-2 text-xs font-bold text-[var(--color-text-primary)]">
             <HiShieldCheck className="h-4 w-4 text-[var(--color-accent)]" />
-            Verified Miami stay for match week
+            Verified Miami luxury stay
           </div>
         </div>
       </Link>

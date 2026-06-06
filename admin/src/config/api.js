@@ -50,6 +50,8 @@ const adminApi = {
     createProperty: (data) => api.post('/properties', data),
     updateProperty: (id, data) => api.patch(`/properties/${id}`, data),
     deleteProperty: (id) => api.delete(`/properties/${id}`),
+    getRateCalendar: (id, params) => api.get(`/properties/${id}/rate-calendar`, { params }),
+    updateRateCalendar: (id, data) => api.patch(`/properties/${id}/rate-calendar`, data),
 
     // Bookings
     getAllBookings: (params) => api.get('/bookings/admin/all', { params }),

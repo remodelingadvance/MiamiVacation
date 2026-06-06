@@ -13,8 +13,7 @@ import {
   HiUser,
   HiX,
 } from 'react-icons/hi';
-import { FaBuilding } from 'react-icons/fa';
-import { GiTrophyCup } from 'react-icons/gi';
+import { FaBuilding, FaUmbrellaBeach } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { APP_CONFIG } from '../../config/constants';
@@ -68,10 +67,9 @@ const MobileMenu = ({ isOpen, onClose }) => {
       >
         <div className="flex items-center justify-between border-b px-5 py-5" style={{ borderColor: THEME.colors.border }}>
           <Link to="/" onClick={onClose} className="flex items-center gap-3">
-            <div className="event-logo-mark event-logo-mark-sm">
-              <span>2</span>
-              <GiTrophyCup aria-hidden="true" />
-              <span>6</span>
+            <div className="miami-brand-mark miami-brand-mark-sm">
+              <span>M</span>
+              <FaUmbrellaBeach aria-hidden="true" />
             </div>
             <div className="leading-none">
               <p className="text-[0.78rem] font-black uppercase" style={{ color: THEME.colors.textDark, letterSpacing: 0 }}>

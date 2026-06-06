@@ -46,7 +46,7 @@ const SignupPage = () => {
     <>
       <SEOHead title="Create Account" />
 
-      <section className="min-h-screen flex items-center justify-center pt-20 pb-12 px-4">
+      <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pb-12 pt-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

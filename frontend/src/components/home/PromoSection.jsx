@@ -16,7 +16,7 @@ const PromoSection = () => {
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-8 md:p-12"
+            className="relative overflow-hidden rounded-lg bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-secondary)] to-[var(--color-accent)] p-8 md:p-12"
           >
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-sm mb-6">
@@ -57,8 +57,6 @@ const PromoSection = () => {
             </div>
 
             {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
           </motion.div>
 
           {/* Side promos */}
@@ -68,14 +66,14 @@ const PromoSection = () => {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass rounded-2xl p-6 hover:border-[var(--color-primary)]/30 transition-all group"
+              className="group rounded-lg border border-[var(--color-border)] bg-white p-6 shadow-[0_14px_34px_rgba(8,51,68,0.08)] transition-all hover:border-[var(--color-primary)]/30"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--color-primary)]/20 transition-all">
                   <HiCalendar className="w-6 h-6 text-[var(--color-primary)]" />
                 </div>
                 <div>
-                  <h4 className="text-white font-display font-bold text-lg mb-2">
+                  <h4 className="mb-2 text-lg font-display font-bold text-[var(--color-text-primary)]">
                     Early Bird Discount
                   </h4>
                   <p className="text-[var(--color-text-secondary)] text-sm mb-3">
@@ -98,14 +96,14 @@ const PromoSection = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="glass rounded-2xl p-6 hover:border-[var(--color-primary)]/30 transition-all group"
+              className="group rounded-lg border border-[var(--color-border)] bg-white p-6 shadow-[0_14px_34px_rgba(8,51,68,0.08)] transition-all hover:border-[var(--color-primary)]/30"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--color-primary)]/20 transition-all">
                   <HiSparkles className="w-6 h-6 text-[var(--color-primary)]" />
                 </div>
                 <div>
-                  <h4 className="text-white font-display font-bold text-lg mb-2">
+                  <h4 className="mb-2 text-lg font-display font-bold text-[var(--color-text-primary)]">
                     Extended Stay Rewards
                   </h4>
                   <p className="text-[var(--color-text-secondary)] text-sm mb-3">

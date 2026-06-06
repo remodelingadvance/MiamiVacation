@@ -35,14 +35,14 @@ const BookingWidget = ({ property }) => {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
-      className="overflow-hidden rounded-[26px] bg-white shadow-[0_24px_70px_rgba(8,19,76,0.14)] ring-1 ring-black/5"
+      className="overflow-hidden rounded-lg bg-white shadow-[0_24px_70px_rgba(8,51,68,0.14)] ring-1 ring-black/5"
     >
       {image && (
         <div className="relative h-40 overflow-hidden">
           <img src={image} alt={property?.name} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,20,76,0.82)] to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
-            <p className="text-xs font-black uppercase text-white/72">Miami match-week stay</p>
+            <p className="text-xs font-black uppercase text-white/72">Miami luxury stay</p>
             <h3 className="line-clamp-1 text-lg font-black text-white">{property?.name}</h3>
           </div>
         </div>
@@ -92,7 +92,7 @@ const BookingWidget = ({ property }) => {
           </div>
           <div className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-medium)] px-3 py-3">
             <HiTag className="h-4 w-4 text-[var(--color-primary)]" />
-            Best price for World Cup 2026 stays
+            Transparent pricing with concierge support
           </div>
         </div>
       </div>

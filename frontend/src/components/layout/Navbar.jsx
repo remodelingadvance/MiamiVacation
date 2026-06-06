@@ -2,27 +2,26 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { HiHome, HiMenu, HiOutlineHeart } from 'react-icons/hi';
-import { GiTrophyCup } from 'react-icons/gi';
+import { FaUmbrellaBeach } from 'react-icons/fa';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { THEME } from '../../config/theme.config';
 import MobileMenu from './MobileMenu';
 
 const BrandLogo = ({ compact = false }) => (
   <Link to="/" className="flex shrink-0 items-center gap-3 lg:gap-4">
-    <div className={compact ? 'event-logo-mark event-logo-mark-sm' : 'event-logo-mark'}>
-      <span>2</span>
-      <GiTrophyCup aria-hidden="true" />
-      <span>6</span>
+    <div className={compact ? 'miami-brand-mark miami-brand-mark-sm' : 'miami-brand-mark'}>
+      <span>M</span>
+      <FaUmbrellaBeach aria-hidden="true" />
     </div>
     <div className="leading-none">
       <p
-        className={`${compact ? 'text-[0.78rem]' : 'text-[1.35rem]'} font-black uppercase`}
+        className={`${compact ? 'text-[0.72rem]' : 'text-[1.1rem]'} font-black uppercase`}
         style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
       >
         {THEME.logo.line1}
       </p>
       <p
-        className={`${compact ? 'text-[0.92rem]' : 'text-[1.42rem]'} mt-1 font-medium uppercase`}
+        className={`${compact ? 'text-[0.9rem]' : 'text-[1.25rem]'} mt-1 font-medium uppercase`}
         style={{ color: THEME.colors.textDark, letterSpacing: 0 }}
       >
         {THEME.logo.line2}
@@ -54,8 +53,8 @@ const Navbar = () => {
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
         isTransparent
-          ? 'bg-transparent'
-          : 'bg-white/95 shadow-[0_10px_35px_rgba(8,19,76,0.08)] backdrop-blur-xl'
+          ? 'bg-white/10 backdrop-blur-[2px]'
+          : 'bg-white/92 shadow-[0_10px_35px_rgba(8,51,68,0.08)] backdrop-blur-xl'
       }`}
     >
       <nav className="mx-auto flex h-[76px] w-full max-w-[1500px] items-center justify-between px-6 lg:h-[96px] lg:px-8">
@@ -90,7 +89,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/wishlist"
-            className="relative hidden h-[54px] w-[54px] items-center justify-center rounded-full bg-white/75 text-[var(--color-text-primary)] shadow-[0_8px_26px_rgba(8,19,76,0.08)] ring-1 ring-white/70 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:text-[var(--color-primary)] md:flex"
+            className="relative hidden h-[50px] w-[50px] items-center justify-center rounded-lg bg-white/80 text-[var(--color-text-primary)] shadow-[0_8px_26px_rgba(8,51,68,0.08)] ring-1 ring-white/70 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:text-[var(--color-primary)] md:flex"
             aria-label="Wishlist"
           >
             <HiOutlineHeart className="h-7 w-7" />
@@ -103,7 +102,7 @@ const Navbar = () => {
 
           <Link
             to={THEME.nav.ctaPath}
-            className="hidden h-[54px] items-center gap-3 rounded-full bg-[var(--color-primary)] px-8 text-base font-bold text-white shadow-[0_13px_24px_rgba(244,20,82,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-primary-dark)] md:flex"
+            className="hidden h-[50px] items-center gap-3 rounded-lg bg-[var(--color-primary)] px-7 text-base font-bold text-white shadow-[0_13px_24px_rgba(0,169,200,0.20)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-primary-dark)] md:flex"
           >
             <HiHome className="h-6 w-6" />
             {THEME.nav.ctaLabel}
@@ -112,7 +111,7 @@ const Navbar = () => {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-[var(--color-text-primary)] shadow-[0_8px_22px_rgba(8,19,76,0.08)] ring-1 ring-white/70 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/88 text-[var(--color-text-primary)] shadow-[0_8px_22px_rgba(8,51,68,0.08)] ring-1 ring-white/70 lg:hidden"
             aria-label="Open menu"
           >
             <HiMenu className="h-6 w-6" />

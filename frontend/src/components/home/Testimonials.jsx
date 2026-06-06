@@ -88,7 +88,7 @@ const Testimonials = () => {
   const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="py-20 bg-[var(--color-bg-medium)]">
+    <section className="bg-[#062B3A] py-20">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -121,7 +121,7 @@ const Testimonials = () => {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: 'easeInOut' }}
-                className="glass rounded-2xl p-8 md:p-12 text-center"
+                className="rounded-lg border border-white/10 bg-white/[0.08] p-8 text-center backdrop-blur md:p-12"
               >
                 {/* Stars */}
                 <div className="flex justify-center gap-1 mb-6">

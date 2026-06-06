@@ -45,7 +45,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="py-20 bg-[var(--color-bg-medium)]">
+    <section className="bg-[var(--color-bg-medium)] py-20">
       <div className="container-custom max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -56,7 +56,7 @@ const FAQ = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 mb-6">
             <HiQuestionMarkCircle className="w-8 h-8 text-[var(--color-primary)]" />
           </div>
-          <h2 className="section-title text-white">
+          <h2 className="section-title">
             Frequently Asked Questions
           </h2>
           <p className="section-subtitle mx-auto">
@@ -72,13 +72,13 @@ const FAQ = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="glass rounded-xl overflow-hidden"
+              className="overflow-hidden rounded-lg border border-[var(--color-border)] bg-white shadow-[0_12px_30px_rgba(8,51,68,0.06)]"
             >
               <button
                 onClick={() => toggleFAQ(index)}
                 className="w-full flex items-center justify-between p-6 text-left transition-all"
               >
-                <h3 className="text-white font-semibold pr-4">{faq.question}</h3>
+                <h3 className="pr-4 font-semibold text-[var(--color-text-primary)]">{faq.question}</h3>
                 <HiChevronDown
                   className={`w-5 h-5 text-[var(--color-primary)] flex-shrink-0 transition-transform duration-300 ${
                     openIndex === index ? 'rotate-180' : ''

@@ -255,9 +255,9 @@ const handleSubmitReview = async () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="pt-24">
+      <div className="bg-[var(--color-bg-medium)] pt-24">
         <div className="container-custom py-20 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Please Sign In</h1>
+          <h1 className="mb-4 text-3xl font-bold text-[var(--color-text-primary)]">Please Sign In</h1>
           <p className="text-[var(--color-text-secondary)] mb-6">Sign in to view your bookings</p>
           <Link to="/login" className="btn-primary">Sign In</Link>
         </div>
@@ -269,7 +269,7 @@ const handleSubmitReview = async () => {
     <>
       <SEOHead title="My Bookings" />
 
-      <section className="pt-28 pb-16">
+      <section className="bg-[var(--color-bg-medium)] pb-16 pt-28">
         <div className="container-custom">
           {/* Header */}
           <motion.div
@@ -277,7 +277,7 @@ const handleSubmitReview = async () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="section-title text-white text-left">My Bookings</h1>
+            <h1 className="section-title text-left">My Bookings</h1>
             <p className="text-[var(--color-text-secondary)]">
               Manage your reservations and booking history
             </p>
@@ -292,7 +292,7 @@ const handleSubmitReview = async () => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                   filter === f.key
                     ? 'bg-[var(--color-primary)] text-[var(--color-bg-dark)]'
-                    : 'glass-light text-[var(--color-text-secondary)] hover:text-white'
+                    : 'bg-white text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)] hover:text-[var(--color-primary)]'
                 }`}
               >
                 {f.label}
@@ -334,7 +334,7 @@ const handleSubmitReview = async () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="glass rounded-2xl overflow-hidden hover:border-[var(--color-primary)]/20 transition-all"
+                    className="overflow-hidden rounded-lg bg-white shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5 transition-all hover:ring-[var(--color-primary)]/30"
                   >
                     <div className="flex flex-col sm:flex-row">
                       {/* Property image */}
@@ -355,7 +355,7 @@ const handleSubmitReview = async () => {
                           <div>
                             <Link
                               to={`/properties/${booking.property?.slug}`}
-                              className="text-xl font-display font-bold text-white hover:text-[var(--color-primary)] transition-colors"
+                              className="text-xl font-display font-bold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
                             >
                               {booking.property?.name}
                             </Link>
@@ -370,26 +370,26 @@ const handleSubmitReview = async () => {
                         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                           <div>
                             <p className="text-xs text-[var(--color-text-muted)] mb-1">Check-in</p>
-                            <p className="text-white font-medium text-sm">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
                               {formatDate(booking.checkIn)}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-[var(--color-text-muted)] mb-1">Check-out</p>
-                            <p className="text-white font-medium text-sm">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
                               {formatDate(booking.checkOut)}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-[var(--color-text-muted)] mb-1">Guests</p>
-                            <p className="text-white font-medium text-sm">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
                               {booking.guests?.adults + booking.guests?.children} guests
                               {booking.guests?.infants > 0 && ` (+ ${booking.guests.infants} infants)`}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-[var(--color-text-muted)] mb-1">Total</p>
-                            <p className="text-white font-medium text-sm">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
                               {formatCurrency(booking.pricing?.total)}
                             </p>
                           </div>
@@ -479,9 +479,9 @@ const handleSubmitReview = async () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative glass-strong rounded-2xl p-8 max-w-md w-full"
+              className="relative w-full max-w-md rounded-lg bg-white p-8 shadow-2xl"
             >
-              <h3 className="text-xl font-display font-bold text-white mb-4">
+              <h3 className="mb-4 text-xl font-display font-bold text-[var(--color-text-primary)]">
                 Cancel Booking
               </h3>
               <p className="text-[var(--color-text-secondary)] text-sm mb-4">
@@ -533,18 +533,18 @@ const handleSubmitReview = async () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative glass-strong rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl"
             >
-              <div className="sticky top-0 glass-strong border-b border-white/10 p-6 flex items-center justify-between">
+              <div className="sticky top-0 flex items-center justify-between border-b border-[var(--color-border)] bg-white p-6">
                 <div>
-                  <h3 className="text-xl font-display font-bold text-white">Write a Review</h3>
+                  <h3 className="text-xl font-display font-bold text-[var(--color-text-primary)]">Write a Review</h3>
                   <p className="text-sm text-[var(--color-text-muted)] mt-1">
                     {reviewBooking.property?.name}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowReviewModal(false)}
-                  className="w-8 h-8 rounded-full glass-light flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-bg-medium)] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
                 >
                   <HiX className="w-5 h-5" />
                 </button>
@@ -553,7 +553,7 @@ const handleSubmitReview = async () => {
               <div className="p-6 space-y-6">
                 {/* Overall Rating */}
                 <div>
-                  <label className="input-label text-white font-semibold mb-2 block">
+                  <label className="input-label mb-2 block font-semibold">
                     Overall Rating *
                   </label>
                   <div className="flex items-center gap-1">
@@ -570,7 +570,7 @@ const handleSubmitReview = async () => {
                           className={`w-8 h-8 transition-colors ${
                             star <= (hoverRating || reviewData.rating)
                               ? 'text-[var(--color-primary)] fill-current'
-                              : 'text-white/20'
+                              : 'text-slate-200'
                           }`}
                         />
                       </button>
@@ -580,7 +580,7 @@ const handleSubmitReview = async () => {
 
                 {/* Review Title */}
                 <div>
-                  <label className="input-label text-white font-semibold mb-2 block">
+                  <label className="input-label mb-2 block font-semibold">
                     Review Title *
                   </label>
                   <input
@@ -598,7 +598,7 @@ const handleSubmitReview = async () => {
 
                 {/* Review Content */}
                 <div>
-                  <label className="input-label text-white font-semibold mb-2 block">
+                  <label className="input-label mb-2 block font-semibold">
                     Your Review *
                   </label>
                   <textarea
@@ -616,7 +616,7 @@ const handleSubmitReview = async () => {
 
                 {/* Detailed Ratings */}
                 <div>
-                  <label className="input-label text-white font-semibold mb-3 block">
+                  <label className="input-label mb-3 block font-semibold">
                     Rate Specific Aspects
                   </label>
                   <div className="space-y-3">
@@ -642,7 +642,7 @@ const handleSubmitReview = async () => {
                                 className={`w-5 h-5 ${
                                   star <= reviewData[key]
                                     ? 'text-[var(--color-primary)] fill-current'
-                                    : 'text-white/20'
+                                    : 'text-slate-200'
                                 }`}
                               />
                             </button>

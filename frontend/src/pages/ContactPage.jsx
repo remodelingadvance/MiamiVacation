@@ -100,14 +100,14 @@ const ContactPage = () => {
       />
 
       {/* Header */}
-      <section className="pt-32 pb-16 bg-[var(--color-bg-medium)]">
+      <section className="bg-[#062B3A] pb-16 pt-32 text-white">
         <div className="container-custom text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="section-title text-white">Contact Us</h1>
-            <p className="section-subtitle mx-auto">
+            <p className="section-subtitle mx-auto text-white/72">
               We'd love to hear from you. Get in touch with our team.
             </p>
           </motion.div>
@@ -121,12 +121,12 @@ const ContactPage = () => {
             {/* Contact info */}
             <div className="lg:col-span-1 space-y-6">
               {contactInfo.map((info) => (
-                <div key={info.title} className="glass rounded-xl p-6">
+                <div key={info.title} className="rounded-lg border border-[var(--color-border)] bg-white p-6 shadow-[0_14px_34px_rgba(8,51,68,0.08)]">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center">
                       <info.icon className="w-5 h-5 text-[var(--color-primary)]" />
                     </div>
-                    <h3 className="text-white font-semibold">{info.title}</h3>
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">{info.title}</h3>
                   </div>
                   {info.details.map((detail, i) => (
                     <p key={i} className="text-[var(--color-text-secondary)] text-sm ml-13">
@@ -137,8 +137,8 @@ const ContactPage = () => {
               ))}
 
               {/* Social links */}
-              <div className="glass rounded-xl p-6">
-                <h3 className="text-white font-semibold mb-4">Follow Us</h3>
+              <div className="rounded-lg border border-[var(--color-border)] bg-white p-6 shadow-[0_14px_34px_rgba(8,51,68,0.08)]">
+                <h3 className="mb-4 font-semibold text-[var(--color-text-primary)]">Follow Us</h3>
                 <div className="flex gap-3">
                   {[
                     { icon: FaInstagram, href: APP_CONFIG.social.instagram },
@@ -151,7 +151,7 @@ const ContactPage = () => {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-bg-medium)] text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
                     >
                       <social.icon className="w-4 h-4" />
                     </a>
@@ -166,12 +166,12 @@ const ContactPage = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="glass rounded-2xl p-12 text-center"
+                  className="rounded-lg border border-[var(--color-border)] bg-white p-12 text-center shadow-[0_18px_48px_rgba(8,51,68,0.10)]"
                 >
                   <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center">
                     <HiCheck className="w-10 h-10 text-[var(--color-success)]" />
                   </div>
-                  <h2 className="text-2xl font-display font-bold text-white mb-2">
+                  <h2 className="mb-2 text-2xl font-display font-bold text-[var(--color-text-primary)]">
                     Message Sent!
                   </h2>
                   <p className="text-[var(--color-text-secondary)] mb-6">
@@ -185,8 +185,8 @@ const ContactPage = () => {
                   </button>
                 </motion.div>
               ) : (
-                <form onSubmit={handleSubmit} className="glass rounded-2xl p-8 space-y-6">
-                  <h2 className="text-2xl font-display font-bold text-white mb-6">
+                <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-[var(--color-border)] bg-white p-8 shadow-[0_18px_48px_rgba(8,51,68,0.10)]">
+                  <h2 className="mb-6 text-2xl font-display font-bold text-[var(--color-text-primary)]">
                     Send Us a Message
                   </h2>
 
@@ -308,7 +308,7 @@ const ContactPage = () => {
       {/* FAQ */}
       <section className="py-16">
         <div className="container-custom max-w-3xl">
-          <h2 className="section-title text-white text-center mb-12">
+          <h2 className="section-title mb-12 text-center">
             Frequently Asked Questions
           </h2>
           <div className="space-y-4">
@@ -319,9 +319,9 @@ const ContactPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group glass rounded-xl"
+                className="group rounded-lg border border-[var(--color-border)] bg-white shadow-[0_12px_30px_rgba(8,51,68,0.06)]"
               >
-                <summary className="p-6 cursor-pointer list-none flex items-center justify-between text-white font-medium">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-6 font-medium text-[var(--color-text-primary)]">
                   {faq.question}
                   <span className="text-[var(--color-primary)] group-open:rotate-45 transition-transform text-xl ml-4">
                     +

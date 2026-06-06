@@ -1,9 +1,10 @@
 // components/common/AvailabilityCalendar.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format, isSameDay } from 'date-fns';
+import { addMonths, format, isSameDay } from 'date-fns';
 import apiService from '../../config/api';
+import { formatCurrency } from '../../utils/helpers';
 
 const buildDateList = (start, end, includeEnd = false) => {
   const dates = [];
@@ -21,6 +22,7 @@ const buildDateList = (start, end, includeEnd = false) => {
 const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSelectedDates }) => {
   const [bookedDates, setBookedDates] = useState([]);
   const [maintenanceDates, setMaintenanceDates] = useState([]);
+  const [rateCalendar, setRateCalendar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDates, setSelectedDates] = useState(propSelectedDates || [new Date(), null]);
 
@@ -31,9 +33,14 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
       try {
         setLoading(true);
 
-        const [bookingsResponse, maintenanceResponse] = await Promise.allSettled([
+        const today = new Date();
+        const [bookingsResponse, maintenanceResponse, rateCalendarResponse] = await Promise.allSettled([
           apiService.getPropertyBookings(propertyId),
           apiService.getMaintenanceDates(propertyId),
+          apiService.getPropertyRateCalendar(propertyId, {
+            startDate: format(today, 'yyyy-MM-dd'),
+            endDate: format(addMonths(today, 18), 'yyyy-MM-dd'),
+          }),
         ]);
 
         if (bookingsResponse.status === 'fulfilled') {
@@ -56,6 +63,12 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
         } else {
           setMaintenanceDates([]);
         }
+
+        if (rateCalendarResponse.status === 'fulfilled') {
+          setRateCalendar(rateCalendarResponse.value.data.days || []);
+        } else {
+          setRateCalendar([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -64,15 +77,24 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
     fetchDates();
   }, [propertyId]);
 
+  const rateMap = useMemo(
+    () => new Map(rateCalendar.map((day) => [day.date, day])),
+    [rateCalendar]
+  );
+
+  const getRateForDate = (date) => rateMap.get(format(date, 'yyyy-MM-dd'));
   const isDateBooked = (date) => bookedDates.some((bookedDate) => isSameDay(bookedDate, date));
   const isDateMaintenance = (date) =>
     maintenanceDates.some((maintenanceDate) => isSameDay(maintenanceDate, date));
-  const isDateUnavailable = (date) => isDateBooked(date) || isDateMaintenance(date);
+  const isDateBlocked = (date) => getRateForDate(date)?.status === 'blocked';
+  const isDateUnavailable = (date) =>
+    isDateBooked(date) || isDateMaintenance(date) || isDateBlocked(date);
 
   const tileClassName = ({ date, view }) => {
     if (view !== 'month') return null;
     if (isDateMaintenance(date)) return 'maintenance-date';
     if (isDateBooked(date)) return 'booked-date';
+    if (isDateBlocked(date)) return 'blocked-date';
 
     if (selectedDates?.[0] && selectedDates?.[1]) {
       if (date >= selectedDates[0] && date <= selectedDates[1]) {
@@ -83,6 +105,19 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
     }
 
     return null;
+  };
+
+  const tileContent = ({ date, view }) => {
+    if (view !== 'month') return null;
+
+    const rate = getRateForDate(date);
+    if (!rate?.price) return null;
+
+    return (
+      <span className="availability-day-price">
+        {formatCurrency(rate.price).replace('.00', '')}
+      </span>
+    );
   };
 
   const tileDisabled = ({ date, view }) => {
@@ -114,6 +149,7 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
         onChange={handleDateChange}
         value={selectedDates}
         tileClassName={tileClassName}
+        tileContent={tileContent}
         tileDisabled={tileDisabled}
         minDate={new Date()}
         formatShortWeekday={(_, date) => format(date, 'EEE')}
@@ -124,6 +160,7 @@ const AvailabilityCalendar = ({ propertyId, onDateSelect, selectedDates: propSel
           ['Selected Range', 'bg-[var(--color-primary)]'],
           ['Booked', 'bg-red-500'],
           ['Under Maintenance', 'bg-amber-400'],
+          ['Closed', 'bg-slate-400'],
           ['Available', 'bg-white border border-[var(--color-border)]'],
         ].map(([label, swatch]) => (
           <div key={label} className="flex items-center gap-2">

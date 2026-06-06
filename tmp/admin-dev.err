@@ -1,0 +1,10 @@
+[2m6:49:49 pm[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "active" in object literal[33m
+48 |  
+49 |    // Property statuses
+50 |    active: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Active' },
+   |    ^
+51 |    inactive: { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Inactive' },
+52 |    maintenance: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Under Maintenance' },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mF:/Vss/Mern_Projects/MiamiVacation/admin/src/components/common/StatusBadge.jsx[39m

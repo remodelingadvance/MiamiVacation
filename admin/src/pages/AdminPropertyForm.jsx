@@ -16,9 +16,9 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import SEOHead from '../components/common/SEOHead';
 import ImageUploader from '../components/common/ImageUploader';
+import RateCalendarManager from '../components/admin/RateCalendarManager';
 import adminApi from '../config/api';
 import toast from 'react-hot-toast';
-import Calendar from 'react-calendar';
 
 const PROPERTY_TYPES = ['condo', 'villa', 'penthouse', 'apartment', 'studio', 'house', 'mansion'];
 const PROPERTY_STATUS = ['active', 'inactive', 'maintenance', 'draft'];
@@ -76,7 +76,6 @@ const AdminPropertyForm = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [images, setImages] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [maintenanceDates, setMaintenanceDates] = useState([]);
   const [newMaintenanceStart, setNewMaintenanceStart] = useState(null);
   const [newMaintenanceEnd, setNewMaintenanceEnd] = useState(null);
@@ -166,7 +165,6 @@ const AdminPropertyForm = () => {
   useEffect(() => {
     if (isEditing) {
       fetchProperty();
-      fetchBookings();
       fetchMaintenanceDates();
     }
   }, [id]);
@@ -234,15 +232,6 @@ const AdminPropertyForm = () => {
       navigate('/admin/properties');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchBookings = async () => {
-    try {
-      const response = await adminApi.getAllBookings({ property: id });
-      setBookings(response.data.bookings || []);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
     }
   };
 
@@ -451,55 +440,6 @@ const AdminPropertyForm = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const getBookedDates = () => {
-    const bookedDates = [];
-    bookings.forEach(booking => {
-      if (booking.status === 'confirmed' || booking.status === 'active') {
-        let currentDate = new Date(booking.checkIn);
-        const endDate = new Date(booking.checkOut);
-        while (currentDate <= endDate) {
-          bookedDates.push(new Date(currentDate));
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      }
-    });
-    return bookedDates;
-  };
-
-  const getMaintenanceDateRanges = () => {
-    return maintenanceDates.map(md => ({
-      start: new Date(md.startDate),
-      end: new Date(md.endDate),
-      reason: md.reason
-    }));
-  };
-
-  const isDateBooked = (date) => {
-    return getBookedDates().some(bookedDate => 
-      bookedDate.toDateString() === date.toDateString()
-    );
-  };
-
-  const isDateMaintenance = (date) => {
-    return maintenanceDates.some(md => {
-      const start = new Date(md.startDate);
-      const end = new Date(md.endDate);
-      return date >= start && date <= end;
-    });
-  };
-
-  const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      if (isDateMaintenance(date)) {
-        return 'bg-red-500/30 text-red-400 rounded-lg line-through';
-      }
-      if (isDateBooked(date)) {
-        return 'bg-yellow-500/20 text-yellow-400 rounded-lg';
-      }
-    }
-    return null;
   };
 
   if (loading) {
@@ -868,6 +808,14 @@ const AdminPropertyForm = () => {
             </div>
           </div>
 
+          {isEditing && (
+            <RateCalendarManager
+              propertyId={id}
+              basePrice={watch('pricing.basePrice')}
+              minimumStay={watch('pricing.minimumStay')}
+            />
+          )}
+
           {/* House Rules */}
           <div className="glass rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">House Rules</h3>
@@ -1107,67 +1055,6 @@ const AdminPropertyForm = () => {
             <ImageUploader images={images} onChange={setImages} maxImages={20} multiple={true} />
           </div>
 
-          {/* Availability Calendar */}
-          {isEditing && (bookings.length > 0 || maintenanceDates.length > 0) && (
-            <div className="glass rounded-xl p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Availability Calendar</h3>
-              <div className="flex justify-center">
-                <style>{`
-                  .react-calendar {
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 0.75rem;
-                    color: white;
-                    width: 100%;
-                    max-width: 600px;
-                  }
-                  .react-calendar__navigation button {
-                    color: white;
-                  }
-                  .react-calendar__navigation button:enabled:hover,
-                  .react-calendar__navigation button:enabled:focus {
-                    background-color: rgba(255, 255, 255, 0.1);
-                  }
-                  .react-calendar__month-view__weekdays {
-                    color: rgba(255, 255, 255, 0.7);
-                  }
-                  .react-calendar__tile {
-                    background: transparent;
-                    color: white;
-                  }
-                  .react-calendar__tile:enabled:hover,
-                  .react-calendar__tile:enabled:focus {
-                    background-color: rgba(255, 255, 255, 0.1);
-                  }
-                  .react-calendar__tile--now {
-                    background: rgba(var(--color-primary-rgb), 0.3);
-                  }
-                  .react-calendar__tile--active {
-                    background: var(--color-primary);
-                    color: white;
-                  }
-                `}</style>
-                <Calendar
-                  tileClassName={tileClassName}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-red-500/30"></div>
-                  <span className="text-sm text-[var(--color-text-muted)]">Maintenance</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-yellow-500/20"></div>
-                  <span className="text-sm text-[var(--color-text-muted)]">Booked</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[var(--color-primary)]"></div>
-                  <span className="text-sm text-[var(--color-text-muted)]">Available</span>
-                </div>
-              </div>
-            </div>
-          )}
         </form>
       </div>
     </>

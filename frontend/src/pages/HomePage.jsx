@@ -51,7 +51,7 @@ const HomePage = () => {
       <AboutBanner />
 
       {/* Featured Properties */}
-      <section className="py-20 bg-[var(--color-bg-medium)]">
+      <section className="bg-[var(--color-bg-medium)] py-20">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -59,7 +59,7 @@ const HomePage = () => {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="section-title text-white">
+            <h2 className="section-title">
               Featured Luxury Properties
             </h2>
             <p className="section-subtitle mx-auto">

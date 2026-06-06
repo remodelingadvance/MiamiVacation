@@ -13,6 +13,7 @@ import {
   FaTwitter,
   FaPinterest,
   FaYoutube,
+  FaUmbrellaBeach,
 } from 'react-icons/fa';
 import { APP_CONFIG } from '../../config/constants';
 import apiService from '../../config/api';
@@ -39,7 +40,7 @@ const Footer = () => {
   };
 
   const footerLinks = {
-    properties: [
+    stays: [
       { label: 'Miami Beach Condos', to: '/properties?type=condo' },
       { label: 'Brickell Apartments', to: '/properties?type=apartment' },
       { label: 'Oceanfront Villas', to: '/properties?type=villa' },
@@ -49,43 +50,41 @@ const Footer = () => {
     company: [
       { label: 'About Us', to: '/about' },
       { label: 'Contact', to: '/contact' },
-      { label: 'Careers', to: '/careers' },
-      { label: 'Press', to: '/press' },
-      { label: 'Blog', to: '/blog' },
+      { label: 'Wishlist', to: '/wishlist' },
+      { label: 'My Bookings', to: '/my-bookings' },
     ],
     support: [
-      { label: 'Help Center', to: '/help' },
-      { label: 'Cancellation Policy', to: '/cancellation-policy' },
       { label: 'Terms of Service', to: '/terms' },
       { label: 'Privacy Policy', to: '/privacy-policy' },
-      { label: 'FAQ', to: '/faq' },
+      { label: 'Sign In', to: '/login' },
+      { label: 'Create Account', to: '/signup' },
     ],
   };
 
   return (
-    <footer className="bg-[var(--color-bg-medium)] border-t border-white/5">
+    <footer className="relative overflow-hidden bg-[#062B3A] text-white">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-secondary)] to-[var(--color-accent)]" />
       {/* Main footer */}
       <div className="container-custom py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center">
-                <span className="text-2xl font-bold text-[var(--color-bg-dark)]">M</span>
+              <div className="miami-brand-mark miami-brand-mark-sm">
+                <span>M</span>
+                <FaUmbrellaBeach aria-hidden="true" />
               </div>
               <div>
-                <h3 className="text-xl font-display font-bold text-white">
-                  Miami Luxury
-                </h3>
-                <p className="text-sm text-[var(--color-primary)] tracking-wider uppercase">
-                  Rentals
+                <h3 className="text-xl font-display font-bold text-white">Miami Luxury</h3>
+                <p className="text-sm uppercase tracking-[0.24em] text-[var(--color-secondary)]">
+                  Stays
                 </p>
               </div>
             </Link>
 
-            <p className="text-[var(--color-text-secondary)] mb-6 leading-relaxed">
+            <p className="mb-6 max-w-xl leading-relaxed text-white/72">
               Experience the finest luxury vacation rentals in Miami. From oceanfront penthouses 
-              to modern Brickell condos, discover your perfect Miami getaway.
+              to modern Brickell condos, discover a stay shaped by design, service, and local care.
             </p>
 
             {/* Contact info */}
@@ -94,21 +93,21 @@ const Footer = () => {
                 href={`https://maps.google.com/?q=${APP_CONFIG.address}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                className="flex items-center gap-3 text-white/70 transition-colors hover:text-white"
               >
                 <HiLocationMarker className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm">{APP_CONFIG.address}</span>
               </a>
               <a
                 href={`tel:${APP_CONFIG.phone}`}
-                className="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                className="flex items-center gap-3 text-white/70 transition-colors hover:text-white"
               >
                 <HiPhone className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm">{APP_CONFIG.phone}</span>
               </a>
               <a
                 href={`mailto:${APP_CONFIG.email}`}
-                className="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                className="flex items-center gap-3 text-white/70 transition-colors hover:text-white"
               >
                 <HiMail className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm">{APP_CONFIG.email}</span>
@@ -130,7 +129,7 @@ const Footer = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
-                  className="w-10 h-10 rounded-full glass-light flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.08] text-white/72 transition-colors hover:border-[var(--color-secondary)] hover:text-white"
                 >
                   <social.icon className="w-4 h-4" />
                 </motion.a>
@@ -141,7 +140,7 @@ const Footer = () => {
           {/* Links columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="text-white font-display font-bold text-lg mb-6 capitalize">
+              <h4 className="text-lg font-display font-bold text-white mb-6 capitalize">
                 {category}
               </h4>
               <ul className="space-y-3">
@@ -149,7 +148,7 @@ const Footer = () => {
                   <li key={link.label}>
                     <Link
                       to={link.to}
-                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors text-sm"
+                      className="text-sm text-white/64 transition-colors hover:text-white"
                     >
                       {link.label}
                     </Link>
@@ -161,13 +160,13 @@ const Footer = () => {
         </div>
 
         {/* Newsletter */}
-        <div className="mt-12 p-8 rounded-2xl glass-light border border-white/5">
+        <div className="mt-12 rounded-lg border border-white/10 bg-white/[0.08] p-6 backdrop-blur md:p-8">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h3 className="text-2xl font-display font-bold text-white mb-2">
                 Stay in the Loop
               </h3>
-              <p className="text-[var(--color-text-secondary)]">
+              <p className="text-white/68">
                 Subscribe to our newsletter for exclusive deals, new properties, and Miami travel tips.
               </p>
             </div>
@@ -177,7 +176,7 @@ const Footer = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="flex-1 input-field"
+                className="input-field flex-1 bg-white text-[var(--color-text-primary)]"
                 required
               />
               <button
@@ -194,20 +193,17 @@ const Footer = () => {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/5">
+      <div className="border-t border-white/10">
         <div className="container-custom py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-white/52">
             &copy; {new Date().getFullYear()} Miami Luxury Rentals. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link to="/privacy-policy" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors">
+            <Link to="/privacy-policy" className="text-sm text-white/52 transition-colors hover:text-white">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors">
+            <Link to="/terms" className="text-sm text-white/52 transition-colors hover:text-white">
               Terms of Service
-            </Link>
-            <Link to="/sitemap" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors">
-              Sitemap
             </Link>
           </div>
         </div>

@@ -4,6 +4,14 @@ import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import ApiFeatures from '../utils/ApiFeatures.js';
 import logger from '../utils/logger.js';
+import {
+  addDaysToKey,
+  buildRateCalendar,
+  calculateStayPricing,
+  dateKeyToUTCDate,
+  getDateKeysBetween,
+  toDateKey,
+} from '../utils/rateCalendar.js';
 
 // @desc    Get all properties
 // @route   GET /api/v1/properties
@@ -301,28 +309,231 @@ export const checkAvailability = catchAsync(async (req, res, next) => {
     return next(new AppError('Property not found', 404));
   }
 
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const stayPricing = calculateStayPricing(property, checkIn, checkOut);
+  const blockedDay = stayPricing.dailyRates.find((day) => day.isAvailable === false);
+  const isUnderMaintenance = (property.maintenanceDates || []).some((md) => {
+    const maintenanceStart = new Date(md.startDate);
+    const maintenanceEnd = new Date(md.endDate);
+    return checkInDate <= maintenanceEnd && checkOutDate >= maintenanceStart;
+  });
+
   // Check if property is available for the given dates
   const conflictingBookings = await Booking.find({
     property: property._id,
-    status: { $in: ['confirmed', 'active'] },
+    status: { $in: ['confirmed', 'active', 'pending'] },
     $or: [
       {
-        checkIn: { $lt: new Date(checkOut) },
-        checkOut: { $gt: new Date(checkIn) },
+        checkIn: { $lt: checkOutDate },
+        checkOut: { $gt: checkInDate },
       },
     ],
   });
 
-  const isAvailable = conflictingBookings.length === 0;
+  const meetsMinimumStay = stayPricing.nights >= stayPricing.minimumStay;
+  const isAvailable =
+    conflictingBookings.length === 0 &&
+    !isUnderMaintenance &&
+    !blockedDay &&
+    meetsMinimumStay;
 
   res.status(200).json({
     success: true,
     isAvailable,
+    reason: isAvailable
+      ? null
+      : isUnderMaintenance
+        ? 'maintenance'
+        : blockedDay
+          ? 'blocked'
+          : !meetsMinimumStay
+            ? 'minimum_stay'
+            : 'booked',
     conflictingBookings: conflictingBookings.length,
+    minimumStay: stayPricing.minimumStay,
+    pricing: {
+      nights: stayPricing.nights,
+      baseTotal: stayPricing.baseTotal,
+      averageNightlyRate: stayPricing.averageNightlyRate,
+      dailyRates: stayPricing.dailyRates,
+    },
     bookedDates: conflictingBookings.map(booking => ({
       checkIn: booking.checkIn,
       checkOut: booking.checkOut
     }))
+  });
+});
+
+// @desc    Get day-wise price and availability calendar
+// @route   GET /api/v1/properties/:id/rate-calendar
+// @access  Public
+export const getRateCalendar = catchAsync(async (req, res, next) => {
+  const startDate = toDateKey(req.query.startDate) || toDateKey(new Date());
+  const endDate = toDateKey(req.query.endDate) || addDaysToKey(startDate, 365);
+
+  if (startDate > endDate) {
+    return next(new AppError('Start date must be before end date', 400));
+  }
+
+  const property = await Property.findById(req.params.id).select(
+    'name pricing availability maintenanceDates'
+  );
+
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  const bookings = await Booking.find({
+    property: property._id,
+    status: { $in: ['confirmed', 'active', 'pending'] },
+    checkIn: { $lt: dateKeyToUTCDate(addDaysToKey(endDate, 1)) },
+    checkOut: { $gt: dateKeyToUTCDate(startDate) },
+  }).select('checkIn checkOut status');
+
+  const days = buildRateCalendar(property, {
+    startDate,
+    endDate,
+    bookings,
+  });
+
+  res.status(200).json({
+    success: true,
+    propertyId: property._id,
+    propertyName: property.name,
+    currency: property.pricing?.currency || 'USD',
+    basePrice: property.pricing?.basePrice || 0,
+    startDate,
+    endDate,
+    count: days.length,
+    days,
+  });
+});
+
+// @desc    Create/update day-wise price and availability overrides
+// @route   PATCH /api/v1/properties/:id/rate-calendar
+// @access  Private/Admin
+export const updateRateCalendar = catchAsync(async (req, res, next) => {
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    return next(new AppError('Property not found', 404));
+  }
+
+  const requestedUpdates = Array.isArray(req.body.updates) ? [...req.body.updates] : [];
+  const resetDates = new Set((req.body.removeDates || []).map(toDateKey).filter(Boolean));
+
+  if (!requestedUpdates.length && req.body.startDate && req.body.endDate) {
+    const dateKeys = getDateKeysBetween(req.body.startDate, req.body.endDate, true);
+    requestedUpdates.push(
+      ...dateKeys.map((date) => ({
+        date,
+        price: req.body.price,
+        isAvailable: req.body.isAvailable,
+        minimumStay: req.body.minimumStay,
+        reset: req.body.reset,
+      }))
+    );
+  }
+
+  if (!requestedUpdates.length && !resetDates.size) {
+    return next(new AppError('Please provide calendar updates or dates to reset', 400));
+  }
+
+  requestedUpdates.forEach((update) => {
+    const dateKey = toDateKey(update.date);
+
+    if (!dateKey) {
+      throw new AppError('Each update must include a valid date', 400);
+    }
+
+    if (update.reset) {
+      resetDates.add(dateKey);
+    }
+  });
+
+  property.availability = property.availability || [];
+
+  resetDates.forEach((dateKey) => {
+    const index = property.availability.findIndex((item) => toDateKey(item.date) === dateKey);
+    if (index >= 0) property.availability.splice(index, 1);
+  });
+
+  requestedUpdates.forEach((update) => {
+    const dateKey = toDateKey(update.date);
+    if (update.reset || resetDates.has(dateKey)) return;
+
+    const hasPrice = update.price !== undefined && update.price !== null && update.price !== '';
+    const hasMinimumStay =
+      update.minimumStay !== undefined && update.minimumStay !== null && update.minimumStay !== '';
+    const hasAvailability = typeof update.isAvailable === 'boolean';
+
+    if (!hasPrice && !hasMinimumStay && !hasAvailability) return;
+
+    const nextOverride = {
+      date: dateKeyToUTCDate(dateKey),
+    };
+
+    if (hasPrice) {
+      const price = Number(update.price);
+      if (Number.isNaN(price) || price < 0) {
+        throw new AppError('Calendar price must be a positive number', 400);
+      }
+      nextOverride.price = Math.round(price * 100) / 100;
+    }
+
+    if (hasMinimumStay) {
+      const minimumStay = parseInt(update.minimumStay, 10);
+      if (Number.isNaN(minimumStay) || minimumStay < 1) {
+        throw new AppError('Minimum stay must be at least 1 night', 400);
+      }
+      nextOverride.minimumStay = minimumStay;
+    }
+
+    if (hasAvailability) {
+      nextOverride.isAvailable = update.isAvailable;
+    }
+
+    const existing = property.availability.find((item) => toDateKey(item.date) === dateKey);
+    if (existing) {
+      if (hasPrice) existing.price = nextOverride.price;
+      if (hasMinimumStay) existing.minimumStay = nextOverride.minimumStay;
+      if (hasAvailability) existing.isAvailable = nextOverride.isAvailable;
+    } else {
+      property.availability.push({
+        isAvailable: true,
+        ...nextOverride,
+      });
+    }
+  });
+
+  property.updatedBy = req.user.id;
+  await property.save();
+
+  const calendarStart = toDateKey(req.body.calendarStartDate || req.body.startDate) || toDateKey(new Date());
+  const calendarEnd =
+    toDateKey(req.body.calendarEndDate || req.body.endDate) || addDaysToKey(calendarStart, 365);
+  const bookings = await Booking.find({
+    property: property._id,
+    status: { $in: ['confirmed', 'active', 'pending'] },
+    checkIn: { $lt: dateKeyToUTCDate(addDaysToKey(calendarEnd, 1)) },
+    checkOut: { $gt: dateKeyToUTCDate(calendarStart) },
+  }).select('checkIn checkOut status');
+
+  const days = buildRateCalendar(property, {
+    startDate: calendarStart,
+    endDate: calendarEnd,
+    bookings,
+  });
+
+  logger.info(`Rate calendar updated for property ${property.name} by admin ${req.user.id}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Rate calendar updated successfully',
+    propertyId: property._id,
+    currency: property.pricing?.currency || 'USD',
+    days,
   });
 });
 

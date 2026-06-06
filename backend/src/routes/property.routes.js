@@ -12,6 +12,8 @@ import {
   checkAvailability,
   getPropertyStats,
   getPropertyBookings,
+  getRateCalendar,
+  updateRateCalendar,
   addMaintenanceDates,
   removeMaintenanceDate,
   getMaintenanceDates,
@@ -35,6 +37,7 @@ router.get('/search', validate(propertySearchValidator), searchProperties);
 router.get('/slug/:slug', getPropertyBySlug);
 router.get('/:id/bookings', getPropertyBookings);
 router.get('/:id/availability', checkAvailability);
+router.get('/:id/rate-calendar', getRateCalendar);
 router.get('/:id', getProperty);
 
 // Maintenance dates - Public (for calendar display)
@@ -52,6 +55,9 @@ router.get('/:id/stats', getPropertyStats);
 
 // Admin filter route - IMPORTANT: This MUST come before /:id routes
 router.get('/admin/all-with-filter', getAllPropertiesWithFilter);
+
+// Rate calendar management (Admin only)
+router.patch('/:id/rate-calendar', updateRateCalendar);
 
 // Maintenance management routes (Admin only)
 router.post('/:id/maintenance-dates', addMaintenanceDates);

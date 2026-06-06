@@ -43,9 +43,9 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="pt-24">
+      <div className="bg-[var(--color-bg-medium)] pt-24">
         <div className="container-custom py-20 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Please Sign In</h1>
+          <h1 className="mb-4 text-3xl font-bold text-[var(--color-text-primary)]">Please Sign In</h1>
           <Link to="/login" className="btn-primary">Sign In</Link>
         </div>
       </div>
@@ -64,12 +64,12 @@ const ProfilePage = () => {
     <>
       <SEOHead title="My Profile" />
 
-      <section className="pt-28 pb-16">
+      <section className="bg-[var(--color-bg-medium)] pb-16 pt-28">
         <div className="container-custom">
           <div className="grid lg:grid-cols-4 gap-8">
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <div className="glass rounded-2xl p-6 text-center mb-6">
+              <div className="mb-6 rounded-lg bg-white p-6 text-center shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
                 <div className="relative w-24 h-24 mx-auto mb-4">
                   <div className="w-full h-full rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
                     <span className="text-3xl font-bold text-[var(--color-primary)]">
@@ -80,7 +80,7 @@ const ProfilePage = () => {
                     <HiCamera className="w-4 h-4" />
                   </button>
                 </div>
-                <h3 className="text-white font-display font-bold text-lg">
+                <h3 className="text-lg font-display font-bold text-[var(--color-text-primary)]">
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="text-[var(--color-text-muted)] text-sm">{user.email}</p>
@@ -88,7 +88,7 @@ const ProfilePage = () => {
               </div>
 
               {/* Navigation */}
-              <nav className="glass rounded-2xl overflow-hidden">
+              <nav className="overflow-hidden rounded-lg bg-white shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
@@ -96,7 +96,7 @@ const ProfilePage = () => {
                     className={`w-full flex items-center gap-3 px-6 py-3 text-left transition-all ${
                       activeTab === tab.key
                         ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
-                        : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-white/5'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-medium)] hover:text-[var(--color-primary)]'
                     }`}
                   >
                     <tab.icon className="w-5 h-5" />
@@ -122,9 +122,9 @@ const ProfilePage = () => {
                 transition={{ duration: 0.3 }}
               >
                 {activeTab === 'profile' && (
-                  <div className="glass rounded-2xl p-8">
+                  <div className="rounded-lg bg-white p-8 shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-display font-bold text-white">
+                      <h2 className="text-2xl font-display font-bold text-[var(--color-text-primary)]">
                         Profile Information
                       </h2>
                       <button
@@ -173,35 +173,35 @@ const ProfilePage = () => {
                       </form>
                     ) : (
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-4 rounded-lg glass-light">
+                        <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">
                           <HiUser className="w-5 h-5 text-[var(--color-primary)]" />
                           <div>
                             <p className="text-sm text-[var(--color-text-muted)]">Full Name</p>
-                            <p className="text-white">{user.firstName} {user.lastName}</p>
+                            <p className="text-[var(--color-text-primary)]">{user.firstName} {user.lastName}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 p-4 rounded-lg glass-light">
+                        <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">
                           <HiMail className="w-5 h-5 text-[var(--color-primary)]" />
                           <div>
                             <p className="text-sm text-[var(--color-text-muted)]">Email</p>
-                            <p className="text-white">{user.email}</p>
+                            <p className="text-[var(--color-text-primary)]">{user.email}</p>
                             {!user.isVerified && (
                               <span className="text-xs text-[var(--color-warning)]">Not verified</span>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 p-4 rounded-lg glass-light">
+                        <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">
                           <HiPhone className="w-5 h-5 text-[var(--color-primary)]" />
                           <div>
                             <p className="text-sm text-[var(--color-text-muted)]">Phone</p>
-                            <p className="text-white">{user.phone || 'Not provided'}</p>
+                            <p className="text-[var(--color-text-primary)]">{user.phone || 'Not provided'}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 p-4 rounded-lg glass-light">
+                        <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">
                           <HiCalendar className="w-5 h-5 text-[var(--color-primary)]" />
                           <div>
                             <p className="text-sm text-[var(--color-text-muted)]">Member Since</p>
-                            <p className="text-white">{formatDate(user.createdAt)}</p>
+                            <p className="text-[var(--color-text-primary)]">{formatDate(user.createdAt)}</p>
                           </div>
                         </div>
                       </div>
@@ -210,8 +210,8 @@ const ProfilePage = () => {
                 )}
 
                 {activeTab === 'bookings' && (
-                  <div className="glass rounded-2xl p-8">
-                    <h2 className="text-2xl font-display font-bold text-white mb-6">
+                  <div className="rounded-lg bg-white p-8 shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
+                    <h2 className="mb-6 text-2xl font-display font-bold text-[var(--color-text-primary)]">
                       My Bookings
                     </h2>
                     <p className="text-[var(--color-text-secondary)]">
@@ -224,8 +224,8 @@ const ProfilePage = () => {
                 )}
 
                 {activeTab === 'favorites' && (
-                  <div className="glass rounded-2xl p-8">
-                    <h2 className="text-2xl font-display font-bold text-white mb-6">
+                  <div className="rounded-lg bg-white p-8 shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
+                    <h2 className="mb-6 text-2xl font-display font-bold text-[var(--color-text-primary)]">
                       Wishlist
                     </h2>
                     <Link to="/wishlist" className="btn-primary inline-block">
@@ -235,14 +235,14 @@ const ProfilePage = () => {
                 )}
 
                 {activeTab === 'settings' && (
-                  <div className="glass rounded-2xl p-8">
-                    <h2 className="text-2xl font-display font-bold text-white mb-6">
+                  <div className="rounded-lg bg-white p-8 shadow-[0_14px_34px_rgba(8,51,68,0.08)] ring-1 ring-black/5">
+                    <h2 className="mb-6 text-2xl font-display font-bold text-[var(--color-text-primary)]">
                       Account Settings
                     </h2>
                     <div className="space-y-4">
                       <Link
                         to="/update-password"
-                        className="block p-4 rounded-lg glass-light text-white hover:bg-white/5 transition-all"
+                        className="block rounded-lg bg-[var(--color-bg-medium)] p-4 text-[var(--color-text-primary)] transition-all hover:text-[var(--color-primary)]"
                       >
                         Change Password
                       </Link>

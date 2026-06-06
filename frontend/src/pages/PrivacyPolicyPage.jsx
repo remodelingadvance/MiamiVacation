@@ -51,13 +51,14 @@ const PrivacyPolicyPage = () => {
         description="Miami Luxury Rentals Privacy Policy - Learn how we collect, use, and protect your personal information."
       />
 
-      <section className="pt-32 pb-16">
+      <section className="bg-[var(--color-bg-medium)] pb-16 pt-32">
         <div className="container-custom max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg bg-white p-6 shadow-[0_18px_48px_rgba(8,51,68,0.08)] ring-1 ring-black/5 sm:p-10"
           >
-            <h1 className="section-title text-white mb-4">Privacy Policy</h1>
+            <h1 className="section-title mb-4">Privacy Policy</h1>
             <p className="text-[var(--color-text-secondary)] mb-2">
               Last updated: January 1, 2024
             </p>
@@ -75,7 +76,7 @@ const PrivacyPolicyPage = () => {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <h2 className="text-xl font-display font-bold text-white mb-3">
+                  <h2 className="mb-3 text-xl font-display font-bold text-[var(--color-text-primary)]">
                     {section.title}
                   </h2>
                   <p className="text-[var(--color-text-secondary)] leading-relaxed">

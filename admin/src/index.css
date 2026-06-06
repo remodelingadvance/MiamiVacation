@@ -187,4 +187,141 @@
   .table-row:hover {
     background: rgba(255, 255, 255, 0.02);
   }
+
+  .admin-rate-calendar .react-calendar {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1rem;
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+  }
+
+  .admin-rate-calendar .react-calendar__navigation {
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+  }
+
+  .admin-rate-calendar .react-calendar__navigation button {
+    min-width: 42px;
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-weight: 700;
+  }
+
+  .admin-rate-calendar .react-calendar__navigation button:enabled:hover,
+  .admin-rate-calendar .react-calendar__navigation button:enabled:focus {
+    background: rgba(200, 169, 126, 0.16);
+    color: var(--color-primary-light);
+  }
+
+  .admin-rate-calendar .react-calendar__month-view__weekdays {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .admin-rate-calendar .react-calendar__month-view__weekdays__weekday {
+    padding: 0.65rem 0;
+  }
+
+  .admin-rate-calendar .react-calendar__month-view__weekdays__weekday abbr {
+    text-decoration: none;
+  }
+
+  .admin-rate-calendar .react-calendar__tile {
+    min-height: 4.4rem;
+    border-radius: 8px;
+    padding: 0.55rem 0.25rem;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.18rem;
+    font-weight: 700;
+    transition: all 0.18s ease;
+  }
+
+  .admin-rate-calendar .react-calendar__tile:enabled:hover,
+  .admin-rate-calendar .react-calendar__tile:enabled:focus {
+    background: rgba(200, 169, 126, 0.16);
+    color: var(--color-primary-light);
+  }
+
+  .admin-rate-calendar .react-calendar__tile--now {
+    background: rgba(59, 130, 246, 0.16);
+    color: #bfdbfe;
+  }
+
+  .admin-rate-calendar .react-calendar__tile--active {
+    background: var(--color-primary) !important;
+    color: var(--color-bg-dark) !important;
+  }
+
+  .admin-rate-day-price {
+    color: var(--color-primary-light);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .admin-rate-calendar .react-calendar__tile--active .admin-rate-day-price {
+    color: var(--color-bg-dark);
+  }
+
+  .admin-rate-calendar .admin-rate-custom {
+    background: rgba(200, 169, 126, 0.16);
+    box-shadow: inset 0 -3px 0 var(--color-primary);
+  }
+
+  .admin-rate-calendar .admin-rate-rule {
+    background: rgba(59, 130, 246, 0.14);
+    box-shadow: inset 0 -3px 0 #3b82f6;
+  }
+
+  .admin-rate-calendar .admin-rate-booked {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    box-shadow: inset 0 -3px 0 #f59e0b;
+  }
+
+  .admin-rate-calendar .admin-rate-maintenance {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+    box-shadow: inset 0 -3px 0 #ef4444;
+  }
+
+  .admin-rate-calendar .admin-rate-blocked {
+    background: rgba(100, 116, 139, 0.22);
+    color: #cbd5e1;
+    box-shadow: inset 0 -3px 0 #64748b;
+  }
+
+  .admin-rate-calendar .react-calendar__tile:disabled {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-text-muted);
+  }
+
+  .admin-rate-calendar .react-calendar__tile:disabled .admin-rate-day-price {
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 640px) {
+    .admin-rate-calendar .react-calendar {
+      padding: 0.75rem;
+    }
+
+    .admin-rate-calendar .react-calendar__tile {
+      min-height: 3.85rem;
+      padding: 0.42rem 0.14rem;
+      font-size: 0.8rem;
+    }
+
+    .admin-rate-day-price {
+      font-size: 0.58rem;
+    }
+  }
 }

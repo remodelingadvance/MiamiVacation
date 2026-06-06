@@ -74,6 +74,8 @@ const apiService = {
     getPropertyBySlug: (slug) => api.get(`/properties/slug/${slug}`),
     searchProperties: (params) => api.get('/properties/search', { params }),
     checkAvailability: (id, params) => api.get(`/properties/${id}/availability`, { params }),
+    getPropertyRateCalendar: (propertyId, params) =>
+        api.get(`/properties/${propertyId}/rate-calendar`, { params }),
     
     // Maintenance dates - ADD THIS
     getMaintenanceDates: (propertyId) => api.get(`/properties/${propertyId}/maintenance-dates`),

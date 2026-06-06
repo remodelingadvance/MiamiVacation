@@ -33,11 +33,8 @@ const NewsletterSignup = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--color-primary)]/20 via-[var(--color-bg-medium)] to-[var(--color-accent)]/20 p-8 md:p-16 text-center"
+          className="relative overflow-hidden rounded-lg border border-[var(--color-border)] bg-white p-8 text-center shadow-[0_20px_60px_rgba(8,51,68,0.08)] md:p-16"
         >
-          {/* Decorative background */}
-          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-5" />
-          
           <div className="relative z-10 max-w-2xl mx-auto">
             {subscribed ? (
               <motion.div
@@ -47,8 +44,8 @@ const NewsletterSignup = () => {
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center">
                   <HiPaperAirplane className="w-10 h-10 text-[var(--color-success)]" />
                 </div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold text-white mb-4">
-                  You're In! 🎉
+                <h3 className="mb-4 text-2xl font-display font-bold text-[var(--color-text-primary)] md:text-3xl">
+                  You're In!
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-lg">
                   Thank you for subscribing! Get ready for exclusive deals and Miami travel inspiration delivered to your inbox.
@@ -56,7 +53,7 @@ const NewsletterSignup = () => {
               </motion.div>
             ) : (
               <>
-                <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
+                <h3 className="mb-4 text-3xl font-display font-bold text-[var(--color-text-primary)] md:text-4xl">
                   Get Exclusive Deals
                 </h3>
                 <p className="text-[var(--color-text-secondary)] text-lg mb-8">
@@ -72,7 +69,7 @@ const NewsletterSignup = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
-                      className="w-full pl-12 pr-4 py-4 rounded-xl bg-[var(--color-bg-dark)] border border-white/10 text-white placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none transition-all"
+                      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-dark)] py-4 pl-12 pr-4 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] transition-all focus:border-[var(--color-primary)] focus:outline-none"
                       required
                     />
                   </div>

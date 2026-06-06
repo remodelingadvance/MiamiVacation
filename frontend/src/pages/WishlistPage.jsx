@@ -15,9 +15,9 @@ const WishlistPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="pt-24">
+      <div className="bg-[var(--color-bg-medium)] pt-24">
         <div className="container-custom py-20 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Please Sign In</h1>
+          <h1 className="mb-4 text-3xl font-bold text-[var(--color-text-primary)]">Please Sign In</h1>
           <p className="text-[var(--color-text-secondary)] mb-6">Sign in to view your wishlist</p>
           <Link to="/login" className="btn-primary">Sign In</Link>
         </div>
@@ -29,7 +29,7 @@ const WishlistPage = () => {
     <>
       <SEOHead title="My Wishlist" />
 
-      <section className="pt-28 pb-16">
+      <section className="bg-[var(--color-bg-medium)] pb-16 pt-28">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -38,7 +38,7 @@ const WishlistPage = () => {
           >
             <div className="flex items-center gap-3 mb-2">
               <HiHeart className="w-8 h-8 text-[var(--color-primary)]" />
-              <h1 className="section-title text-white text-left mb-0">My Wishlist</h1>
+              <h1 className="section-title mb-0 text-left">My Wishlist</h1>
             </div>
             <p className="text-[var(--color-text-secondary)]">
               {favorites.length} {favorites.length === 1 ? 'property' : 'properties'} saved
