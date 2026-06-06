@@ -1,50 +1,92 @@
-import { motion } from 'framer-motion';
-import { HiHome, HiUsers, HiStar, HiGlobe, HiShieldCheck } from 'react-icons/hi';
-import CountUp from 'react-countup';
-import { useInView } from 'react-intersection-observer';
+import { motion } from "framer-motion";
+import {
+  HiOutlineArrowsExpand,
+  HiOutlineBriefcase,
+  HiOutlineTruck,
+} from "react-icons/hi";
+import { MdOutlineBed, MdOutlineBathtub } from "react-icons/md";
+import BGImage from "../../assets/ctabg.png";
 
 const stats = [
-  { icon: HiHome, value: 500, suffix: '+', label: 'Luxury Properties' },
-  { icon: HiUsers, value: 10000, suffix: '+', label: 'Happy Guests' },
-  { icon: HiStar, value: 4.9, suffix: '', label: 'Average Rating', decimals: 1 },
-  { icon: HiGlobe, value: 15, suffix: '+', label: 'Miami Neighborhoods' },
-  { icon: HiShieldCheck, value: 100, suffix: '%', label: 'Secure Booking' },
+  {
+    label: "Square Feet",
+    value: "2389",
+    icon: HiOutlineArrowsExpand,
+  },
+  {
+    label: "Bath Rooms",
+    value: "3",
+    icon: MdOutlineBathtub,
+  },
+  {
+    label: "Bed Rooms",
+    value: "6",
+    icon: MdOutlineBed,
+  },
+  {
+    label: "Car Parking",
+    value: "1",
+    icon: HiOutlineTruck,
+  },
 ];
 
-const StatsSection = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.2,
-  });
-
+const StatsSection = ({
+  backgroundImage = BGImage,
+  items = stats,
+}) => {
   return (
-    <section className="bg-gradient-to-b from-[var(--color-bg-dark)] to-[var(--color-bg-medium)] py-16">
-      <div className="container-custom" ref={ref}>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: index * 0.1 }}
-              className="rounded-lg bg-white p-5 text-center shadow-[0_12px_34px_rgba(8,51,68,0.07)] ring-1 ring-black/5"
-            >
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--color-primary-light)]">
-                <stat.icon className="w-7 h-7 text-[var(--color-primary)]" />
-              </div>
-              <div className="mb-1 text-3xl font-bold text-[var(--color-text-primary)]">
-                {inView && (
-                  <CountUp
-                    end={stat.value}
-                    duration={2.5}
-                    decimals={stat.decimals || 0}
-                    suffix={stat.suffix}
-                  />
-                )}
-              </div>
-              <p className="text-sm font-semibold text-[var(--color-text-muted)]">{stat.label}</p>
-            </motion.div>
-          ))}
+    <section className="relative overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      />
+
+      <div className="absolute inset-0 bg-black/70" />
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 sm:gap-6">
+          {items.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 22 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{
+                  duration: 0.45,
+                  delay: index * 0.08,
+                  ease: "easeOut",
+                }}
+                className="group flex flex-col items-center text-center"
+              >
+                <motion.div
+                  whileHover={{ y: -5, scale: 1.08 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 14 }}
+                  className="mb-3 text-[#E73968]"
+                >
+                  <Icon className="h-11 w-11 stroke-[1.6]" />
+                </motion.div>
+
+                <motion.h3
+                  initial={{ scale: 0.9 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 + 0.15 }}
+                  className="text-lg font-black leading-none text-white sm:text-xl"
+                >
+                  {item.value}
+                </motion.h3>
+
+                <p className="mt-1 text-xs font-bold text-white/90 sm:text-sm">
+                  {item.label}
+                </p>
+
+                <span className="mt-3 h-[2px] w-0 rounded-full bg-[#E73968] transition-all duration-300 group-hover:w-10" />
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

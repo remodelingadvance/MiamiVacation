@@ -7,15 +7,14 @@ import HeroSection from '../components/home/HeroSection';
 import FeaturedProperties from '../components/home/FeaturedProperties';
 import Amenities from '../components/home/Amenities';
 import Testimonials from '../components/home/Testimonials';
-import PromoSection from '../components/home/PromoSection';
 import FAQ from '../components/home/FAQ';
 import NewsletterSignup from '../components/home/NewsletterSignup';
-import CTASection from '../components/home/CTASection';
 import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
 import AboutBanner from '../components/home/AboutBanner';
 import PropertyLocationSection from '../components/home/PropertyLocationSection';
+import MiamiEscapeBanner from '../components/home/MiamiEscapeBanner';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -48,12 +47,14 @@ const HomePage = () => {
 
       <PropertyLocationSection />
 
+      {/* Stats Section */}
+      <StatsSection />
+
       {/* Featured Properties */}
 
       <FeaturedProperties properties={featuredProperties} loading={loading} />
 
-      {/* Stats Section */}
-      <StatsSection />
+      <MiamiEscapeBanner />
 
       <AboutBanner />
 
@@ -62,20 +63,11 @@ const HomePage = () => {
       {/* Amenities Section */}
       <Amenities />
 
-      {/* Promotional Section */}
-      <PromoSection />
-
       {/* Testimonials */}
       <Testimonials />
 
       {/* FAQ */}
       <FAQ />
-
-      {/* Newsletter */}
-      <NewsletterSignup />
-
-      {/* CTA Section */}
-      <CTASection />
     </>
   );
 };

@@ -1,0 +1,316 @@
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { HiOutlineChatAlt2 } from 'react-icons/hi';
+
+const SunIcon = ({ className = '' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+  >
+    <circle cx="12" cy="12" r="4" fill="currentColor" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+);
+
+const packages = [
+  {
+    name: 'Casita',
+    tagline: 'Beachfront bungalow',
+    detail: '2 BR · Sleeps 4',
+    image:
+      'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=600&q=80',
+    price: 185,
+  },
+  {
+    name: 'Suite',
+    tagline: 'Ocean Drive condo',
+    detail: '3 BR · Sleeps 6 · Pool',
+    image:
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80',
+    price: 320,
+  },
+  {
+    name: 'Penthouse',
+    tagline: 'Sky-high indulgence',
+    detail: '4 BR · Rooftop pool',
+    image:
+      'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=600&q=80',
+    price: 580,
+    highlighted: true,
+    badge: 'Most popular',
+  },
+];
+
+const MiamiEscapeBanner = () => {
+  return (
+    <section className="relative overflow-hidden bg-[#f3ecd9]">
+      {/* ─── Right-side beach image (desktop diagonal clip) ─── */}
+      <div
+        className="absolute inset-0 hidden lg:block"
+        style={{ clipPath: 'polygon(46% 0, 100% 0, 100% 100%, 30% 100%)' }}
+      >
+        <motion.img
+          initial={{ scale: 1.08 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.6, ease: 'easeOut' }}
+          src="https://images.unsplash.com/photo-1535498730771-e735b998cd64?auto=format&fit=crop&w=2200&q=80"
+          alt="Miami beach"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/35 via-black/15 to-black/45" />
+      </div>
+
+      {/* Mobile beach banner */}
+      <div className="relative h-60 lg:hidden">
+        <img
+          src="https://images.unsplash.com/photo-1535498730771-e735b998cd64?auto=format&fit=crop&w=1200&q=80"
+          alt="Miami beach"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/25" />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-6 py-14 lg:px-12 lg:py-24">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-10">
+          {/* ─── LEFT: Content (constrained to max-w-md to prevent overlap) ─── */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="lg:col-span-5"
+          >
+            <div className="max-w-md">
+              {/* Pulsing "Limited Time" badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                className="mb-6 inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)]/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]/20"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-primary)] opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-primary)]" />
+                </span>
+                Limited Time Offer
+              </motion.div>
+
+              {/* Title — clean 2-line layout */}
+              <h1
+                className="font-bold leading-none text-[var(--color-secondary)]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                <span className="flex items-center gap-3 text-6xl lg:text-7xl">
+                  Escape
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+                    className="inline-flex"
+                  >
+                    <SunIcon className="h-10 w-10 text-[var(--color-primary)] lg:h-12 lg:w-12" />
+                  </motion.span>
+                </span>
+                <span className="mt-2 flex items-baseline gap-3">
+                  <span
+                    className="text-2xl font-normal italic text-[var(--color-text-muted)] lg:text-3xl"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    to
+                  </span>
+                  <span className="text-6xl lg:text-7xl">Miami</span>
+                </span>
+              </h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="mt-8 text-lg font-semibold text-[var(--color-text-dark)] sm:text-xl"
+              >
+                Save up to 30% — this week only
+              </motion.p>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base"
+              >
+                Sun-kissed villas along Atlantic sands. Art Deco penthouses with
+                rooftop pools. Oceanfront escapes minutes from Lincoln Road's
+                neon glow — every stay hand-picked by our Miami concierge.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="mt-8 flex flex-wrap gap-3"
+              >
+                <Link
+                  to="/properties"
+                  className="rounded-full bg-[var(--color-primary)] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-[var(--color-primary)]/30 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-primary-dark)] hover:shadow-xl hover:shadow-[var(--color-primary)]/40"
+                >
+                  Explore stays
+                </Link>
+                <Link
+                  to="/book"
+                  className="rounded-full border-2 border-[var(--color-secondary)] px-7 py-3 text-sm font-semibold text-[var(--color-secondary)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-secondary)] hover:text-white"
+                >
+                  Book now
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.7 }}
+                className="mt-12 flex items-center gap-3"
+              >
+                <span className="mr-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                  Follow
+                </span>
+                {[FaFacebookF, FaTwitter, FaInstagram, HiOutlineChatAlt2].map(
+                  (Icon, i) => (
+                    <motion.a
+                      key={i}
+                      href="#"
+                      whileHover={{ y: -3, scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white transition-colors hover:bg-[var(--color-primary)]"
+                      aria-label="Social"
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </motion.a>
+                  )
+                )}
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* ─── RIGHT: Packages ─── */}
+          <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="mb-8"
+            >
+              <h2
+                className="text-3xl font-bold text-[var(--color-secondary)] sm:text-4xl lg:text-white lg:drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Vacation packages
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)] lg:text-white/85 lg:drop-shadow">
+                Three curated experiences — one unforgettable city.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {packages.map((pkg, i) => (
+                <motion.div
+                  key={pkg.name}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{
+                    duration: 0.7,
+                    delay: 0.4 + i * 0.12,
+                    ease: [0.21, 0.47, 0.32, 0.98],
+                  }}
+                  whileHover={{ y: -10 }}
+                  className={`group relative overflow-hidden rounded-3xl shadow-2xl ring-1 ring-black/5 ${
+                    pkg.highlighted
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-white text-[var(--color-secondary)]'
+                  }`}
+                >
+                  {pkg.badge && (
+                    <div className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[var(--color-primary)] shadow-md">
+                      {pkg.badge}
+                    </div>
+                  )}
+
+                  <div className="p-5">
+                    <h3
+                      className="mb-4 text-center text-xl font-bold italic"
+                      style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                      {pkg.name}
+                    </h3>
+                    <div className="mb-4 aspect-[4/5] overflow-hidden rounded-2xl">
+                      <img
+                        src={pkg.image}
+                        alt={pkg.name}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    </div>
+                    <p
+                      className={`text-center text-xs italic ${
+                        pkg.highlighted ? 'text-white/90' : 'text-[var(--color-text-muted)]'
+                      }`}
+                    >
+                      {pkg.tagline}
+                    </p>
+                    <p
+                      className={`mt-0.5 text-center text-[10px] font-semibold uppercase tracking-wider ${
+                        pkg.highlighted ? 'text-white/70' : 'text-[var(--color-text-muted)]/70'
+                      }`}
+                    >
+                      {pkg.detail}
+                    </p>
+                    <p className="mt-2 text-center text-2xl font-bold">
+                      ${pkg.price}
+                      <span
+                        className={`ml-0.5 text-xs font-normal ${
+                          pkg.highlighted ? 'text-white/75' : 'text-[var(--color-text-muted)]'
+                        }`}
+                      >
+                        /night
+                      </span>
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.9, ease: 'backOut' }}
+              className="mt-6 flex justify-end"
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="inline-flex items-center overflow-hidden rounded-full bg-white shadow-2xl ring-1 ring-black/5"
+              >
+                <span className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[var(--color-secondary)]">
+                  Use code
+                </span>
+                <span className="bg-[var(--color-secondary)] px-5 py-2.5 text-sm font-bold tracking-widest text-white">
+                  MIAMI20
+                </span>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default MiamiEscapeBanner;

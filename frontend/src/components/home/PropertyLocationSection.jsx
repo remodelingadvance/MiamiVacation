@@ -89,7 +89,7 @@ const PropertyLocationSection = () => {
               Prime Locations
             </span>
 
-            <h2 className="mt-4 text-3xl font-black leading-[1.15] text-gray-950 sm:mt-6 sm:text-4xl lg:text-5xl xl:text-6xl">
+            <h2 className="mt-4 text-2xl font-black leading-[1.15] text-gray-950 sm:mt-6 sm:text-3xl lg:text-4xl xl:text-5xl">
               Properties Across{" "}
               <span className="bg-gradient-to-r from-[var(--color-primary)] to-pink-500 bg-clip-text text-transparent">
                 All Locations

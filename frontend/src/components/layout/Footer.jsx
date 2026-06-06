@@ -18,6 +18,7 @@ import {
 import { APP_CONFIG } from '../../config/constants';
 import apiService from '../../config/api';
 import toast from 'react-hot-toast';
+import NewsletterSignup from '../home/NewsletterSignup';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -62,11 +63,13 @@ const Footer = () => {
   };
 
   return (
+    <>
+    <NewsletterSignup />
     <footer className="relative overflow-hidden bg-[#062B3A] text-white">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-secondary)] to-[var(--color-accent)]" />
       {/* Main footer */}
       <div className="container-custom py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mt-16">
           {/* Brand column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-3 mb-6">
@@ -158,38 +161,6 @@ const Footer = () => {
             </div>
           ))}
         </div>
-
-        {/* Newsletter */}
-        <div className="mt-12 rounded-lg border border-white/10 bg-white/[0.08] p-6 backdrop-blur md:p-8">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h3 className="text-2xl font-display font-bold text-white mb-2">
-                Stay in the Loop
-              </h3>
-              <p className="text-white/68">
-                Subscribe to our newsletter for exclusive deals, new properties, and Miami travel tips.
-              </p>
-            </div>
-            <form onSubmit={handleSubscribe} className="flex gap-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="input-field flex-1 bg-white text-[var(--color-text-primary)]"
-                required
-              />
-              <button
-                type="submit"
-                disabled={subscribing}
-                className="btn-primary flex items-center gap-2 whitespace-nowrap"
-              >
-                <HiPaperAirplane className="w-5 h-5" />
-                {subscribing ? 'Sending...' : 'Subscribe'}
-              </button>
-            </form>
-          </div>
-        </div>
       </div>
 
       {/* Bottom bar */}
@@ -209,6 +180,7 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+    </>
   );
 };
 
