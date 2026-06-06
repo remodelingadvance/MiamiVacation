@@ -15,6 +15,7 @@ import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
 import AboutBanner from '../components/home/AboutBanner';
+import PropertyLocationSection from '../components/home/PropertyLocationSection';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -44,6 +45,8 @@ const HomePage = () => {
 
       {/* Hero Section */}
       <HeroSection />
+
+      <PropertyLocationSection />
 
       {/* Stats Section */}
       <StatsSection />

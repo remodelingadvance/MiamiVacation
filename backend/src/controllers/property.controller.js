@@ -65,6 +65,66 @@ export const getFeaturedProperties = catchAsync(async (req, res, next) => {
   });
 });
 
+// @desc    Get active property neighborhoods with counts
+// @route   GET /api/v1/properties/neighborhoods
+// @access  Public
+export const getPropertyNeighborhoods = catchAsync(async (req, res, next) => {
+  const neighborhoods = await Property.aggregate([
+    {
+      $match: {
+        status: 'active',
+        'location.neighborhood': { $exists: true, $type: 'string' },
+      },
+    },
+    {
+      $addFields: {
+        normalizedNeighborhood: { $trim: { input: '$location.neighborhood' } },
+      },
+    },
+    {
+      $match: {
+        normalizedNeighborhood: { $ne: '' },
+      },
+    },
+    {
+      $sort: {
+        featured: -1,
+        priority: -1,
+        createdAt: -1,
+      },
+    },
+    {
+      $group: {
+        _id: '$normalizedNeighborhood',
+        count: { $sum: 1 },
+        city: { $first: '$location.city' },
+        image: { $first: { $arrayElemAt: ['$images.url', 0] } },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        neighborhood: '$_id',
+        city: 1,
+        count: 1,
+        image: 1,
+      },
+    },
+    {
+      $sort: {
+        count: -1,
+        neighborhood: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    count: neighborhoods.length,
+    neighborhoods,
+  });
+});
+
 // @desc    Get single property
 // @route   GET /api/v1/properties/:id
 // @access  Public
@@ -200,12 +260,12 @@ export const deleteProperty = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/properties/search
 // @access  Public
 export const searchProperties = catchAsync(async (req, res, next) => {
-  const { 
-    search, 
-    type, 
-    minPrice, 
-    maxPrice, 
-    bedrooms, 
+  const {
+    search,
+    type,
+    minPrice,
+    maxPrice,
+    bedrooms,
     bathrooms,
     guests,
     amenities,
@@ -214,81 +274,108 @@ export const searchProperties = catchAsync(async (req, res, next) => {
     lat,
     lng,
     radius,
+    neighborhood,
+    neighbourhood,
+    sort = "-ratings.average",
+    page = 1,
+    limit = 12,
   } = req.query;
 
-  const query = { status: 'active' };
+  const query = { status: "active" };
 
-  // Text search
+  const selectedNeighborhood = neighborhood || neighbourhood;
+
+  if (selectedNeighborhood) {
+    query["location.neighborhood"] = {
+      $regex: selectedNeighborhood,
+      $options: "i",
+    };
+  }
+
   if (search) {
-    query.$text = { $search: search };
+    const searchRegex = { $regex: search, $options: "i" };
+
+    query.$or = [
+      { name: searchRegex },
+      { "description.short": searchRegex },
+      { "description.full": searchRegex },
+      { "location.address": searchRegex },
+      { "location.city": searchRegex },
+      { "location.neighborhood": searchRegex },
+    ];
   }
 
-  // Property type filter
   if (type) {
-    query.type = { $in: type.split(',') };
+    query.type = { $in: type.split(",") };
   }
 
-  // Price range
   if (minPrice || maxPrice) {
-    query['pricing.basePrice'] = {};
-    if (minPrice) query['pricing.basePrice'].$gte = parseFloat(minPrice);
-    if (maxPrice) query['pricing.basePrice'].$lte = parseFloat(maxPrice);
+    query["pricing.basePrice"] = {};
+    if (minPrice) query["pricing.basePrice"].$gte = Number(minPrice);
+    if (maxPrice) query["pricing.basePrice"].$lte = Number(maxPrice);
   }
 
-  // Bedrooms
   if (bedrooms) {
-    query['details.bedrooms'] = { $gte: parseInt(bedrooms) };
+    query["details.bedrooms"] = { $gte: Number(bedrooms) };
   }
 
-  // Bathrooms
   if (bathrooms) {
-    query['details.bathrooms'] = { $gte: parseFloat(bathrooms) };
+    query["details.bathrooms"] = { $gte: Number(bathrooms) };
   }
 
-  // Guests
   if (guests) {
-    query['details.maxGuests'] = { $gte: parseInt(guests) };
+    query["details.maxGuests"] = { $gte: Number(guests) };
   }
 
-  // Amenities
   if (amenities) {
-    const amenityList = amenities.split(',');
-    query['amenities.name'] = { $all: amenityList };
+    query["amenities.name"] = { $all: amenities.split(",") };
   }
 
-  // Location-based search
   if (lat && lng) {
-    const earthRadius = 6378.1; // Earth's radius in km
-    const searchRadius = radius || 10; // Default 10km
-    
-    query['location.coordinates'] = {
+    const earthRadius = 6378.1;
+    const searchRadius = Number(radius) || 10;
+
+    query["location.coordinates"] = {
       $geoWithin: {
-        $centerSphere: [[parseFloat(lng), parseFloat(lat)], searchRadius / earthRadius],
+        $centerSphere: [[Number(lng), Number(lat)], searchRadius / earthRadius],
       },
     };
   }
 
-  // Availability check
   if (checkIn && checkOut) {
-    query['bookings'] = {
+    query.bookings = {
       $not: {
         $elemMatch: {
           checkIn: { $lt: new Date(checkOut) },
           checkOut: { $gt: new Date(checkIn) },
-          status: { $in: ['confirmed', 'active'] },
+          status: { $in: ["confirmed", "active", "pending"] },
         },
       },
     };
   }
 
+  const pageNumber = Math.max(Number(page), 1);
+  const limitNumber = Math.max(Number(limit), 1);
+  const skip = (pageNumber - 1) * limitNumber;
+
   const properties = await Property.find(query)
-    .sort('-ratings.average')
-    .populate('reviews')
+    .sort(sort)
+    .skip(skip)
+    .limit(limitNumber)
+    .populate("reviews")
     .lean();
+
+  const total = await Property.countDocuments(query);
 
   res.status(200).json({
     success: true,
     count: properties.length,
+    total,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
+    },
     properties,
   });
 });

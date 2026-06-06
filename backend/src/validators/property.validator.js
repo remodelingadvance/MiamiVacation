@@ -250,6 +250,18 @@ export const updatePropertyValidator = [
 ];
 
 export const propertySearchValidator = [
+    query('search')
+        .optional()
+        .trim(),
+
+    query('neighborhood')
+        .optional()
+        .trim(),
+
+    query('neighbourhood')
+        .optional()
+        .trim(),
+
     query('minPrice')
         .optional()
         .isFloat({ min: 0 })
@@ -272,8 +284,19 @@ export const propertySearchValidator = [
 
     query('type')
         .optional()
-        .isIn(['condo', 'villa', 'penthouse', 'apartment', 'studio', 'house', 'mansion'])
+        .custom((value) => {
+            const allowedTypes = ['condo', 'villa', 'penthouse', 'apartment', 'studio', 'house', 'mansion'];
+            return value.split(',').every((type) => allowedTypes.includes(type));
+        })
         .withMessage('Invalid property type'),
+
+    query('amenities')
+        .optional()
+        .trim(),
+
+    query('sort')
+        .optional()
+        .trim(),
 
     query('page')
         .optional()

@@ -26,6 +26,7 @@ export const SearchProvider = ({ children }) => {
     bedrooms: '',
     bathrooms: '',
     guests: '',
+    neighborhood: '',
     amenities: [],
     sort: '-createdAt',
   });
@@ -33,13 +34,20 @@ export const SearchProvider = ({ children }) => {
   // Sync filters with URL params
   useEffect(() => {
     const params = Object.fromEntries(searchParams);
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      ...params,
+      search: params.search || '',
       type: params.type ? params.type.split(',') : [],
+      minPrice: params.minPrice || '',
+      maxPrice: params.maxPrice || '',
+      bedrooms: params.bedrooms || '',
+      bathrooms: params.bathrooms || '',
+      guests: params.guests || '',
+      neighborhood: params.neighborhood || params.neighbourhood || '',
       amenities: params.amenities ? params.amenities.split(',') : [],
+      sort: params.sort || '-createdAt',
     }));
-  }, []);
+  }, [searchParams]);
 
   // Update URL when filters change
   const updateFilters = useCallback((newFilters) => {
@@ -74,6 +82,7 @@ export const SearchProvider = ({ children }) => {
         bedrooms: filters.bedrooms,
         bathrooms: filters.bathrooms,
         guests: filters.guests,
+        neighborhood: filters.neighborhood,
         amenities: filters.amenities.join(','),
         sort: filters.sort,
       };
@@ -105,6 +114,7 @@ export const SearchProvider = ({ children }) => {
       bedrooms: '',
       bathrooms: '',
       guests: '',
+      neighborhood: '',
       amenities: [],
       sort: '-createdAt',
     });

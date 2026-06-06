@@ -3,6 +3,7 @@ import express from 'express';
 import {
   getProperties,
   getFeaturedProperties,
+  getPropertyNeighborhoods,
   getProperty,
   getPropertyBySlug,
   createProperty,
@@ -33,6 +34,7 @@ const router = express.Router();
 // ============ PUBLIC ROUTES ============
 router.get('/', generalLimiter, optionalAuth, getProperties);
 router.get('/featured', getFeaturedProperties);
+router.get('/neighborhoods', getPropertyNeighborhoods);
 router.get('/search', validate(propertySearchValidator), searchProperties);
 router.get('/slug/:slug', getPropertyBySlug);
 router.get('/:id/bookings', getPropertyBookings);

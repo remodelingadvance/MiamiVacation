@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import {
   HiAdjustments,
   HiHome,
+  HiLocationMarker,
   HiSearch,
   HiSparkles,
   HiUsers,
@@ -41,6 +42,7 @@ const PropertyFilters = ({ filters, onFilterChange, onReset }) => {
     filters.maxPrice ||
     filters.bedrooms ||
     filters.guests ||
+    filters.neighborhood ||
     selectedAmenities.length > 0;
 
   const toggleType = (value) => {
@@ -85,7 +87,7 @@ const PropertyFilters = ({ filters, onFilterChange, onReset }) => {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr_0.95fr_0.9fr_0.9fr]">
         <label className="block">
           <FieldLabel icon={HiSearch}>Search</FieldLabel>
           <div className="relative">
@@ -95,6 +97,20 @@ const PropertyFilters = ({ filters, onFilterChange, onReset }) => {
               value={filters.search || ''}
               onChange={(e) => onFilterChange({ search: e.target.value })}
               placeholder="Neighborhood, tower, villa..."
+              className="input-field pl-10"
+            />
+          </div>
+        </label>
+
+        <label className="block">
+          <FieldLabel icon={HiLocationMarker}>Neighborhood</FieldLabel>
+          <div className="relative">
+            <HiLocationMarker className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <input
+              type="text"
+              value={filters.neighborhood || ''}
+              onChange={(e) => onFilterChange({ neighborhood: e.target.value })}
+              placeholder="South Beach"
               className="input-field pl-10"
             />
           </div>

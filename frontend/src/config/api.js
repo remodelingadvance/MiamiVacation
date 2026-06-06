@@ -70,6 +70,7 @@ const apiService = {
     // ============ PROPERTIES ============
     getProperties: (params) => api.get('/properties', { params }),
     getFeaturedProperties: () => api.get('/properties/featured'),
+    getPropertyNeighborhoods: () => api.get('/properties/neighborhoods'),
     getProperty: (id) => api.get(`/properties/${id}`),
     getPropertyBySlug: (slug) => api.get(`/properties/slug/${slug}`),
     searchProperties: (params) => api.get('/properties/search', { params }),
