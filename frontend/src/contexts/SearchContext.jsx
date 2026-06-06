@@ -1,8 +1,53 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import apiService from '../config/api';
 
 const SearchContext = createContext(null);
+const DEFAULT_FILTERS = {
+  search: '',
+  type: [],
+  minPrice: '',
+  maxPrice: '',
+  bedrooms: '',
+  bathrooms: '',
+  guests: '',
+  neighborhood: '',
+  amenities: [],
+  sort: '-createdAt',
+};
+
+const parseFiltersFromSearchParams = (searchParams) => {
+  const params = Object.fromEntries(searchParams);
+
+  return {
+    ...DEFAULT_FILTERS,
+    search: params.search || '',
+    type: params.type ? params.type.split(',').filter(Boolean) : [],
+    minPrice: params.minPrice || '',
+    maxPrice: params.maxPrice || '',
+    bedrooms: params.bedrooms || '',
+    bathrooms: params.bathrooms || '',
+    guests: params.guests || '',
+    neighborhood: params.neighborhood || params.neighbourhood || '',
+    amenities: params.amenities ? params.amenities.split(',').filter(Boolean) : [],
+    sort: params.sort || DEFAULT_FILTERS.sort,
+  };
+};
+
+const arraysMatch = (a = [], b = []) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
+const filtersMatch = (left, right) =>
+  left.search === right.search &&
+  left.minPrice === right.minPrice &&
+  left.maxPrice === right.maxPrice &&
+  left.bedrooms === right.bedrooms &&
+  left.bathrooms === right.bathrooms &&
+  left.guests === right.guests &&
+  left.neighborhood === right.neighborhood &&
+  left.sort === right.sort &&
+  arraysMatch(left.type, right.type) &&
+  arraysMatch(left.amenities, right.amenities);
 
 export const useSearch = () => {
   const context = useContext(SearchContext);
@@ -18,36 +63,22 @@ export const SearchProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState({
-    search: '',
-    type: [],
-    minPrice: '',
-    maxPrice: '',
-    bedrooms: '',
-    bathrooms: '',
-    guests: '',
-    neighborhood: '',
-    amenities: [],
-    sort: '-createdAt',
-  });
+  const [filters, setFilters] = useState(() => parseFiltersFromSearchParams(searchParams));
+  const latestRequestId = useRef(0);
+  const searchParamString = searchParams.toString();
+  const urlFilters = useMemo(
+    () => parseFiltersFromSearchParams(searchParams),
+    [searchParamString]
+  );
+  const filtersSynced = useMemo(
+    () => filtersMatch(filters, urlFilters),
+    [filters, urlFilters]
+  );
 
   // Sync filters with URL params
   useEffect(() => {
-    const params = Object.fromEntries(searchParams);
-    setFilters((prev) => ({
-      ...prev,
-      search: params.search || '',
-      type: params.type ? params.type.split(',') : [],
-      minPrice: params.minPrice || '',
-      maxPrice: params.maxPrice || '',
-      bedrooms: params.bedrooms || '',
-      bathrooms: params.bathrooms || '',
-      guests: params.guests || '',
-      neighborhood: params.neighborhood || params.neighbourhood || '',
-      amenities: params.amenities ? params.amenities.split(',') : [],
-      sort: params.sort || '-createdAt',
-    }));
-  }, [searchParams]);
+    setFilters(urlFilters);
+  }, [urlFilters]);
 
   // Update URL when filters change
   const updateFilters = useCallback((newFilters) => {
@@ -69,6 +100,9 @@ export const SearchProvider = ({ children }) => {
 
   // Search properties
   const searchProperties = useCallback(async (page = 1) => {
+    const requestId = latestRequestId.current + 1;
+    latestRequestId.current = requestId;
+
     try {
       setLoading(true);
       
@@ -93,31 +127,26 @@ export const SearchProvider = ({ children }) => {
       });
 
       const response = await apiService.searchProperties(params);
+
+      if (requestId !== latestRequestId.current) return;
       
       setProperties(response.data.properties);
       setTotalResults(response.data.total || response.data.count);
       setCurrentPage(page);
     } catch (error) {
-      console.error('Search failed:', error);
+      if (requestId === latestRequestId.current) {
+        console.error('Search failed:', error);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
   }, [filters]);
 
   // Reset filters
   const resetFilters = useCallback(() => {
-    setFilters({
-      search: '',
-      type: [],
-      minPrice: '',
-      maxPrice: '',
-      bedrooms: '',
-      bathrooms: '',
-      guests: '',
-      neighborhood: '',
-      amenities: [],
-      sort: '-createdAt',
-    });
+    setFilters(DEFAULT_FILTERS);
     setSearchParams({});
   }, [setSearchParams]);
 
@@ -127,6 +156,7 @@ export const SearchProvider = ({ children }) => {
     totalResults,
     currentPage,
     filters,
+    filtersSynced,
     updateFilters,
     searchProperties,
     resetFilters,

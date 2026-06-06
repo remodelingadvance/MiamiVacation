@@ -31,6 +31,7 @@ const PropertiesPage = () => {
     totalResults,
     currentPage,
     filters,
+    filtersSynced,
     updateFilters,
     searchProperties,
     resetFilters,
@@ -40,8 +41,9 @@ const PropertiesPage = () => {
   const selectedNeighborhood = filters.neighborhood || "";
 
   useEffect(() => {
+    if (!filtersSynced) return;
     searchProperties(currentPage);
-  }, [filters, currentPage, searchProperties]);
+  }, [currentPage, filtersSynced, searchProperties]);
 
   useEffect(() => {
     document.body.style.overflow = isFilterOpen ? "hidden" : "";

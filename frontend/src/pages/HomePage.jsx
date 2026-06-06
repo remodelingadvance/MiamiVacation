@@ -48,38 +48,16 @@ const HomePage = () => {
 
       <PropertyLocationSection />
 
+      {/* Featured Properties */}
+
+      <FeaturedProperties properties={featuredProperties} loading={loading} />
+
       {/* Stats Section */}
       <StatsSection />
 
       <AboutBanner />
 
-      {/* Featured Properties */}
-      <section className="bg-[var(--color-bg-medium)] py-20">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="section-title">
-              Featured Luxury Properties
-            </h2>
-            <p className="section-subtitle mx-auto">
-              Discover our hand-picked selection of premium vacation rentals in Miami's most desirable locations
-            </p>
-          </motion.div>
-
-          <FeaturedProperties properties={featuredProperties} loading={loading} />
-
-          <div className="text-center mt-10">
-            <Link to="/properties" className="btn-outline inline-flex items-center gap-2">
-              View All Properties
-              <HiArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Amenities Section */}
       <Amenities />
