@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiStar, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
-import { FaQuoteLeft } from "react-icons/fa";
+import { HiStar, HiArrowLeft, HiArrowRight } from 'react-icons/hi';
 
 const testimonials = [
   {
@@ -50,68 +49,139 @@ const testimonials = [
     location: 'Toronto, Canada',
     avatar: '/testimonials/lisa.jpg',
     rating: 5,
-    text: 'Best booking experience ever! The team was incredibly responsive, and the property was even better than the photos. Can\'t wait to come back next winter!',
+    text: "Best booking experience ever! The team was incredibly responsive, and the property was even better than the photos. Can't wait to come back next winter!",
     property: 'Coral Gables Estate',
     date: 'November 2023',
   },
 ];
 
+// Scattered decorative dots (position / size / color / float speed)
+const dots = [
+  { top: '14%', left: '7%', size: 14, color: '#ff8a5a', dur: 4 },
+  { top: '24%', left: '15%', size: 8, color: '#2dd4bf', dur: 5 },
+  { top: '16%', right: '11%', size: 16, color: 'var(--color-primary)', dur: 4.5 },
+  { top: '30%', right: '6%', size: 10, color: '#fbbf24', dur: 6 },
+  { top: '48%', left: '3%', size: 9, color: '#fbbf24', dur: 5.5 },
+  { top: '44%', right: '3%', size: 12, color: 'var(--color-primary)', dur: 4 },
+  { bottom: '22%', left: '10%', size: 12, color: 'var(--color-primary)', dur: 5 },
+  { bottom: '14%', left: '20%', size: 8, color: '#fbbf24', dur: 4.2 },
+  { bottom: '26%', right: '13%', size: 14, color: '#2dd4bf', dur: 6 },
+  { bottom: '16%', right: '8%', size: 10, color: '#ff8a5a', dur: 4.8 },
+];
+
+const fallbackAvatar = (name) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ff4f7b&color=fff&size=200&bold=true`;
+
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
-  const nextTestimonial = () => {
+  const total = testimonials.length;
+  const next = () => {
     setDirection(1);
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+    setCurrentIndex((p) => (p + 1) % total);
+  };
+  const prev = () => {
+    setDirection(-1);
+    setCurrentIndex((p) => (p - 1 + total) % total);
   };
 
-  const prevTestimonial = () => {
-    setDirection(-1);
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
+  const current = testimonials[currentIndex];
+  const prevItem = testimonials[(currentIndex - 1 + total) % total];
+  const nextItem = testimonials[(currentIndex + 1) % total];
 
   const variants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 300 : -300,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction) => ({
-      x: direction > 0 ? -300 : 300,
-      opacity: 0,
-    }),
+    enter: (dir) => ({ opacity: 0, scale: 0.9, x: dir > 0 ? 40 : -40 }),
+    center: { opacity: 1, scale: 1, x: 0 },
+    exit: (dir) => ({ opacity: 0, scale: 0.9, x: dir > 0 ? -40 : 40 }),
   };
 
-  const currentTestimonial = testimonials[currentIndex];
-
   return (
-    <section className="bg-[#062B3A] py-20">
-      <div className="container-custom">
+    <section className="relative overflow-hidden bg-white py-16">
+      {/* Soft gradient wash */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-[var(--color-primary)]/[0.03]" />
+
+      {/* Floating decorative dots */}
+      {dots.map((d, i) => (
+        <motion.span
+          key={i}
+          animate={{ y: [0, -14, 0], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: d.dur, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+          className="pointer-events-none absolute hidden rounded-full sm:block"
+          style={{
+            top: d.top,
+            bottom: d.bottom,
+            left: d.left,
+            right: d.right,
+            width: d.size,
+            height: d.size,
+            backgroundColor: d.color,
+          }}
+        />
+      ))}
+
+      <div className="container-custom relative">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          transition={{ duration: 0.6 }}
+          className="mx-auto mb-10 max-w-2xl text-center sm:mb-14"
         >
-          <h2 className="section-title text-white">
-            What Our Guests Say
+          <h2 className="text-3xl font-black text-gray-900 sm:text-4xl">
+            Our Customer Review
           </h2>
-          <p className="section-subtitle mx-auto">
-            Read reviews from guests who have experienced Miami luxury with us
+          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
+            We're recognized for exceeding guest expectations and delivering
+            unforgettable Miami stays through care and detail.
           </p>
         </motion.div>
 
-        <div className="relative max-w-3xl mx-auto">
-          {/* Quote icon */}
-          <div className="absolute -top-6 -left-4 text-[var(--color-primary)]/20">
-            <FaQuoteLeft className="w-16 h-16" />
-          </div>
+        {/* Carousel */}
+        <div className="relative mx-auto max-w-3xl">
+          {/* Left preview avatar (prev) */}
+          <motion.button
+            type="button"
+            onClick={prev}
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            whileHover={{ scale: 1.08, y: 0 }}
+            className="absolute left-0 top-[38%] z-10 hidden -translate-y-1/2 lg:block"
+            aria-label={`Previous: ${prevItem.name}`}
+          >
+            <div className="rounded-full bg-amber-100 p-2 shadow-lg">
+              <img
+                src={prevItem.avatar}
+                onError={(e) => (e.currentTarget.src = fallbackAvatar(prevItem.name))}
+                alt={prevItem.name}
+                className="h-14 w-14 rounded-full object-cover opacity-90 xl:h-16 xl:w-16"
+              />
+            </div>
+          </motion.button>
 
-          {/* Testimonial card */}
-          <div className="relative overflow-hidden">
+          {/* Right preview avatar (next) */}
+          <motion.button
+            type="button"
+            onClick={next}
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            whileHover={{ scale: 1.08, y: 0 }}
+            className="absolute right-0 top-[38%] z-10 hidden -translate-y-1/2 lg:block"
+            aria-label={`Next: ${nextItem.name}`}
+          >
+            <div className="rounded-full bg-[var(--color-primary)]/12 p-2 shadow-lg">
+              <img
+                src={nextItem.avatar}
+                onError={(e) => (e.currentTarget.src = fallbackAvatar(nextItem.name))}
+                alt={nextItem.name}
+                className="h-14 w-14 rounded-full object-cover opacity-90 xl:h-16 xl:w-16"
+              />
+            </div>
+          </motion.button>
+
+          {/* Center content */}
+          <div className="px-2 text-center lg:px-32">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentIndex}
@@ -120,108 +190,110 @@ const Testimonials = () => {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                className="rounded-lg border border-white/10 bg-white/[0.08] p-8 text-center backdrop-blur md:p-12"
+                transition={{ duration: 0.4, ease: [0.21, 0.47, 0.32, 0.98] }}
               >
-                {/* Stars */}
-                <div className="flex justify-center gap-1 mb-6">
-                  {[...Array(5)].map((_, i) => (
-                    <HiStar
-                      key={i}
-                      className={`w-6 h-6 ${
-                        i < currentTestimonial.rating
-                          ? 'text-[var(--color-primary)]'
-                          : 'text-white/20'
-                      }`}
+                {/* Main avatar with ring */}
+                <div className="relative mx-auto mb-5 w-fit">
+                  <motion.div
+                    animate={{ scale: [1, 1.04, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                    className="rounded-full bg-white p-1.5 shadow-[0_12px_40px_rgba(255,79,123,0.28)] ring-[3px] ring-[var(--color-primary)]"
+                  >
+                    <img
+                      src={current.avatar}
+                      onError={(e) => (e.currentTarget.src = fallbackAvatar(current.name))}
+                      alt={current.name}
+                      className="h-24 w-24 rounded-full object-cover sm:h-28 sm:w-28"
                     />
+                  </motion.div>
+                  {/* small accent dot */}
+                  <span className="absolute bottom-2 right-2 h-4 w-4 rounded-full border-2 border-white bg-[var(--color-primary)]" />
+                </div>
+
+                {/* Name */}
+                <h3 className="text-xl font-black text-[var(--color-secondary)] sm:text-2xl">
+                  {current.name}
+                </h3>
+                <p className="mt-0.5 text-xs font-medium text-[var(--color-text-muted)] sm:text-sm">
+                  {current.location} · {current.date}
+                </p>
+
+                {/* Stars */}
+                <div className="mt-3 flex justify-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ scale: 0, rotate: -45 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.1 + i * 0.06, ease: 'backOut' }}
+                    >
+                      <HiStar
+                        className={`h-5 w-5 ${
+                          i < current.rating
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-gray-200'
+                        }`}
+                      />
+                    </motion.span>
                   ))}
                 </div>
 
                 {/* Quote */}
-                <blockquote className="text-lg md:text-xl text-white/90 leading-relaxed mb-8 font-display italic">
-                  "{currentTestimonial.text}"
-                </blockquote>
+                <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
+                  "{current.text}"
+                </p>
 
-                {/* Author */}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={currentTestimonial.avatar}
-                      alt={currentTestimonial.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-white font-semibold">{currentTestimonial.name}</p>
-                    <p className="text-sm text-[var(--color-text-muted)]">
-                      {currentTestimonial.location} • {currentTestimonial.date}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Property */}
-                <p className="mt-4 text-sm text-[var(--color-primary)]">
-                  Stayed at: {currentTestimonial.property}
+                {/* Property tag */}
+                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  Stayed at {current.property}
                 </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              onClick={prevTestimonial}
-              className="w-12 h-12 rounded-full glass-light flex items-center justify-center text-white hover:text-[var(--color-primary)] hover:bg-white/10 transition-all"
+          {/* Arrows + dots */}
+          <div className="mt-8 flex items-center justify-center gap-5 sm:gap-8">
+            <motion.button
+              type="button"
+              onClick={prev}
+              whileHover={{ scale: 1.1, x: -2 }}
+              whileTap={{ scale: 0.92 }}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-[var(--color-secondary)] shadow-sm transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
+              aria-label="Previous testimonial"
             >
-              <HiChevronLeft className="w-6 h-6" />
-            </button>
+              <HiArrowLeft className="h-5 w-5" />
+            </motion.button>
 
-            {/* Dots */}
             <div className="flex gap-2">
-              {testimonials.map((_, index) => (
+              {testimonials.map((_, i) => (
                 <button
-                  key={index}
+                  key={i}
                   onClick={() => {
-                    setDirection(index > currentIndex ? 1 : -1);
-                    setCurrentIndex(index);
+                    setDirection(i > currentIndex ? 1 : -1);
+                    setCurrentIndex(i);
                   }}
-                  className={`w-2.5 h-2.5 rounded-full transition-all ${
-                    index === currentIndex
-                      ? 'bg-[var(--color-primary)] w-8'
-                      : 'bg-white/20 hover:bg-white/40'
-                  }`}
+                  aria-label={`Go to testimonial ${i + 1}`}
+                  className="h-2.5 rounded-full transition-all duration-300"
+                  style={{
+                    width: i === currentIndex ? '28px' : '10px',
+                    backgroundColor:
+                      i === currentIndex ? 'var(--color-primary)' : '#e5e7eb',
+                  }}
                 />
               ))}
             </div>
 
-            <button
-              onClick={nextTestimonial}
-              className="w-12 h-12 rounded-full glass-light flex items-center justify-center text-white hover:text-[var(--color-primary)] hover:bg-white/10 transition-all"
+            <motion.button
+              type="button"
+              onClick={next}
+              whileHover={{ scale: 1.1, x: 2 }}
+              whileTap={{ scale: 0.92 }}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-[var(--color-secondary)] shadow-sm transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
+              aria-label="Next testimonial"
             >
-              <HiChevronRight className="w-6 h-6" />
-            </button>
+              <HiArrowRight className="h-5 w-5" />
+            </motion.button>
           </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 max-w-3xl mx-auto">
-          {[
-            { value: '4.9', label: 'Average Rating' },
-            { value: '98%', label: 'Guest Satisfaction' },
-            { value: '1,000+', label: '5-Star Reviews' },
-            { value: '24/7', label: 'Guest Support' },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
-              <p className="text-sm text-[var(--color-text-muted)]">{stat.label}</p>
-            </motion.div>
-          ))}
         </div>
       </div>
     </section>

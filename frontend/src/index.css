@@ -12,6 +12,7 @@
 @tailwind utilities;
 
 /* ─── Theme Variables (overridable via JS / theme.config.js) ─── */
+
 @layer base {
   :root {
     /* Brand */
@@ -28,7 +29,7 @@
     --color-bg-dark:    #FFFDFB;
     --color-bg-medium:  #F5FBFC;
     --color-bg-light:   #EAF4F6;
-    --color-bg-cream:   #ebe4d4;
+    --color-bg-cream:   #ede8dc;
 
     /* Text */
     --color-text-primary:   #083344;

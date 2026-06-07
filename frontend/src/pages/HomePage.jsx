@@ -15,6 +15,7 @@ import apiService from '../config/api';
 import AboutBanner from '../components/home/AboutBanner';
 import PropertyLocationSection from '../components/home/PropertyLocationSection';
 import MiamiEscapeBanner from '../components/home/MiamiEscapeBanner';
+import NatureExploreHero from '../components/home/NatureExploreHero';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -55,6 +56,8 @@ const HomePage = () => {
       <FeaturedProperties properties={featuredProperties} loading={loading} />
 
       <MiamiEscapeBanner />
+
+      <NatureExploreHero />
 
       <AboutBanner />
 

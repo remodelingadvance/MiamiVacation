@@ -52,7 +52,7 @@ const stats = [
 
 const MiamiEscapeBanner = () => {
   return (
-    <section className="relative overflow-hidden bg-[#f3ecd9]">
+    <section className="relative overflow-hidden bg-[#ede8dc]">
       {/* ─── Right-side beach image (desktop diagonal clip) ─── */}
       <div
         className="absolute inset-0 hidden lg:block"
