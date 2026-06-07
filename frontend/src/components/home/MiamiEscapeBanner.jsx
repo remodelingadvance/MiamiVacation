@@ -2,6 +2,12 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
 import { HiOutlineChatAlt2 } from 'react-icons/hi';
+import {
+  HiLocationMarker,
+  HiUserGroup,
+  HiStar,
+  HiHome,
+} from 'react-icons/hi';
 
 const SunIcon = ({ className = '' }) => (
   <svg
@@ -17,32 +23,30 @@ const SunIcon = ({ className = '' }) => (
   </svg>
 );
 
-const packages = [
+const stats = [
   {
-    name: 'Casita',
-    tagline: 'Beachfront bungalow',
-    detail: '2 BR · Sleeps 4',
-    image:
-      'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=600&q=80',
-    price: 185,
+    icon: HiLocationMarker,
+    value: '50+',
+    label: 'Miami Locations',
+    sub: 'Across the city',
   },
   {
-    name: 'Suite',
-    tagline: 'Ocean Drive condo',
-    detail: '3 BR · Sleeps 6 · Pool',
-    image:
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80',
-    price: 320,
+    icon: HiHome,
+    value: '500+',
+    label: 'Verified Stays',
+    sub: 'Handpicked rentals',
   },
   {
-    name: 'Penthouse',
-    tagline: 'Sky-high indulgence',
-    detail: '4 BR · Rooftop pool',
-    image:
-      'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=600&q=80',
-    price: 580,
-    highlighted: true,
-    badge: 'Most popular',
+    icon: HiUserGroup,
+    value: '12K+',
+    label: 'Happy Guests',
+    sub: 'And counting',
+  },
+  {
+    icon: HiStar,
+    value: '4.9★',
+    label: 'Average Rating',
+    sub: 'From 8K+ reviews',
   },
 ];
 
@@ -78,7 +82,7 @@ const MiamiEscapeBanner = () => {
 
       <div className="relative mx-auto max-w-7xl px-6 py-14 lg:px-12 lg:py-24">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-10">
-          {/* ─── LEFT: Content (constrained to max-w-md to prevent overlap) ─── */}
+          {/* ─── LEFT: Content ─── */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -102,7 +106,7 @@ const MiamiEscapeBanner = () => {
                 Limited Time Offer
               </motion.div>
 
-              {/* Title — clean 2-line layout */}
+              {/* Title */}
               <h1
                 className="font-bold leading-none text-[var(--color-secondary)]"
                 style={{ fontFamily: 'var(--font-display)' }}
@@ -199,8 +203,8 @@ const MiamiEscapeBanner = () => {
             </div>
           </motion.div>
 
-          {/* ─── RIGHT: Packages ─── */}
-          <div className="lg:col-span-7">
+          {/* ─── RIGHT: Stats Grid ─── */}
+          <div className="lg:col-span-7 max-w-lg mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -212,81 +216,57 @@ const MiamiEscapeBanner = () => {
                 className="text-3xl font-bold text-[var(--color-secondary)] sm:text-4xl lg:text-white lg:drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                Vacation packages
+                Trusted by travelers worldwide
               </h2>
               <p className="mt-1 text-sm text-[var(--color-text-muted)] lg:text-white/85 lg:drop-shadow">
-                Three curated experiences — one unforgettable city.
+                Numbers that speak for our Miami experience.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {packages.map((pkg, i) => (
+            {/* Stats Grid 2x2 */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {stats.map((stat, i) => (
                 <motion.div
-                  key={pkg.name}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{
-                    duration: 0.7,
-                    delay: 0.4 + i * 0.12,
+                    duration: 0.6,
+                    delay: 0.4 + i * 0.1,
                     ease: [0.21, 0.47, 0.32, 0.98],
                   }}
-                  whileHover={{ y: -10 }}
-                  className={`group relative overflow-hidden rounded-3xl shadow-2xl ring-1 ring-black/5 ${
-                    pkg.highlighted
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-white text-[var(--color-secondary)]'
-                  }`}
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/5 transition-shadow hover:shadow-2xl sm:p-6"
                 >
-                  {pkg.badge && (
-                    <div className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[var(--color-primary)] shadow-md">
-                      {pkg.badge}
-                    </div>
-                  )}
+                  {/* Decorative corner accent */}
+                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--color-primary)]/5 transition-transform duration-500 group-hover:scale-150" />
 
-                  <div className="p-5">
-                    <h3
-                      className="mb-4 text-center text-xl font-bold italic"
-                      style={{ fontFamily: 'var(--font-display)' }}
-                    >
-                      {pkg.name}
-                    </h3>
-                    <div className="mb-4 aspect-[4/5] overflow-hidden rounded-2xl">
-                      <img
-                        src={pkg.image}
-                        alt={pkg.name}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    </div>
-                    <p
-                      className={`text-center text-xs italic ${
-                        pkg.highlighted ? 'text-white/90' : 'text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {pkg.tagline}
-                    </p>
-                    <p
-                      className={`mt-0.5 text-center text-[10px] font-semibold uppercase tracking-wider ${
-                        pkg.highlighted ? 'text-white/70' : 'text-[var(--color-text-muted)]/70'
-                      }`}
-                    >
-                      {pkg.detail}
-                    </p>
-                    <p className="mt-2 text-center text-2xl font-bold">
-                      ${pkg.price}
-                      <span
-                        className={`ml-0.5 text-xs font-normal ${
-                          pkg.highlighted ? 'text-white/75' : 'text-[var(--color-text-muted)]'
-                        }`}
-                      >
-                        /night
-                      </span>
-                    </p>
+                  {/* Icon */}
+                  <div className="relative mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] transition-all duration-300 group-hover:bg-[var(--color-primary)] group-hover:text-white">
+                    <stat.icon className="h-5 w-5" />
                   </div>
+
+                  {/* Value */}
+                  <p
+                    className="relative text-3xl font-black leading-none text-[var(--color-secondary)] sm:text-4xl"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {stat.value}
+                  </p>
+
+                  {/* Label */}
+                  <p className="relative mt-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-dark)] sm:text-sm">
+                    {stat.label}
+                  </p>
+                  <p className="relative mt-0.5 text-[11px] text-[var(--color-text-muted)] sm:text-xs">
+                    {stat.sub}
+                  </p>
                 </motion.div>
               ))}
             </div>
 
+            {/* Promo code */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -298,12 +278,18 @@ const MiamiEscapeBanner = () => {
                 whileHover={{ scale: 1.05 }}
                 className="inline-flex items-center overflow-hidden rounded-full bg-white shadow-2xl ring-1 ring-black/5"
               >
-                <span className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[var(--color-secondary)]">
-                  Use code
-                </span>
-                <span className="bg-[var(--color-secondary)] px-5 py-2.5 text-sm font-bold tracking-widest text-white">
-                  MIAMI20
-                </span>
+                <Link
+                  to="/properties"
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-[var(--color-secondary)] transition-colors hover:text-[var(--color-primary)]"
+                >
+                  Book a stay
+                </Link>
+                <Link
+                  to="/contact"
+                  className="flex h-full items-center justify-center rounded-full bg-[var(--color-secondary)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary)]"
+                >
+                  Contact us
+                </Link>
               </motion.div>
             </motion.div>
           </div>

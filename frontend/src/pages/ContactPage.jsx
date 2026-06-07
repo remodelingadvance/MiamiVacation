@@ -2,7 +2,8 @@ import SEOHead from '../components/common/SEOHead';
 import ContactHero from '../components/contact/ContactHero';
 import ContactForm from '../components/contact/ContactForm';
 import ContactMap from '../components/contact/ContactMap';
-import ContactFAQ from '../components/contact/ContactFAQ';
+import ContactLocations from '../components/contact/ContactLocations';
+// import ContactFAQ from '../components/contact/ContactFAQ';
 
 const ContactPage = () => {
   return (
@@ -13,12 +14,13 @@ const ContactPage = () => {
       />
 
       <ContactHero />
+      <ContactLocations />
 
       {/* Info + Form */}
       <ContactForm />
 
       <ContactMap />
-      <ContactFAQ />
+      {/* <ContactFAQ /> */}
     </>
   );
 };
