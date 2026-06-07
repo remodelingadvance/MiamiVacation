@@ -3,10 +3,21 @@ import { Link } from 'react-router-dom';
 import { HiArrowRight, HiSparkles } from 'react-icons/hi';
 import SkeletonLoader from '../common/SkeletonLoader';
 import PropertyCard from '../properties/PropertyCard';
+import backgroundImage from '../../assets/Featured-palm.png';
 
 const FeaturedProperties = ({ properties, loading }) => {
   return (
     <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
+
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+        }}
+      />
+
+      {/* Soft Overlay */}
+      <div className="absolute inset-0 z-0 bg-white/40" />
       {/* ─── Animated Miami-sunset Background ─── */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {/* Base wash */}

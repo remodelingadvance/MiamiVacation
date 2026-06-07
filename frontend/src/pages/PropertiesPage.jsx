@@ -16,6 +16,7 @@ import PropertyCard from "../components/properties/PropertyCard";
 import PropertyFilters from "../components/properties/PropertyFilters";
 import { useSearch } from "../contexts/SearchContext";
 import { THEME } from "../config/theme.config";
+import backgroundImage from '../assets/property-bg.png';
 
 const hasFilterValue = (value) => {
   if (Array.isArray(value)) return value.length > 0;
@@ -139,6 +140,12 @@ const PropertiesPage = () => {
       </section>
 
       <section className="relative bg-[#f8f8f8] py-10 lg:py-14">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-15"
+          style={{
+            backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+          }}
+        />
         <div className="container-custom relative">
           <motion.div
             initial={{ opacity: 0, y: 18 }}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiStar, HiArrowLeft, HiArrowRight } from 'react-icons/hi';
+import backgroundImage from '../../assets/testimonial-bg.png';
 
 const testimonials = [
   {
@@ -97,9 +98,14 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-white py-16">
+    <section className="relative overflow-hidden py-16">
       {/* Soft gradient wash */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-[var(--color-primary)]/[0.03]" />
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25"
+        style={{
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+        }}
+      />
 
       {/* Floating decorative dots */}
       {dots.map((d, i) => (
@@ -228,11 +234,10 @@ const Testimonials = () => {
                       transition={{ delay: 0.1 + i * 0.06, ease: 'backOut' }}
                     >
                       <HiStar
-                        className={`h-5 w-5 ${
-                          i < current.rating
+                        className={`h-5 w-5 ${i < current.rating
                             ? 'text-[var(--color-primary)]'
                             : 'text-gray-200'
-                        }`}
+                          }`}
                       />
                     </motion.span>
                   ))}

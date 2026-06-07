@@ -83,7 +83,7 @@ const FillButton = ({ to, children, onClick, variant = "primary", className = ""
     >
       <span
         className={`absolute inset-y-0 left-0 w-0 transition-all duration-500 ease-out group-hover:w-full ${
-          primary ? "bg-gray-950" : "bg-[var(--color-primary)]"
+          primary ? "bg-[var(--color-secondary)]" : "bg-[var(--color-primary)]"
         }`}
       />
       <span className="relative z-10 flex items-center gap-2 transition-colors duration-300 group-hover:text-white">

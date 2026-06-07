@@ -7,15 +7,15 @@ import HeroSection from '../components/home/HeroSection';
 import FeaturedProperties from '../components/home/FeaturedProperties';
 import Amenities from '../components/home/Amenities';
 import Testimonials from '../components/home/Testimonials';
-import FAQ from '../components/home/FAQ';
+// import FAQ from '../components/home/FAQ';
 import NewsletterSignup from '../components/home/NewsletterSignup';
 import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
-import AboutBanner from '../components/home/AboutBanner';
+// import AboutBanner from '../components/home/AboutBanner';
 import PropertyLocationSection from '../components/home/PropertyLocationSection';
-import MiamiEscapeBanner from '../components/home/MiamiEscapeBanner';
-import NatureExploreHero from '../components/home/NatureExploreHero';
+import AboutStayWiseBanner from '../components/home/AboutStayWiseBanner';
+// import NatureExploreHero from '../components/home/NatureExploreHero';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -55,11 +55,11 @@ const HomePage = () => {
 
       <FeaturedProperties properties={featuredProperties} loading={loading} />
 
-      <MiamiEscapeBanner />
+      <AboutStayWiseBanner />
 
-      <NatureExploreHero />
+      {/* <NatureExploreHero /> */}
 
-      <AboutBanner />
+      {/* <AboutBanner /> */}
 
       
 
@@ -70,7 +70,7 @@ const HomePage = () => {
       <Testimonials />
 
       {/* FAQ */}
-      <FAQ />
+      {/* <FAQ /> */}
     </>
   );
 };
