@@ -6,11 +6,127 @@ import catchAsync from '../utils/catchAsync.js';
 import { generateToken, generateRefreshToken } from '../utils/generateToken.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
+import { getFirebaseAuth } from '../config/firebaseAdmin.js';
 
-// @desc    Register user
+const allowedFirebaseProviders = ['password', 'google.com', 'apple.com', 'phone', 'firebase'];
+
+const normalizeFirebaseProvider = (provider) =>
+  allowedFirebaseProviders.includes(provider) ? provider : 'firebase';
+
+const splitDisplayName = (displayName = '', email = '') => {
+  const fallbackName = email ? email.split('@')[0].replace(/[._-]+/g, ' ') : '';
+  const parts = (displayName || fallbackName).trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || 'Guest',
+    lastName: parts.slice(1).join(' ') || 'Customer',
+  };
+};
+
+const authUserPayload = (user) => ({
+  id: user._id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  email: user.email,
+  phone: user.phone,
+  avatar: user.avatar,
+  role: user.role,
+  isVerified: user.isVerified,
+  favorites: user.favorites,
+  preferences: user.preferences,
+  address: user.address,
+  authProviders: user.authProviders,
+});
+
+const issueAuthTokens = async (user) => {
+  const token = generateToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+  user.refreshToken = refreshToken;
+  user.lastLogin = Date.now();
+  await user.save({ validateBeforeSave: false });
+
+  return { token, refreshToken };
+};
+
+const sendVerificationCodeEmail = async (user, code) => {
+  await emailService.send({
+    to: user.email,
+    subject: 'Your Miami Luxury Rentals verification code',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { margin: 0; font-family: Arial, sans-serif; color: #083344; background: #f6fbfc; }
+          .container { max-width: 600px; margin: 0 auto; padding: 28px 16px; }
+          .card { background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 48px rgba(8, 51, 68, 0.10); }
+          .header { background: #062B3A; color: #ffffff; padding: 28px; }
+          .content { padding: 28px; }
+          .code { margin: 24px 0; padding: 18px; border-radius: 14px; background: #FFF1F5; color: #FF4F7B; font-size: 34px; font-weight: 900; letter-spacing: 8px; text-align: center; }
+          .muted { color: #6B8794; font-size: 14px; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="header">
+              <h1 style="margin:0;">Verify your email</h1>
+              <p style="margin:8px 0 0;">Miami Luxury Rentals account security</p>
+            </div>
+            <div class="content">
+              <h2 style="margin-top:0;">Hello ${user.firstName},</h2>
+              <p>Use this verification code to activate your account:</p>
+              <div class="code">${code}</div>
+              <p class="muted">This code expires in 15 minutes. If you did not create this account, you can safely ignore this email.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};
+
+// @desc    Register user with email verification code
 // @route   POST /api/v1/auth/signup
 // @access  Public
 export const signup = catchAsync(async (req, res, next) => {
+  const { firstName, lastName, email, password, phone } = req.body;
+  const normalizedEmail = email.toLowerCase();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    return next(new AppError('An account with this email already exists', 400));
+  }
+
+  const user = await User.create({
+    firstName,
+    lastName,
+    email: normalizedEmail,
+    password,
+    phone,
+    authProviders: [{ provider: 'password' }],
+  });
+
+  const verificationCode = user.generateVerificationCode();
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await sendVerificationCodeEmail(user, verificationCode);
+  } catch (error) {
+    logger.error('Verification code email failed during signup:', error);
+    return next(new AppError('Account created, but the verification email could not be sent. Please request a new code.', 500));
+  }
+
+  res.status(201).json({
+    success: true,
+    requiresVerification: true,
+    email: user.email,
+    message: 'Registration successful. Please enter the verification code sent to your email.',
+  });
+});
+
+// Legacy link-based signup kept unused for rollback/reference.
+const legacySignup = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
   // Check if user exists
@@ -114,6 +230,186 @@ export const signup = catchAsync(async (req, res, next) => {
   }
 });
 
+// @desc    Verify email with 6-digit code
+// @route   POST /api/v1/auth/verify-email-code
+// @access  Public
+export const verifyEmailCode = catchAsync(async (req, res, next) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return next(new AppError('Email and verification code are required', 400));
+  }
+
+  const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    return next(new AppError('Invalid verification code', 400));
+  }
+
+  if (user.isVerified) {
+    const { token, refreshToken } = await issueAuthTokens(user);
+    return res.status(200).json({
+      success: true,
+      message: 'Email already verified',
+      token,
+      refreshToken,
+      user: authUserPayload(user),
+    });
+  }
+
+  if (
+    !user.verificationCode ||
+    user.verificationCode !== hashedCode ||
+    !user.verificationCodeExpires ||
+    user.verificationCodeExpires < Date.now()
+  ) {
+    user.verificationCodeAttempts = (user.verificationCodeAttempts || 0) + 1;
+    await user.save({ validateBeforeSave: false });
+    return next(new AppError('Invalid or expired verification code', 400));
+  }
+
+  user.isVerified = true;
+  user.verificationCode = undefined;
+  user.verificationCodeExpires = undefined;
+  user.verificationCodeAttempts = 0;
+
+  const { token, refreshToken } = await issueAuthTokens(user);
+
+  res.status(200).json({
+    success: true,
+    message: 'Email verified successfully',
+    token,
+    refreshToken,
+    user: authUserPayload(user),
+  });
+});
+
+// @desc    Resend verification code
+// @route   POST /api/v1/auth/resend-verification-code
+// @access  Public
+export const resendVerificationCode = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return next(new AppError('Email is required', 400));
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message: 'If an unverified account exists, a new code has been sent.',
+    });
+  }
+
+  if (user.isVerified) {
+    return res.status(200).json({
+      success: true,
+      message: 'This email is already verified. Please sign in.',
+    });
+  }
+
+  const verificationCode = user.generateVerificationCode();
+  await user.save({ validateBeforeSave: false });
+  await sendVerificationCodeEmail(user, verificationCode);
+
+  res.status(200).json({
+    success: true,
+    message: 'Verification code sent.',
+  });
+});
+
+// @desc    Login/signup with Firebase provider token
+// @route   POST /api/v1/auth/firebase
+// @access  Public
+export const firebaseAuth = catchAsync(async (req, res, next) => {
+  const { idToken, profile = {} } = req.body;
+
+  if (!idToken) {
+    return next(new AppError('Firebase ID token is required', 400));
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = await getFirebaseAuth().verifyIdToken(idToken, true);
+  } catch (error) {
+    logger.error('Firebase ID token verification failed:', error);
+    return next(new AppError('Invalid Firebase authentication token', 401));
+  }
+
+  const email = (decodedToken.email || profile.email || '').toLowerCase();
+  if (!email) {
+    return next(new AppError('Firebase account did not provide an email address', 400));
+  }
+
+  const provider = normalizeFirebaseProvider(
+    decodedToken.firebase?.sign_in_provider || profile.provider || 'firebase'
+  );
+  const displayName = decodedToken.name || profile.displayName || '';
+  const { firstName, lastName } = splitDisplayName(displayName, email);
+  const phone = decodedToken.phone_number || profile.phone || profile.phoneNumber;
+  const avatar = decodedToken.picture || profile.photoURL;
+  const profileAddress = profile.address && typeof profile.address === 'object'
+    ? profile.address
+    : undefined;
+
+  let user = await User.findOne({
+    $or: [{ firebaseUid: decodedToken.uid }, { email }],
+  });
+  let isNewUser = false;
+
+  if (!user) {
+    isNewUser = true;
+    user = await User.create({
+      firstName,
+      lastName,
+      email,
+      phone,
+      avatar: avatar || 'default-avatar.jpg',
+      firebaseUid: decodedToken.uid,
+      isVerified: Boolean(decodedToken.email_verified || provider === 'google.com' || provider === 'apple.com'),
+      authProviders: [{
+        provider,
+        providerUid: decodedToken.uid,
+      }],
+      address: profileAddress,
+    });
+  } else {
+    if (!user.firebaseUid) user.firebaseUid = decodedToken.uid;
+    if (avatar && (!user.avatar || user.avatar === 'default-avatar.jpg')) user.avatar = avatar;
+    if (phone && !user.phone) user.phone = phone;
+    if (profileAddress && !user.address?.street) user.address = profileAddress;
+    if (decodedToken.email_verified) user.isVerified = true;
+
+    const hasProvider = (user.authProviders || []).some(
+      (item) => item.provider === provider && item.providerUid === decodedToken.uid
+    );
+
+    if (!hasProvider) {
+      user.authProviders.push({
+        provider,
+        providerUid: decodedToken.uid,
+      });
+    }
+  }
+
+  if (!user.isActive) {
+    return next(new AppError('Your account has been deactivated. Please contact support.', 403));
+  }
+
+  const { token, refreshToken } = await issueAuthTokens(user);
+
+  res.status(200).json({
+    success: true,
+    token,
+    refreshToken,
+    isNewUser,
+    user: authUserPayload(user),
+  });
+});
+
 // @desc    Login user
 // @route   POST /api/v1/auth/login
 // @access  Public
@@ -153,20 +449,22 @@ export const login = catchAsync(async (req, res, next) => {
     return next(new AppError('Your account has been deactivated. Please contact support.', 403));
   }
 
+  if (!user.isVerified) {
+    return res.status(403).json({
+      success: false,
+      requiresVerification: true,
+      email: user.email,
+      message: 'Please verify your email before signing in.',
+    });
+  }
+
   // Reset login attempts on successful login
   if (user.loginAttempts > 0) {
     user.loginAttempts = 0;
     user.lockUntil = undefined;
   }
 
-  // Update last login
-  user.lastLogin = Date.now();
-
-  // Generate tokens
-  const token = generateToken(user._id);
-  const refreshToken = generateRefreshToken(user._id);
-  user.refreshToken = refreshToken;
-  await user.save({ validateBeforeSave: false });
+  const { token, refreshToken } = await issueAuthTokens(user);
 
   // Remove password from output
   user.password = undefined;
@@ -175,18 +473,7 @@ export const login = catchAsync(async (req, res, next) => {
     success: true,
     token,
     refreshToken,
-    user: {
-      id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      avatar: user.avatar,
-      role: user.role,
-      isVerified: user.isVerified,
-      favorites: user.favorites,
-      preferences: user.preferences,
-    },
+    user: authUserPayload(user),
   });
 });
 

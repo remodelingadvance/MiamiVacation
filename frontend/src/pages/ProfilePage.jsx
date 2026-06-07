@@ -12,6 +12,7 @@ import {
   HiLogout,
   HiCamera,
   HiPencil,
+  HiLocationMarker,
 } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +27,13 @@ const ProfilePage = () => {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     phone: user?.phone || '',
+    address: {
+      street: user?.address?.street || '',
+      city: user?.address?.city || '',
+      state: user?.address?.state || '',
+      zipCode: user?.address?.zipCode || '',
+      country: user?.address?.country || 'US',
+    },
   });
 
   const handleLogout = async () => {
@@ -39,6 +47,16 @@ const ProfilePage = () => {
     if (result.success) {
       setEditing(false);
     }
+  };
+
+  const handleAddressChange = (field, value) => {
+    setFormData((current) => ({
+      ...current,
+      address: {
+        ...current.address,
+        [field]: value,
+      },
+    }));
   };
 
   if (!user) {
@@ -59,6 +77,14 @@ const ProfilePage = () => {
     { key: 'reviews', label: 'My Reviews', icon: HiStar },
     { key: 'settings', label: 'Settings', icon: HiCog },
   ];
+
+  const addressParts = [
+    user.address?.street,
+    user.address?.city,
+    user.address?.state,
+    user.address?.zipCode,
+    user.address?.country,
+  ].filter(Boolean);
 
   return (
     <>
@@ -167,6 +193,60 @@ const ProfilePage = () => {
                             className="input-field"
                           />
                         </div>
+                        <div>
+                          <label className="input-label">Street Address</label>
+                          <input
+                            type="text"
+                            value={formData.address.street}
+                            onChange={(e) => handleAddressChange('street', e.target.value)}
+                            className="input-field"
+                            placeholder="Street address"
+                          />
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="input-label">City</label>
+                            <input
+                              type="text"
+                              value={formData.address.city}
+                              onChange={(e) => handleAddressChange('city', e.target.value)}
+                              className="input-field"
+                              placeholder="City"
+                            />
+                          </div>
+                          <div>
+                            <label className="input-label">State / Region</label>
+                            <input
+                              type="text"
+                              value={formData.address.state}
+                              onChange={(e) => handleAddressChange('state', e.target.value)}
+                              className="input-field"
+                              placeholder="State or region"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="input-label">Postal Code</label>
+                            <input
+                              type="text"
+                              value={formData.address.zipCode}
+                              onChange={(e) => handleAddressChange('zipCode', e.target.value)}
+                              className="input-field"
+                              placeholder="Postal code"
+                            />
+                          </div>
+                          <div>
+                            <label className="input-label">Country</label>
+                            <input
+                              type="text"
+                              value={formData.address.country}
+                              onChange={(e) => handleAddressChange('country', e.target.value)}
+                              className="input-field"
+                              placeholder="Country"
+                            />
+                          </div>
+                        </div>
                         <button type="submit" className="btn-primary">
                           Save Changes
                         </button>
@@ -195,6 +275,15 @@ const ProfilePage = () => {
                           <div>
                             <p className="text-sm text-[var(--color-text-muted)]">Phone</p>
                             <p className="text-[var(--color-text-primary)]">{user.phone || 'Not provided'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">
+                          <HiLocationMarker className="w-5 h-5 text-[var(--color-primary)]" />
+                          <div>
+                            <p className="text-sm text-[var(--color-text-muted)]">Address</p>
+                            <p className="text-[var(--color-text-primary)]">
+                              {addressParts.length ? addressParts.join(', ') : 'Not provided'}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-medium)] p-4">

@@ -58,6 +58,7 @@ const apiService = {
     // ============ AUTH ============
     login: (credentials) => api.post('/auth/login', credentials),
     signup: (userData) => api.post('/auth/signup', userData),
+    firebaseAuth: (data) => api.post('/auth/firebase', data),
     logout: () => api.post('/auth/logout'),
     getMe: () => api.get('/auth/me'),
     updateProfile: (data) => api.patch('/auth/update-profile', data),
@@ -65,6 +66,8 @@ const apiService = {
     forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
     verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
+    verifyEmailCode: (data) => api.post('/auth/verify-email-code', data),
+    resendVerificationCode: (data) => api.post('/auth/resend-verification-code', data),
     refreshToken: (refreshToken) => api.post('/auth/refresh-token', { refreshToken }),
 
     // ============ PROPERTIES ============

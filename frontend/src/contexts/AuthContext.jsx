@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import apiService from '../config/api';
 import { setToken, getToken, setRefreshToken, getRefreshToken, clearAuth } from '../utils/auth';
+import { signInWithFirebaseProvider } from '../services/firebaseAuth';
 
 const AuthContext = createContext(null);
 
@@ -64,6 +65,13 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      if (error.response?.data?.requiresVerification) {
+        const email = error.response.data.email || credentials.email;
+        toast.error('Please verify your email before signing in.');
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return { success: false, requiresVerification: true, email };
+      }
+
       const message = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(message);
       return { success: false, message };
@@ -74,6 +82,12 @@ export const AuthProvider = ({ children }) => {
   const signup = useCallback(async (userData) => {
     try {
       const response = await apiService.signup(userData);
+      if (response.data.requiresVerification) {
+        toast.success('Account created. Please check your email for the verification code.');
+        navigate(`/verify-email?email=${encodeURIComponent(response.data.email || userData.email)}`);
+        return { success: true, requiresVerification: true };
+      }
+
       const { token, refreshToken, user } = response.data;
       
       setToken(token);
@@ -91,6 +105,67 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message };
     }
   }, [navigate]);
+
+  const loginWithFirebase = useCallback(async (providerName) => {
+    try {
+      const firebaseResult = await signInWithFirebaseProvider(providerName);
+      const response = await apiService.firebaseAuth(firebaseResult);
+      const { token, refreshToken, user } = response.data;
+
+      setToken(token);
+      setRefreshToken(refreshToken);
+      setUser(user);
+      setIsAuthenticated(true);
+
+      const needsProfileCompletion = response.data.isNewUser && (!user.phone || !user.address?.street);
+      toast.success(
+        needsProfileCompletion
+          ? `Welcome, ${user.firstName}! Please complete your profile.`
+          : `Welcome, ${user.firstName}!`
+      );
+      navigate(needsProfileCompletion ? '/profile' : '/');
+      return { success: true };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        `${providerName === 'apple' ? 'Apple' : 'Google'} sign-in failed.`;
+      toast.error(message);
+      return { success: false, message };
+    }
+  }, [navigate]);
+
+  const verifyEmailCode = useCallback(async ({ email, code }) => {
+    try {
+      const response = await apiService.verifyEmailCode({ email, code });
+      const { token, refreshToken, user } = response.data;
+
+      setToken(token);
+      setRefreshToken(refreshToken);
+      setUser(user);
+      setIsAuthenticated(true);
+
+      toast.success('Email verified successfully.');
+      navigate('/');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Email verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  }, [navigate]);
+
+  const resendVerificationCode = useCallback(async (email) => {
+    try {
+      await apiService.resendVerificationCode({ email });
+      toast.success('Verification code sent.');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to resend verification code';
+      toast.error(message);
+      return { success: false, message };
+    }
+  }, []);
 
   // Logout
   const logout = useCallback(async () => {
@@ -183,12 +258,15 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     signup,
+    loginWithFirebase,
     logout,
     updateProfile,
     updatePassword,
     forgotPassword,
     resetPassword,
     verifyEmail,
+    verifyEmailCode,
+    resendVerificationCode,
     setUser,
   };
 

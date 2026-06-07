@@ -38,7 +38,7 @@ export const signupValidator = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .matches(/^\+?[0-9\s().-]{7,20}$/)
     .withMessage('Please provide a valid phone number'),
 ];
 
@@ -54,6 +54,46 @@ export const loginValidator = [
   body('password')
     .notEmpty()
     .withMessage('Password is required'),
+];
+
+export const firebaseAuthValidator = [
+  body('idToken')
+    .notEmpty()
+    .withMessage('Firebase ID token is required')
+    .isString()
+    .withMessage('Firebase ID token must be a string'),
+
+  body('profile')
+    .optional()
+    .isObject()
+    .withMessage('Profile must be an object'),
+];
+
+export const verifyEmailCodeValidator = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+
+  body('code')
+    .trim()
+    .notEmpty()
+    .withMessage('Verification code is required')
+    .matches(/^\d{6}$/)
+    .withMessage('Verification code must be 6 digits'),
+];
+
+export const resendVerificationCodeValidator = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
 ];
 
 export const forgotPasswordValidator = [
@@ -120,6 +160,6 @@ export const updateProfileValidator = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .matches(/^\+?[0-9\s().-]{7,20}$/)
     .withMessage('Please provide a valid phone number'),
 ];

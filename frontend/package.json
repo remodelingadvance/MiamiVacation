@@ -21,6 +21,7 @@
     "axios": "^1.6.2",
     "clsx": "^2.1.0",
     "date-fns": "^3.0.6",
+    "firebase": "^12.14.0",
     "framer-motion": "^10.16.16",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",

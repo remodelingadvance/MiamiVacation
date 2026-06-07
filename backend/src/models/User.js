@@ -28,14 +28,34 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: function () {
+            return !this.firebaseUid;
+        },
         minlength: [8, 'Password must be at least 8 characters'],
         select: false
     },
+    firebaseUid: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true
+    },
+    authProviders: [{
+        provider: {
+            type: String,
+            enum: ['password', 'google.com', 'apple.com', 'phone', 'firebase'],
+            default: 'password'
+        },
+        providerUid: String,
+        linkedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     phone: {
         type: String,
         trim: true,
-        match: [/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/, 'Please provide a valid phone number']
+        match: [/^\+?[0-9\s().-]{7,20}$/, 'Please provide a valid phone number']
     },
     avatar: {
         type: String,
@@ -52,6 +72,12 @@ const userSchema = new mongoose.Schema({
     },
     verificationToken: String,
     verificationTokenExpires: Date,
+    verificationCode: String,
+    verificationCodeExpires: Date,
+    verificationCodeAttempts: {
+        type: Number,
+        default: 0
+    },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
     refreshToken: String,
@@ -146,6 +172,7 @@ userSchema.virtual('bookingCount').get(function () {
 // Indexes
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
+userSchema.index({ firebaseUid: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Hash password before saving
@@ -178,6 +205,15 @@ userSchema.methods.generateVerificationToken = function () {
     this.verificationToken = crypto.createHash('sha256').update(token).digest('hex');
     this.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
     return token;
+};
+
+// Generate email verification code
+userSchema.methods.generateVerificationCode = function () {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.verificationCode = crypto.createHash('sha256').update(code).digest('hex');
+    this.verificationCodeExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+    this.verificationCodeAttempts = 0;
+    return code;
 };
 
 // Generate password reset token

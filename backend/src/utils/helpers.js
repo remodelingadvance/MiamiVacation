@@ -112,6 +112,9 @@ export const sanitizeUser = (user) => {
   delete sanitized.resetPasswordExpires;
   delete sanitized.verificationToken;
   delete sanitized.verificationTokenExpires;
+  delete sanitized.verificationCode;
+  delete sanitized.verificationCodeExpires;
+  delete sanitized.verificationCodeAttempts;
   delete sanitized.refreshToken;
   delete sanitized.loginAttempts;
   return sanitized;
@@ -125,7 +128,7 @@ export const isValidEmail = (email) => {
 
 // Validate phone format
 export const isValidPhone = (phone) => {
-  const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+  const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
   return phoneRegex.test(phone);
 };
 

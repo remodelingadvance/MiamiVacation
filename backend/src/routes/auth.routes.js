@@ -2,7 +2,10 @@ import express from 'express';
 import {
   signup,
   login,
+  firebaseAuth,
   verifyEmail,
+  verifyEmailCode,
+  resendVerificationCode,
   forgotPassword,
   resetPassword,
   refreshToken,
@@ -16,6 +19,9 @@ import { validate } from '../middleware/validate.js';
 import {
   signupValidator,
   loginValidator,
+  firebaseAuthValidator,
+  verifyEmailCodeValidator,
+  resendVerificationCodeValidator,
   forgotPasswordValidator,
   resetPasswordValidator,
   updatePasswordValidator,
@@ -28,6 +34,9 @@ const router = express.Router();
 // Public routes with rate limiting
 router.post('/signup', authLimiter, authRateLimiter, validate(signupValidator), signup);
 router.post('/login', authLimiter, authRateLimiter, validate(loginValidator), login);
+router.post('/firebase', authLimiter, authRateLimiter, validate(firebaseAuthValidator), firebaseAuth);
+router.post('/verify-email-code', authLimiter, validate(verifyEmailCodeValidator), verifyEmailCode);
+router.post('/resend-verification-code', authLimiter, validate(resendVerificationCodeValidator), resendVerificationCode);
 router.post('/forgot-password', authLimiter, validate(forgotPasswordValidator), forgotPassword);
 router.post('/reset-password/:token', authLimiter, validate(resetPasswordValidator), resetPassword);
 router.get('/verify-email/:token', verifyEmail);
