@@ -169,7 +169,7 @@ const OurStory = () => {
               transition={{ duration: 0.8, ease: EASE }}
               className="group relative overflow-hidden shadow-[0_30px_70px_rgba(232,82,122,0.18)]"
               style={{
-                borderRadius: '46% 46% 4% 4% / 26% 26% 3% 3%',
+                borderRadius: '46% 6% 46% 6% / 4% 26% 4% 26%',
               }}
             >
               <img
@@ -178,35 +178,6 @@ const OurStory = () => {
                 className="h-[300px] w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105 sm:h-[380px] lg:h-[440px] xl:h-[480px]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
-            </motion.div>
-
-            {/* Floating stat card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 24 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.4, ease: 'backOut' }}
-              className="absolute bottom-[12%] left-2 z-20 sm:left-6 lg:bottom-[16%] lg:-left-4"
-            >
-              <div className="flex flex-col items-center rounded-2xl border border-pink-100/60 bg-white/95 px-6 py-5 text-center shadow-[0_20px_50px_rgba(232,82,122,0.2)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(232,82,122,0.28)] sm:rounded-3xl sm:px-8 sm:py-6">
-                <div className="mb-2.5 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/30 sm:h-14 sm:w-14">
-                  <TbUsersGroup className="h-6 w-6 sm:h-7 sm:w-7" />
-                </div>
-                <p className="text-2xl font-black leading-none text-[var(--color-secondary)] sm:text-3xl">
-                  <CountUp to={2000} />+
-                </p>
-                <p className="mt-1 text-xs font-medium text-[var(--color-text-muted)] sm:text-sm">
-                  Happy Guests
-                </p>
-                <div className="mt-1.5 flex justify-center gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <TbStarFilled
-                      key={i}
-                      className="h-3 w-3 text-[var(--color-primary)]"
-                    />
-                  ))}
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>

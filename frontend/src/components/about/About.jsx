@@ -35,7 +35,7 @@ const About = () => {
   }, []);
 
   return (
-    <div className="relative min-h-80vh overflow-hidden bg-[var(--color-bg-cream)]">
+    <div className="relative min-h-80vh overflow-hidden bg-gradient-to-br from-[#fdf6ef] via-white to-[#fef9f4]">
       {/* ─── HEADER ─── */}
       <header className="relative z-20 h-20">
         {/* Primary color corner with title */}

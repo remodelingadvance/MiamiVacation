@@ -43,6 +43,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import apiService from '../config/api';
 import { formatTimeAgo } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
+import backgroundImage from '../assets/why-choose-us-bg.png'
 
 // All 7 tabs
 const tabs = [
@@ -454,11 +455,10 @@ const TabSlider = ({ tabs, activeTab, setActiveTab, totalImages, totalReviews })
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs sm:px-4 sm:py-2.5 sm:text-sm font-bold capitalize transition-all ${
-              activeTab === tab.id
+            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs sm:px-4 sm:py-2.5 sm:text-sm font-bold capitalize transition-all ${activeTab === tab.id
                 ? 'bg-[var(--color-primary)] text-white shadow-md'
                 : 'bg-white text-gray-600 hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)] shadow-sm'
-            }`}
+              }`}
           >
             {tab.label}
             {tab.id === 'images' && totalImages > 0 && (
@@ -573,8 +573,8 @@ const PropertyDetailsPage = () => {
 
   const averageRating = reviews.length
     ? Math.round(
-        (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length) * 10
-      ) / 10
+      (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length) * 10
+    ) / 10
     : property.ratings?.average || 0;
 
   const totalReviews = reviews.length || property.ratings?.count || 0;
@@ -655,11 +655,10 @@ const PropertyDetailsPage = () => {
                   if (isAuthenticated) toggleFavorite(property._id);
                   else toast.error('Please login to save favorites');
                 }}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold shadow-lg transition-all sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
-                  isFav
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold shadow-lg transition-all sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${isFav
                     ? 'bg-[var(--color-primary)] text-white'
                     : 'bg-white text-gray-900'
-                }`}
+                  }`}
               >
                 <HiHeart className={`h-4 w-4 sm:h-5 sm:w-5 ${isFav ? 'fill-current' : ''}`} />
                 Save
@@ -711,7 +710,7 @@ const PropertyDetailsPage = () => {
                   <h2 className="mb-3 text-xl font-black text-gray-900 sm:mb-4 sm:text-2xl">
                     About this stay
                   </h2>
-                  
+
                   <div className="space-y-4">
                     {descriptionParagraphs.map((paragraph, idx) => (
                       <motion.p

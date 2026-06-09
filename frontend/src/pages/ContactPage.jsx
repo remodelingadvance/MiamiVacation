@@ -3,7 +3,6 @@ import ContactHero from '../components/contact/ContactHero';
 import ContactForm from '../components/contact/ContactForm';
 import ContactMap from '../components/contact/ContactMap';
 import ContactLocations from '../components/contact/ContactLocations';
-// import ContactFAQ from '../components/contact/ContactFAQ';
 
 const ContactPage = () => {
   return (
@@ -20,7 +19,6 @@ const ContactPage = () => {
       <ContactForm />
 
       <ContactMap />
-      {/* <ContactFAQ /> */}
     </>
   );
 };

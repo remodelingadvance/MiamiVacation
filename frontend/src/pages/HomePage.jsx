@@ -7,15 +7,13 @@ import HeroSection from '../components/home/HeroSection';
 import FeaturedProperties from '../components/home/FeaturedProperties';
 import Amenities from '../components/home/Amenities';
 import Testimonials from '../components/home/Testimonials';
-// import FAQ from '../components/home/FAQ';
 import NewsletterSignup from '../components/home/NewsletterSignup';
 import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
-// import AboutBanner from '../components/home/AboutBanner';
 import PropertyLocationSection from '../components/home/PropertyLocationSection';
 import AboutStayWiseBanner from '../components/home/AboutStayWiseBanner';
-// import NatureExploreHero from '../components/home/NatureExploreHero';
+import NatureExploreHero from '../components/home/NatureExploreHero';
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -45,6 +43,7 @@ const HomePage = () => {
 
       {/* Hero Section */}
       <HeroSection />
+      <NatureExploreHero />
 
       <PropertyLocationSection />
 
@@ -57,20 +56,11 @@ const HomePage = () => {
 
       <AboutStayWiseBanner />
 
-      {/* <NatureExploreHero /> */}
-
-      {/* <AboutBanner /> */}
-
-      
-
       {/* Amenities Section */}
       <Amenities />
 
       {/* Testimonials */}
       <Testimonials />
-
-      {/* FAQ */}
-      {/* <FAQ /> */}
     </>
   );
 };
