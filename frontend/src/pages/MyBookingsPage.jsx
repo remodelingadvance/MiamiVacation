@@ -14,6 +14,7 @@ import {
   HiChat,
   HiPhotograph,
   HiInformationCircle,
+  HiDownload,
 } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import EmptyState from '../components/common/EmptyState';
@@ -32,6 +33,7 @@ const MyBookingsPage = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
   
   // Review modal states
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -115,6 +117,27 @@ const MyBookingsPage = () => {
       value: 5,
     });
     setShowReviewModal(true);
+  };
+
+  const handleDownloadInvoice = async (booking) => {
+    try {
+      setDownloadingInvoiceId(booking._id);
+      const response = await apiService.downloadBookingInvoice(booking._id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `stay-wise-invoice-${booking.bookingNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to download invoice');
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
   };
 
   // MyBookingsPage.jsx - Updated handleSubmitReview function
@@ -403,6 +426,16 @@ const handleSubmitReview = async () => {
                             View Details
                             <HiChevronRight className="w-4 h-4" />
                           </Link>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadInvoice(booking)}
+                            disabled={downloadingInvoiceId === booking._id}
+                            className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-light)] transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            <HiDownload className="w-4 h-4" />
+                            {downloadingInvoiceId === booking._id ? 'Downloading...' : 'Invoice PDF'}
+                          </button>
                           
                           {['pending', 'confirmed'].includes(booking.status) && (
                             <button

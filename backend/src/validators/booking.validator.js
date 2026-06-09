@@ -45,6 +45,69 @@ export const createBookingValidator = [
     .isInt({ min: 0 })
     .withMessage('Number of infants cannot be negative'),
 
+  body('guestDetails.firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('Primary guest first name is required')
+    .isLength({ max: 50 })
+    .withMessage('First name cannot exceed 50 characters'),
+
+  body('guestDetails.lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Primary guest last name is required')
+    .isLength({ max: 50 })
+    .withMessage('Last name cannot exceed 50 characters'),
+
+  body('guestDetails.email')
+    .trim()
+    .notEmpty()
+    .withMessage('Primary guest email is required')
+    .isEmail()
+    .withMessage('Please provide a valid primary guest email')
+    .normalizeEmail(),
+
+  body('guestDetails.phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer phone number is required for booking')
+    .matches(/^\+?[0-9\s().-]{7,20}$/)
+    .withMessage('Please provide a valid customer phone number'),
+
+  body('guestDetails.address')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer street address is required for booking')
+    .isLength({ max: 150 })
+    .withMessage('Street address cannot exceed 150 characters'),
+
+  body('guestDetails.city')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer city is required for booking')
+    .isLength({ max: 80 })
+    .withMessage('City cannot exceed 80 characters'),
+
+  body('guestDetails.state')
+    .optional()
+    .trim()
+    .isLength({ max: 80 })
+    .withMessage('State or region cannot exceed 80 characters'),
+
+  body('guestDetails.postalCode')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer postal code is required for booking')
+    .isLength({ max: 20 })
+    .withMessage('Postal code cannot exceed 20 characters'),
+
+  body('guestDetails.country')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer country is required for booking')
+    .isLength({ min: 2, max: 80 })
+    .withMessage('Country must be between 2 and 80 characters'),
+
   body('couponCode')
     .optional()
     .trim()

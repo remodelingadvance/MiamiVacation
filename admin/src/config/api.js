@@ -56,6 +56,7 @@ const adminApi = {
     // Bookings
     getAllBookings: (params) => api.get('/bookings/admin/all', { params }),
     getBooking: (id) => api.get(`/bookings/${id}`),
+    downloadBookingInvoice: (id) => api.get(`/bookings/${id}/invoice`, { responseType: 'blob' }),
     updateBookingStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
     getPendingBookingsCount: () => api.get('/bookings/pending-count'),
     markAllBookingsViewed: () => api.post('/bookings/mark-all-viewed'),
@@ -119,6 +120,19 @@ const adminApi = {
     deleteNotification: (id) => api.delete(`/notifications/${id}`),
     bulkDeleteNotifications: (notificationIds) => api.post('/notifications/bulk', { notificationIds }),
     getNotificationSettings: () => api.get('/notifications/settings'),
+
+    // Support / Live Chat
+    getAdminSupportAnalytics: () => api.get('/support/admin/analytics'),
+    getAdminSupportConversations: (params) => api.get('/support/admin/conversations', { params }),
+    getAdminSupportConversation: (conversationId) => api.get(`/support/admin/conversations/${conversationId}`),
+    sendAdminSupportMessage: (conversationId, data) =>
+        api.post(`/support/admin/conversations/${conversationId}/messages`, data),
+    updateAdminSupportConversation: (conversationId, data) =>
+        api.patch(`/support/admin/conversations/${conversationId}`, data),
+    markAdminSupportRead: (conversationId) =>
+        api.patch(`/support/admin/conversations/${conversationId}/read`),
+    getSupportKnowledge: () => api.get('/support/admin/knowledge'),
+    saveSupportKnowledge: (data) => api.post('/support/admin/knowledge', data),
 
     // Analytics
     getAnalytics: (params) => api.get('/admin/analytics', { params }),

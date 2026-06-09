@@ -88,6 +88,7 @@ const apiService = {
     createBooking: (data) => api.post('/bookings', data),
     getMyBookings: () => api.get('/bookings/my-bookings'),
     getBooking: (id) => api.get(`/bookings/${id}`),
+    downloadBookingInvoice: (id) => api.get(`/bookings/${id}/invoice`, { responseType: 'blob' }),
     cancelBooking: (id, reason) => api.patch(`/bookings/${id}/cancel`, { reason }),
     getPropertyBookings: (propertyId) => api.get(`/properties/${propertyId}/bookings`),
     
@@ -116,6 +117,16 @@ const apiService = {
     // ============ NEWSLETTER ============
     subscribeNewsletter: (data) => api.post('/newsletter/subscribe', data),
     unsubscribeNewsletter: (email) => api.post('/newsletter/unsubscribe', { email }),
+
+    // ============ SUPPORT / CHAT ============
+    askSupportAi: (data) => api.post('/support/ai/ask', data),
+    createSupportConversation: (data) => api.post('/support/conversations', data),
+    getSupportConversation: (conversationId, params) =>
+        api.get(`/support/conversations/${conversationId}`, { params }),
+    sendSupportMessage: (conversationId, data) =>
+        api.post(`/support/conversations/${conversationId}/messages`, data),
+    markSupportRead: (conversationId, data) =>
+        api.patch(`/support/conversations/${conversationId}/read`, data),
 
     // ============ USER / FAVORITES ============
     getFavorites: () => api.get('/users/favorites'),

@@ -15,6 +15,7 @@ export const useAdminAuth = () => {
 
 export const AdminAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('mlr_admin_token'));
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
@@ -31,18 +32,21 @@ export const AdminAuthProvider = ({ children }) => {
           // Check if user is admin
           if (userData.role === 'admin' || userData.role === 'super-admin') {
             setUser(userData);
+            setToken(token);
             setIsAuthenticated(true);
             localStorage.setItem('mlr_admin_user', JSON.stringify(userData));
           } else {
             // Not an admin, clear auth
             localStorage.removeItem('mlr_admin_token');
             localStorage.removeItem('mlr_admin_user');
+            setToken(null);
             toast.error('Access denied. Admin privileges required.');
           }
         } catch (error) {
           console.error('Admin auth check failed:', error);
           localStorage.removeItem('mlr_admin_token');
           localStorage.removeItem('mlr_admin_user');
+          setToken(null);
         }
       }
       setLoading(false);
@@ -66,6 +70,7 @@ export const AdminAuthProvider = ({ children }) => {
       localStorage.setItem('mlr_admin_token', token);
       localStorage.setItem('mlr_admin_user', JSON.stringify(userData));
       setUser(userData);
+      setToken(token);
       setIsAuthenticated(true);
       
       toast.success(`Welcome back, ${userData.firstName}!`);
@@ -84,6 +89,7 @@ export const AdminAuthProvider = ({ children }) => {
     localStorage.removeItem('mlr_admin_token');
     localStorage.removeItem('mlr_admin_user');
     setUser(null);
+    setToken(null);
     setIsAuthenticated(false);
     toast.success('Logged out successfully');
     navigate('/admin/login');
@@ -91,6 +97,7 @@ export const AdminAuthProvider = ({ children }) => {
 
   const value = {
     user,
+    token,
     loading,
     isAuthenticated,
     login,

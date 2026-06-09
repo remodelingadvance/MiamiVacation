@@ -1,15 +1,69 @@
+import mongoose from 'mongoose';
 import { Contact, Notification } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
 
+const CONTACT_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+const CONTACT_STATUSES = ['unread', 'read', 'replied', 'resolved', 'spam'];
+
+const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const escapeHtml = (value) =>
+  String(value || '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }[char]));
+
+const buildContactPayload = (body) => {
+  const payload = {
+    name: cleanText(body.name),
+    email: cleanText(body.email).toLowerCase(),
+    phone: cleanText(body.phone),
+    subject: cleanText(body.subject) || 'General inquiry',
+    message: cleanText(body.message),
+    priority: CONTACT_PRIORITIES.includes(body.priority) ? body.priority : 'low',
+  };
+
+  if (body.booking) {
+    if (!mongoose.Types.ObjectId.isValid(body.booking)) {
+      throw new AppError('Invalid related booking ID', 400);
+    }
+    payload.booking = body.booking;
+  }
+
+  return payload;
+};
+
+const emitContactUnreadCount = async () => {
+  try {
+    const { getIO } = await import('../config/socket.js');
+    const io = getIO();
+    if (!io) return;
+
+    const unreadCount = await Contact.countDocuments({ status: 'unread' });
+    io.to('admin').emit('admin:contact-unread-count-update', unreadCount);
+  } catch (error) {
+    logger.error('Contact unread socket update failed:', error);
+  }
+};
+
 // @desc    Submit contact form
 // @route   POST /api/v1/contact
 // @access  Public
 export const submitContact = catchAsync(async (req, res, next) => {
+  const contactPayload = buildContactPayload(req.body);
+
+  if (!contactPayload.name || !contactPayload.email || !contactPayload.message) {
+    return next(new AppError('Name, email, and message are required', 400));
+  }
+
   const contact = await Contact.create({
-    ...req.body,
+    ...contactPayload,
     metadata: {
       ip: req.ip,
       userAgent: req.get('user-agent'),
@@ -17,7 +71,8 @@ export const submitContact = catchAsync(async (req, res, next) => {
     },
   });
 
-  // ✅ Create notification for admin
+  await emitContactUnreadCount();
+
   await Notification.createNotification({
     type: 'new_contact',
     title: 'New Contact Message',
@@ -32,7 +87,6 @@ export const submitContact = catchAsync(async (req, res, next) => {
     link: `/admin/contacts/${contact._id}`,
   });
 
-  // Send notification email to admin
   try {
     await emailService.send({
       to: process.env.ADMIN_EMAIL || 'admin@miamivacationrentals.com',
@@ -54,11 +108,11 @@ export const submitContact = catchAsync(async (req, res, next) => {
               <h1>New Contact Form Submission</h1>
             </div>
             <div class="content">
-              <p><strong>From:</strong> ${contact.name} (${contact.email})</p>
-              <p><strong>Phone:</strong> ${contact.phone || 'N/A'}</p>
-              <p><strong>Subject:</strong> ${contact.subject}</p>
+              <p><strong>From:</strong> ${escapeHtml(contact.name)} (${escapeHtml(contact.email)})</p>
+              <p><strong>Phone:</strong> ${escapeHtml(contact.phone || 'N/A')}</p>
+              <p><strong>Subject:</strong> ${escapeHtml(contact.subject)}</p>
               <p><strong>Message:</strong></p>
-              <p>${contact.message}</p>
+              <p>${escapeHtml(contact.message)}</p>
             </div>
           </div>
         </body>
@@ -66,7 +120,6 @@ export const submitContact = catchAsync(async (req, res, next) => {
       `,
     });
 
-    // Send auto-reply to user
     await emailService.send({
       to: contact.email,
       subject: 'Thank you for contacting Miami Luxury Rentals',
@@ -84,10 +137,10 @@ export const submitContact = catchAsync(async (req, res, next) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Thank You! 🌴</h1>
+              <h1>Thank You</h1>
             </div>
             <div class="content">
-              <p>Dear ${contact.name},</p>
+              <p>Dear ${escapeHtml(contact.name)},</p>
               <p>Thank you for reaching out to Miami Luxury Rentals. We have received your message and will get back to you within 24 hours.</p>
               <p>For urgent inquiries, please call us at +1 (305) 123-4567.</p>
               <p>Best regards,<br>The Miami Luxury Rentals Team</p>
@@ -115,6 +168,8 @@ export const submitContact = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 export const getContacts = catchAsync(async (req, res, next) => {
   const { status, priority, page = 1, limit = 20 } = req.query;
+  const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNumber = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
 
   const query = {};
   if (status) query.status = status;
@@ -123,21 +178,38 @@ export const getContacts = catchAsync(async (req, res, next) => {
   const contacts = await Contact.find(query)
     .populate('assignedTo', 'firstName lastName')
     .sort('-createdAt')
-    .skip((page - 1) * limit)
-    .limit(parseInt(limit));
+    .skip((pageNumber - 1) * limitNumber)
+    .limit(limitNumber);
 
-  const total = await Contact.countDocuments(query);
+  const [total, unreadCount] = await Promise.all([
+    Contact.countDocuments(query),
+    Contact.countDocuments({ status: 'unread' }),
+  ]);
 
   res.status(200).json({
     success: true,
     count: contacts.length,
     total,
+    unreadCount,
     pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / limit),
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
     },
     contacts,
+  });
+});
+
+// @desc    Get unread contact count
+// @route   GET /api/v1/contact/unread-count
+// @access  Private/Admin
+export const getUnreadContactsCount = catchAsync(async (req, res, next) => {
+  const unreadCount = await Contact.countDocuments({ status: 'unread' });
+
+  res.status(200).json({
+    success: true,
+    count: unreadCount,
+    unreadCount,
   });
 });
 
@@ -153,10 +225,10 @@ export const getContact = catchAsync(async (req, res, next) => {
     return next(new AppError('Contact not found', 404));
   }
 
-  // Mark as read if unread
   if (contact.status === 'unread') {
     contact.status = 'read';
     await contact.save();
+    await emitContactUnreadCount();
   }
 
   res.status(200).json({
@@ -169,27 +241,29 @@ export const getContact = catchAsync(async (req, res, next) => {
 // @route   POST /api/v1/contact/:id/reply
 // @access  Private/Admin
 export const replyToContact = catchAsync(async (req, res, next) => {
-  const contact = await Contact.findById(req.params.id);
+  const replyMessage = cleanText(req.body.message);
+  if (!replyMessage) {
+    return next(new AppError('Reply message is required', 400));
+  }
 
+  const contact = await Contact.findById(req.params.id);
   if (!contact) {
     return next(new AppError('Contact not found', 404));
   }
 
-  const reply = {
-    message: req.body.message,
+  contact.replies.push({
+    message: replyMessage,
     sentBy: req.user.id,
-    isAdmin: req.user.role === 'admin',
-  };
-
-  contact.replies.push(reply);
+    isAdmin: ['admin', 'super-admin'].includes(req.user.role),
+  });
   contact.status = 'replied';
   if (!contact.assignedTo) {
     contact.assignedTo = req.user.id;
   }
 
   await contact.save();
+  await emitContactUnreadCount();
 
-  // Send email notification to original sender
   try {
     await emailService.send({
       to: contact.email,
@@ -197,9 +271,9 @@ export const replyToContact = catchAsync(async (req, res, next) => {
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Response from Miami Luxury Rentals</h2>
-          <p>Dear ${contact.name},</p>
-          <p>${req.body.message}</p>
-          <p>Best regards,<br>${req.user.firstName} ${req.user.lastName}<br>Miami Luxury Rentals</p>
+          <p>Dear ${escapeHtml(contact.name)},</p>
+          <p>${escapeHtml(replyMessage)}</p>
+          <p>Best regards,<br>${escapeHtml(req.user.firstName)} ${escapeHtml(req.user.lastName)}<br>Miami Luxury Rentals</p>
         </div>
       `,
     });
@@ -218,11 +292,28 @@ export const replyToContact = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 export const updateContactStatus = catchAsync(async (req, res, next) => {
   const { status, priority, assignedTo } = req.body;
-
   const updates = {};
-  if (status) updates.status = status;
-  if (priority) updates.priority = priority;
-  if (assignedTo) updates.assignedTo = assignedTo;
+
+  if (status) {
+    if (!CONTACT_STATUSES.includes(status)) {
+      return next(new AppError('Invalid contact status', 400));
+    }
+    updates.status = status;
+  }
+
+  if (priority) {
+    if (!CONTACT_PRIORITIES.includes(priority)) {
+      return next(new AppError('Invalid contact priority', 400));
+    }
+    updates.priority = priority;
+  }
+
+  if (assignedTo) {
+    if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
+      return next(new AppError('Invalid assignee ID', 400));
+    }
+    updates.assignedTo = assignedTo;
+  }
 
   const contact = await Contact.findByIdAndUpdate(
     req.params.id,
@@ -234,8 +325,33 @@ export const updateContactStatus = catchAsync(async (req, res, next) => {
     return next(new AppError('Contact not found', 404));
   }
 
+  await emitContactUnreadCount();
+
   res.status(200).json({
     success: true,
+    contact,
+  });
+});
+
+// @desc    Mark single contact as read
+// @route   POST /api/v1/contact/:id/read
+// @access  Private/Admin
+export const markContactRead = catchAsync(async (req, res, next) => {
+  const contact = await Contact.findByIdAndUpdate(
+    req.params.id,
+    { status: 'read' },
+    { new: true, runValidators: true }
+  );
+
+  if (!contact) {
+    return next(new AppError('Contact not found', 404));
+  }
+
+  await emitContactUnreadCount();
+
+  res.status(200).json({
+    success: true,
+    message: 'Contact marked as read',
     contact,
   });
 });
@@ -244,13 +360,15 @@ export const updateContactStatus = catchAsync(async (req, res, next) => {
 // @route   POST /api/v1/contact/mark-all-read
 // @access  Private/Admin
 export const markAllAsRead = catchAsync(async (req, res, next) => {
-    await Contact.updateMany(
-        { status: 'unread' },
-        { status: 'read' }
-    );
-    
-    res.status(200).json({
-        success: true,
-        message: 'All contacts marked as read',
-    });
+  await Contact.updateMany(
+    { status: 'unread' },
+    { status: 'read' }
+  );
+
+  await emitContactUnreadCount();
+
+  res.status(200).json({
+    success: true,
+    message: 'All contacts marked as read',
+  });
 });

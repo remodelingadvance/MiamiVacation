@@ -73,3 +73,27 @@ export const contactLimiter = rateLimit({
     message: 'Too many contact form submissions. Please try again later.',
   },
 });
+
+// AI support limiter
+export const supportAiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: {
+    success: false,
+    message: 'Too many AI support questions. Please wait a moment and try again.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Live support chat limiter
+export const supportChatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: {
+    success: false,
+    message: 'Too many chat messages. Please slow down for a moment.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

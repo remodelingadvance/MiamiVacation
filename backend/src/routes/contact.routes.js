@@ -5,6 +5,8 @@ import {
   getContact,
   replyToContact,
   updateContactStatus,
+  getUnreadContactsCount,
+  markContactRead,
   markAllAsRead,
 } from '../controllers/contact.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -20,10 +22,11 @@ router.use(protect);
 router.use(authorize('admin', 'super-admin'));
 
 router.get('/', getContacts);
+router.get('/unread-count', getUnreadContactsCount);
+router.post('/mark-all-read', markAllAsRead);
+router.post('/:id/read', markContactRead);
 router.get('/:id', getContact);
 router.post('/:id/reply', replyToContact);
 router.patch('/:id/status', updateContactStatus);
-
-router.post('/mark-all-read', protect, authorize('admin', 'super-admin'), markAllAsRead);
 
 export default router;

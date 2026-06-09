@@ -90,13 +90,19 @@ notificationSchema.index({ createdAt: -1 });
 notificationSchema.statics.createNotification = async function(data) {
   // Prevent duplicate notifications for same action within 5 seconds
   const recentThreshold = new Date(Date.now() - 5000);
-  const existing = await this.findOne({
+  const dedupeQuery = {
     type: data.type,
-    'data.bookingId': data.data?.bookingId,
-    'data.contactId': data.data?.contactId,
-    'data.reviewId': data.data?.reviewId,
     createdAt: { $gte: recentThreshold },
-  });
+  };
+
+  if (data.data?.bookingId) dedupeQuery['data.bookingId'] = data.data.bookingId;
+  if (data.data?.contactId) dedupeQuery['data.contactId'] = data.data.contactId;
+  if (data.data?.reviewId) dedupeQuery['data.reviewId'] = data.data.reviewId;
+  if (data.data?.conversationId) dedupeQuery['data.conversationId'] = data.data.conversationId;
+
+  const existing = Object.keys(dedupeQuery).length > 2
+    ? await this.findOne(dedupeQuery)
+    : null;
 
   if (existing) {
     return existing;

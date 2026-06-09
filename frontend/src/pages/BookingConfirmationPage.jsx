@@ -22,6 +22,7 @@ const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -71,6 +72,27 @@ const BookingConfirmationPage = () => {
   const property = booking.property;
   const image = property?.images?.[0]?.url || THEME.hero.heroImage;
   const guests = (booking.guests?.adults || 0) + (booking.guests?.children || 0);
+
+  const handleDownloadInvoice = async () => {
+    try {
+      setDownloadingInvoice(true);
+      const response = await apiService.downloadBookingInvoice(booking._id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `stay-wise-invoice-${booking.bookingNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to download invoice');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   return (
     <>
@@ -202,10 +224,12 @@ const BookingConfirmationPage = () => {
                   </Link>
                   <button
                     type="button"
+                    onClick={handleDownloadInvoice}
+                    disabled={downloadingInvoice}
                     className="btn-outline flex flex-1 items-center justify-center gap-2"
                   >
                     <HiDownload className="h-5 w-5" />
-                    Download Invoice
+                    {downloadingInvoice ? 'Downloading...' : 'Download Invoice'}
                   </button>
                 </div>
               </div>

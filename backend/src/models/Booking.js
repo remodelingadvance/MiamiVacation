@@ -104,7 +104,17 @@ const bookingSchema = new mongoose.Schema({
             firstName: String,
             lastName: String,
             email: String,
-            phone: String
+            phone: String,
+            address: {
+                street: String,
+                city: String,
+                state: String,
+                postalCode: String,
+                country: {
+                    type: String,
+                    default: 'US'
+                }
+            }
         },
         additionalGuests: [{
             firstName: String,

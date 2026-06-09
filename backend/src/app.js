@@ -24,10 +24,12 @@ import paymentRoutes from './routes/payment.routes.js';
 import newsletterRoutes from './routes/newsletter.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import newsletterCampaignRoutes from './routes/newsletterCampaign.routes.js';
+import supportRoutes from './routes/support.routes.js';
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
+import { csrfOriginGuard } from './middleware/csrfGuard.js';
 
 const app = express();
 
@@ -41,6 +43,7 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(csrfOriginGuard);
 
 // Security middleware
 app.use(helmet());
@@ -149,6 +152,7 @@ app.use(`${API_PREFIX}/payments`, paymentRoutes);
 app.use(`${API_PREFIX}/newsletter`, newsletterRoutes);
 app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}/newsletter-campaigns`, newsletterCampaignRoutes); 
+app.use(`${API_PREFIX}/support`, supportRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

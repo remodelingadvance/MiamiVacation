@@ -21,6 +21,7 @@ import {
   HiExternalLink,
   HiRefresh,
   HiSearch,
+  HiChatAlt2,
 } from 'react-icons/hi';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -48,6 +49,15 @@ const sidebarLinks = [
         resetType: 'bookings' 
       },
       { to: '/admin/users', icon: HiUsers, label: 'Users', badgeKey: null, badgeColor: null, resetOnVisit: false, resetType: null },
+      {
+        to: '/admin/support',
+        icon: HiChatAlt2,
+        label: 'Support',
+        badgeKey: 'supportUnread',
+        badgeColor: 'bg-cyan-500',
+        resetOnVisit: true,
+        resetType: 'support'
+      },
       { 
         to: '/admin/reviews', 
         icon: HiStar, 
@@ -285,6 +295,7 @@ useEffect(() => {
     if (path.includes('/analytics')) return 'Analytics';
     if (path.includes('/properties')) return path.includes('new') ? 'Add Property' : path.includes('edit') ? 'Edit Property' : 'Properties';
     if (path.includes('/bookings')) return path.includes('/') && path.split('/').length > 3 ? 'Booking Details' : 'Bookings';
+    if (path.includes('/support')) return 'Support';
     if (path.includes('/users')) return path.includes('/') && path.split('/').length > 3 ? 'User Details' : 'Users';
     if (path.includes('/reviews')) return 'Reviews';
     if (path.includes('/coupons')) return path.includes('new') ? 'Create Coupon' : path.includes('edit') ? 'Edit Coupon' : 'Coupons';
@@ -352,6 +363,7 @@ useEffect(() => {
                     { label: 'Dashboard', path: '/admin/dashboard' },
                     { label: 'Properties', path: '/admin/properties' },
                     { label: 'Bookings', path: '/admin/bookings' },
+                    { label: 'Support', path: '/admin/support' },
                     { label: 'Users', path: '/admin/users' },
                     { label: 'Reviews', path: '/admin/reviews' },
                     { label: 'Newsletter', path: '/admin/newsletter' },

@@ -44,6 +44,7 @@ const steps = [
 ];
 
 const currencyOrZero = (value) => formatCurrency(Math.max(0, value || 0));
+const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
 
 const buildDateList = (start, end, includeEnd = false) => {
   const dates = [];
@@ -89,10 +90,11 @@ const BookingPage = () => {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    address: '',
-    city: '',
-    postalCode: '',
-    country: 'US',
+    address: user?.address?.street || '',
+    city: user?.address?.city || '',
+    state: user?.address?.state || '',
+    postalCode: user?.address?.zipCode || user?.address?.postalCode || '',
+    country: user?.address?.country || 'US',
     specialRequests: '',
   });
 
@@ -305,6 +307,30 @@ const BookingPage = () => {
         toast.error('Please enter a valid email address');
         return;
       }
+      if (!contactInfo.phone.trim()) {
+        toast.error('Please enter the customer phone number');
+        return;
+      }
+      if (!phoneRegex.test(contactInfo.phone.trim())) {
+        toast.error('Please enter a valid customer phone number');
+        return;
+      }
+      if (!contactInfo.address.trim()) {
+        toast.error('Please enter the customer street address');
+        return;
+      }
+      if (!contactInfo.city.trim()) {
+        toast.error('Please enter the customer city');
+        return;
+      }
+      if (!contactInfo.postalCode.trim()) {
+        toast.error('Please enter the customer postal code');
+        return;
+      }
+      if (!contactInfo.country.trim()) {
+        toast.error('Please select the customer country');
+        return;
+      }
     }
 
     setStep((prev) => Math.min(3, prev + 1));
@@ -327,6 +353,7 @@ const BookingPage = () => {
           phone: contactInfo.phone,
           address: contactInfo.address,
           city: contactInfo.city,
+          state: contactInfo.state,
           postalCode: contactInfo.postalCode,
           country: contactInfo.country,
         },
@@ -619,29 +646,32 @@ const BookingPage = () => {
                             placeholder="john@example.com"
                           />
                         </Field>
-                        <Field icon={HiPhone} label="Phone Number">
+                        <Field icon={HiPhone} label="Phone Number *">
                           <input
                             type="tel"
                             value={contactInfo.phone}
                             onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
                             className="input-field pl-10"
                             placeholder="+1 305 123 4567"
+                            required
                           />
                         </Field>
-                        <Field icon={HiHome} label="Street Address">
+                        <Field icon={HiHome} label="Street Address *">
                           <input
                             type="text"
                             value={contactInfo.address}
                             onChange={(e) => setContactInfo({ ...contactInfo, address: e.target.value })}
                             className="input-field pl-10"
                             placeholder="123 Main St"
+                            required
                           />
                         </Field>
-                        <Field icon={HiGlobeAlt} label="Country">
+                        <Field icon={HiGlobeAlt} label="Country *">
                           <select
                             value={contactInfo.country}
                             onChange={(e) => setContactInfo({ ...contactInfo, country: e.target.value })}
                             className="input-field pl-10"
+                            required
                           >
                             <option value="US">United States</option>
                             <option value="CA">Canada</option>
@@ -652,22 +682,33 @@ const BookingPage = () => {
                             <option value="IN">India</option>
                           </select>
                         </Field>
-                        <Field label="City">
+                        <Field label="City *">
                           <input
                             type="text"
                             value={contactInfo.city}
                             onChange={(e) => setContactInfo({ ...contactInfo, city: e.target.value })}
                             className="input-field"
                             placeholder="Miami"
+                            required
                           />
                         </Field>
-                        <Field label="Postal Code">
+                        <Field label="State / Region">
+                          <input
+                            type="text"
+                            value={contactInfo.state}
+                            onChange={(e) => setContactInfo({ ...contactInfo, state: e.target.value })}
+                            className="input-field"
+                            placeholder="Florida"
+                          />
+                        </Field>
+                        <Field label="Postal Code *">
                           <input
                             type="text"
                             value={contactInfo.postalCode}
                             onChange={(e) => setContactInfo({ ...contactInfo, postalCode: e.target.value })}
                             className="input-field"
                             placeholder="33101"
+                            required
                           />
                         </Field>
                       </div>

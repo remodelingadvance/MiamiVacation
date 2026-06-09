@@ -60,7 +60,7 @@ function App() {
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/payment/failed" element={<PaymentFailedPage />} />
             </Route>
-            
+
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

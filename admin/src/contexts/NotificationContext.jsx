@@ -7,6 +7,12 @@ import { useAdminAuth } from './AdminAuthContext';
 
 const NotificationContext = createContext(null);
 
+const getSocketUrl = () => {
+  if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+  return apiUrl.replace(/\/api\/v1\/?$/, '');
+};
+
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) throw new Error('useNotifications must be used within NotificationProvider');
@@ -28,6 +34,7 @@ export const NotificationProvider = ({ children }) => {
     activeCoupons: 0,
     pendingBookings: 0,
     unreadNotifications: 0,
+    supportUnread: 0,
     newsletterStats: 0,
   });
   
@@ -44,13 +51,13 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const SOCKET_URL = getSocketUrl();
     
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
 
-    const newSocket = io(API_URL, {
+    const newSocket = io(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -85,6 +92,9 @@ export const NotificationProvider = ({ children }) => {
       setSidebarBadges(prev => ({
         ...prev,
         unreadNotifications: prev.unreadNotifications + 1,
+        unreadContacts: notification.type === 'new_contact'
+          ? prev.unreadContacts + 1
+          : prev.unreadContacts,
       }));
       
       // Show toast for important notifications
@@ -136,6 +146,14 @@ export const NotificationProvider = ({ children }) => {
       }));
     });
 
+    newSocket.on('admin:contact-unread-count-update', (count) => {
+      if (!mountedRef.current) return;
+      setSidebarBadges(prev => ({
+        ...prev,
+        unreadContacts: count,
+      }));
+    });
+
     newSocket.on('admin:all-marked-read', () => {
       if (!mountedRef.current) return;
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -144,6 +162,46 @@ export const NotificationProvider = ({ children }) => {
         ...prev,
         unreadNotifications: 0,
       }));
+    });
+
+    newSocket.on('support:conversation-updated', (payload) => {
+      if (!mountedRef.current) return;
+
+      const adminUnread = payload.conversation?.unread?.admin || 0;
+      if (adminUnread > 0) {
+        setSidebarBadges(prev => ({
+          ...prev,
+          supportUnread: payload.adminUnreadConversations ?? Math.max(prev.supportUnread || 0, adminUnread),
+        }));
+      }
+
+      if (payload.message?.senderType === 'customer') {
+        toast.custom((t) => (
+          <div
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full glass-strong rounded-lg shadow-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <p className="text-sm font-medium text-white">New support message</p>
+              <p className="mt-1 text-sm text-gray-400 line-clamp-2">
+                {payload.conversation?.customer?.name || 'Guest'}: {payload.message?.body}
+              </p>
+            </div>
+            <div className="flex border-l border-white/10">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  window.location.href = `/admin/support?chat=${payload.conversation?.id}`;
+                }}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[var(--color-primary)] hover:text-[var(--color-accent)]"
+              >
+                Open
+              </button>
+            </div>
+          </div>
+        ), { duration: 6000 });
+      }
     });
 
     socketRef.current = newSocket;
@@ -260,13 +318,15 @@ const fetchAllSidebarBadges = useCallback(async () => {
       couponsRes,
       subscribersRes,
       notificationsRes,
+      supportRes,
     ] = await Promise.allSettled([
       adminApi.getAllReviews({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
-      adminApi.getContacts({ status: 'unread', limit: 1 }).catch(() => ({ data: { unreadCount: 0, total: 0 } })),
+      adminApi.getUnreadContactsCount().catch(() => ({ data: { unreadCount: 0, total: 0 } })),
       adminApi.getAllBookings({ status: 'pending', limit: 1 }).catch(() => ({ data: { pendingCount: 0, total: 0 } })),
       adminApi.getCoupons().catch(() => ({ data: { coupons: [] } })),
       adminApi.getSubscribers({ status: 'active', limit: 1 }).catch(() => ({ data: { activeCount: 0, total: 0 } })),
       adminApi.getUnreadCount().catch(() => ({ data: { unreadCount: 0 } })),
+      adminApi.getAdminSupportAnalytics().catch(() => ({ data: { analytics: { unread: 0 } } })),
     ]);
     
     // Extract counts - Use correct field names
@@ -274,6 +334,7 @@ const fetchAllSidebarBadges = useCallback(async () => {
     const unreadContacts = contactsRes.status === 'fulfilled' ? (contactsRes.value.data?.unreadCount || 0) : 0;
     const pendingBookings = bookingsRes.status === 'fulfilled' ? (bookingsRes.value.data?.pendingCount || 0) : 0;
     const unreadNotifications = notificationsRes.status === 'fulfilled' ? (notificationsRes.value.data?.unreadCount || 0) : 0;
+    const supportUnread = supportRes.status === 'fulfilled' ? (supportRes.value.data?.analytics?.unread || 0) : 0;
     
     // Count active coupons
     let activeCoupons = 0;
@@ -290,6 +351,7 @@ const fetchAllSidebarBadges = useCallback(async () => {
       activeCoupons,
       pendingBookings,
       unreadNotifications,
+      supportUnread,
       newsletterStats,
     };
     
@@ -424,6 +486,9 @@ const fetchAllSidebarBadges = useCallback(async () => {
           break;
         case 'notifications':
           await markAllAsRead();
+          break;
+        case 'support':
+          setSidebarBadges(prev => ({ ...prev, supportUnread: 0 }));
           break;
         default:
           break;

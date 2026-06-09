@@ -9,8 +9,51 @@ import {
   calculateStayPricing,
   dateKeyToUTCDate,
 } from '../utils/rateCalendar.js';
+import { createBookingInvoicePdf } from '../utils/bookingInvoicePdf.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
+
+const hasAdminBookingAccess = (user) => ['admin', 'super-admin'].includes(user?.role);
+const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
+
+const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const buildPrimaryGuest = (guestDetails = {}, user = {}) => {
+  const nestedAddress = typeof guestDetails.address === 'object' && guestDetails.address !== null
+    ? guestDetails.address
+    : {};
+  const street = cleanText(nestedAddress.street || guestDetails.street || guestDetails.address);
+
+  return {
+    firstName: cleanText(guestDetails.firstName) || user.firstName,
+    lastName: cleanText(guestDetails.lastName) || user.lastName,
+    email: cleanText(guestDetails.email).toLowerCase() || user.email,
+    phone: cleanText(guestDetails.phone || user.phone),
+    address: {
+      street,
+      city: cleanText(nestedAddress.city || guestDetails.city),
+      state: cleanText(nestedAddress.state || guestDetails.state),
+      postalCode: cleanText(nestedAddress.postalCode || guestDetails.postalCode),
+      country: cleanText(nestedAddress.country || guestDetails.country) || 'US',
+    },
+  };
+};
+
+const getPrimaryGuestValidationError = (primaryGuest) => {
+  if (!primaryGuest.phone) {
+    return 'Customer phone number is required for booking';
+  }
+
+  if (!phoneRegex.test(primaryGuest.phone)) {
+    return 'Please provide a valid customer phone number';
+  }
+
+  if (!primaryGuest.address.street || !primaryGuest.address.city || !primaryGuest.address.postalCode || !primaryGuest.address.country) {
+    return 'Customer address, city, postal code, and country are required for booking';
+  }
+
+  return null;
+};
 
 // @desc    Create booking
 // @route   POST /api/v1/bookings
@@ -32,6 +75,12 @@ export const createBooking = catchAsync(async (req, res, next) => {
   // Validate required fields
   if (!propertyId || !checkIn || !checkOut || !guests) {
     return next(new AppError('Missing required booking information', 400));
+  }
+
+  const primaryGuest = buildPrimaryGuest(guestDetails, req.user);
+  const primaryGuestError = getPrimaryGuestValidationError(primaryGuest);
+  if (primaryGuestError) {
+    return next(new AppError(primaryGuestError, 400));
   }
 
   // Get property
@@ -194,12 +243,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
     },
     specialRequests: specialRequests || '',
     guestsInfo: {
-      primaryGuest: {
-        firstName: guestDetails?.firstName || req.user.firstName,
-        lastName: guestDetails?.lastName || req.user.lastName,
-        email: guestDetails?.email || req.user.email,
-        phone: guestDetails?.phone || req.user.phone,
-      },
+      primaryGuest,
       additionalGuests: [],
     },
     metadata: {
@@ -218,13 +262,22 @@ export const createBooking = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
   if (!user.bookings) user.bookings = [];
   user.bookings.push(booking._id);
+  user.phone = primaryGuest.phone;
+  user.address = {
+    ...(user.address?.toObject?.() || user.address || {}),
+    street: primaryGuest.address.street,
+    city: primaryGuest.address.city,
+    state: primaryGuest.address.state,
+    zipCode: primaryGuest.address.postalCode,
+    country: primaryGuest.address.country,
+  };
   await user.save();
 
   // Create notification for admin
   await Notification.createNotification({
     type: 'new_booking',
     title: 'New Booking Received',
-    message: `New booking #${booking.bookingNumber} for ${property.name} by ${guestDetails?.firstName || req.user.firstName} ${guestDetails?.lastName || req.user.lastName}`,
+    message: `New booking #${booking.bookingNumber} for ${property.name} by ${primaryGuest.firstName} ${primaryGuest.lastName}`,
     priority: 'high',
     data: {
       bookingId: booking._id,
@@ -240,12 +293,12 @@ export const createBooking = catchAsync(async (req, res, next) => {
   // Send confirmation email
   try {
     await emailService.send({
-      to: guestDetails?.email || req.user.email,
+      to: primaryGuest.email,
       subject: `Booking Confirmed - ${bookingNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Booking Confirmed! 🎉</h2>
-          <p>Dear ${guestDetails?.firstName || req.user.firstName},</p>
+          <p>Dear ${primaryGuest.firstName},</p>
           <p>Your booking has been confirmed. Here are the details:</p>
           <ul>
             <li><strong>Booking Number:</strong> ${bookingNumber}</li>
@@ -354,19 +407,19 @@ export const getMyBookings = catchAsync(async (req, res, next) => {
 export const getBooking = catchAsync(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
     .populate('property', 'name slug images type location houseRules')
-    .populate('user', 'firstName lastName email phone');
+    .populate('user', 'firstName lastName email phone address');
 
   if (!booking) {
     return next(new AppError('Booking not found', 404));
   }
 
   // Check if user owns the booking or is admin
-  if (booking.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (booking.user?._id?.toString() !== req.user.id && !hasAdminBookingAccess(req.user)) {
     return next(new AppError('You can only view your own bookings', 403));
   }
 
   // If admin is viewing, mark as viewed
-  if (req.user.role === 'admin' || req.user.role === 'super-admin') {
+  if (hasAdminBookingAccess(req.user)) {
     if (!booking.viewedByAdmin) {
       booking.viewedByAdmin = true;
       booking.viewedAt = new Date();
@@ -381,6 +434,31 @@ export const getBooking = catchAsync(async (req, res, next) => {
   });
 });
 
+// @desc    Download booking invoice PDF
+// @route   GET /api/v1/bookings/:id/invoice
+// @access  Private
+export const downloadBookingInvoice = catchAsync(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id)
+    .populate('property', 'name slug images type location houseRules')
+    .populate('user', 'firstName lastName email phone address');
+
+  if (!booking) {
+    return next(new AppError('Booking not found', 404));
+  }
+
+  if (booking.user?._id?.toString() !== req.user.id && !hasAdminBookingAccess(req.user)) {
+    return next(new AppError('You can only download your own booking invoice', 403));
+  }
+
+  const pdfBuffer = createBookingInvoicePdf(booking);
+  const fileName = `stay-wise-invoice-${booking.bookingNumber}.pdf`;
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.status(200).send(pdfBuffer);
+});
+
 // @desc    Cancel booking
 // @route   PATCH /api/v1/bookings/:id/cancel
 // @access  Private
@@ -392,7 +470,7 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
   }
 
   // Check ownership
-  if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (booking.user.toString() !== req.user.id && !hasAdminBookingAccess(req.user)) {
     return next(new AppError('You can only cancel your own bookings', 403));
   }
 
@@ -471,7 +549,7 @@ export const getAllBookings = catchAsync(async (req, res, next) => {
   if (status) query.status = status;
 
   const bookings = await Booking.find(query)
-    .populate('user', 'firstName lastName email')
+    .populate('user', 'firstName lastName email phone address')
     .populate('property', 'name type slug')
     .sort('-createdAt')
     .skip((page - 1) * limit)

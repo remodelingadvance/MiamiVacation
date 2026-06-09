@@ -6,6 +6,7 @@ import Footer from '../components/layout/Footer';
 import PageLoader from '../components/common/PageLoader';
 import BackToTop from '../components/common/BackToTop';
 import CookieConsent from '../components/common/CookieConsent';
+import SupportChatWidget from '../components/support/SupportChatWidget';
 
 const pageVariants = {
   initial: {
@@ -52,6 +53,7 @@ const MainLayout = () => {
       <Footer />
       <BackToTop />
       <CookieConsent />
+      <SupportChatWidget />
     </div>
   );
 };

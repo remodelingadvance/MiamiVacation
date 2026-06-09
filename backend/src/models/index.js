@@ -10,6 +10,9 @@ import Payment from './Payment.js';
 import Analytics from './Analytics.js';
 import Notification from './Notification.js';
 import NewsletterCampaign from './NewsletterCampaign.js';
+import ChatConversation from './ChatConversation.js';
+import ChatMessage from './ChatMessage.js';
+import BusinessKnowledge from './BusinessKnowledge.js';
 
 export {
   User,
@@ -23,5 +26,8 @@ export {
   Payment,
   Analytics,
   Notification,
-  NewsletterCampaign
+  NewsletterCampaign,
+  ChatConversation,
+  ChatMessage,
+  BusinessKnowledge
 };

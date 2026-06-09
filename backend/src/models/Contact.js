@@ -20,8 +20,9 @@ const contactSchema = new mongoose.Schema({
   },
   subject: {
     type: String,
-    enum: ['general', 'booking', 'support', 'partnership', 'press', 'other'],
-    default: 'general'
+    trim: true,
+    default: 'General inquiry',
+    maxlength: [160, 'Subject cannot exceed 160 characters']
   },
   message: {
     type: String,

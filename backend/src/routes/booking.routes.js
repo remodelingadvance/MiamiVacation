@@ -4,6 +4,7 @@ import {
   createBooking,
   getMyBookings,
   getBooking,
+  downloadBookingInvoice,
   cancelBooking,
   getAllBookings,
   updateBookingStatus,
@@ -27,8 +28,6 @@ router.use(protect);
 // User routes
 router.post('/', bookingLimiter, validate(createBookingValidator), createBooking);
 router.get('/my-bookings', getMyBookings);
-router.get('/:id', getBooking);
-router.patch('/:id/cancel', cancelBooking);
 
 // Admin routes
 router.get('/admin/all', authorize('admin', 'super-admin'), getAllBookings);
@@ -41,5 +40,9 @@ router.patch(
   validate(updateBookingValidator),
   updateBookingStatus
 );
+
+router.get('/:id/invoice', downloadBookingInvoice);
+router.get('/:id', getBooking);
+router.patch('/:id/cancel', cancelBooking);
 
 export default router;
