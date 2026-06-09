@@ -6,14 +6,16 @@ import FeaturesGrid from "../components/about/FeaturesGrid";
 import RealEstateBanner from "../components/about/RealEstateBanner";
 import StatsBanner from "../components/about/StatsBanner";
 import StorySection from "../components/about/StorySection";
+import WhyChooseUs from "../components/about/WhyChooseUs";
 
 
 const AboutPage = () => {
   return (
     <main className="bg-white overflow-hidden">
       <AboutHero />
-      <About />
       <RealEstateBanner />
+      <WhyChooseUs />
+      <About />
       <DreamHomeBanner />
       <StorySection />
       <ExperiencesSection />

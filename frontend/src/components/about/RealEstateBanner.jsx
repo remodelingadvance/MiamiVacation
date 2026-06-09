@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import FillButton from '../common/FillButton';
 
 const EASE = [0.21, 0.47, 0.32, 0.98];
 
@@ -132,8 +133,8 @@ const RealEstateBanner = () => {
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-6 sm:px-10 lg:grid-cols-2 lg:gap-10 lg:py-16">
         {/* Left: text */}
         <div>
-          <h1 className="font-light uppercase leading-[1.12] tracking-tight text-[var(--color-secondary)]">
-            {["It's Time", 'To Find Your', 'Dream Real Estate'].map((line, i) => (
+          <h1 className="font-light uppercase leading-[1.12] tracking-tight text-[var(--color-primary)]">
+            {["YOUR PERFECT", 'MIAMI GETAWAY'].map((line, i) => (
               <motion.span
                 key={line}
                 initial={{ opacity: 0, y: 24 }}
@@ -152,8 +153,8 @@ const RealEstateBanner = () => {
             transition={{ duration: 0.6, delay: 0.7 }}
             className="mt-6 max-w-md text-base font-bold leading-snug text-[var(--color-secondary)] sm:text-lg"
           >
-            We are here ready to help you to do all things related with realizing
-            your dream real estate
+            Luxury Vacation Stays <br />
+            Designed for Unforgettable Experiences
           </motion.p>
 
           <motion.p
@@ -162,10 +163,7 @@ const RealEstateBanner = () => {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-text-muted)]"
           >
-            Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam
-            nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat
-            volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation
-            ullamcorper suscipit.
+            Discover premium vacation rentals, beachfront condos, and luxury accommodations across Miami's most sought-after destinations. Whether you're planning a family vacation, romantic escape, or extended stay, StayWise helps you find the perfect place to relax, recharge, and create lasting memories.
           </motion.p>
 
           <motion.div
@@ -174,12 +172,12 @@ const RealEstateBanner = () => {
             transition={{ duration: 0.6, delay: 0.95 }}
             className="mt-8"
           >
-            <Link
+            <FillButton
               to="/contact"
-              className="group inline-flex items-center gap-2 rounded-full bg-[var(--color-secondary)] px-8 py-3.5 text-sm font-bold text-white shadow-xl transition-all hover:-translate-y-0.5 hover:bg-[var(--color-primary)] hover:shadow-2xl"
+              className="group inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
             >
               Get in touch
-            </Link>
+            </FillButton>
           </motion.div>
         </div>
 

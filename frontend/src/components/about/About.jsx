@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiSearch, HiUser } from 'react-icons/hi';
 import { FaFacebookF, FaInstagram, FaTwitter, FaPinterest } from 'react-icons/fa';
+import FillButton from '../common/FillButton';
 
 const slides = [
   {
@@ -183,7 +184,7 @@ const About = () => {
             </motion.div>
 
             {/* Heading */}
-            <motion.h1
+            <motion.h2
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
@@ -194,8 +195,8 @@ const About = () => {
               <br />
               MIAMI'S
               <br />
-              FINEST STAYS!
-            </motion.h1>
+              <p style={{ color: 'var(--color-primary)' }}>FINEST STAYS!</p>
+            </motion.h2>
 
             {/* Subtitle */}
             <motion.p
@@ -204,8 +205,7 @@ const About = () => {
               transition={{ duration: 0.6, delay: 1 }}
               className="relative z-10 mt-4 text-sm leading-relaxed text-[var(--color-text-muted)] sm:mt-6 sm:text-base lg:text-lg"
             >
-              Curated luxury rentals across South Beach, Brickell, and Coconut
-              Grove — handpicked by our local Miami concierge team.
+              Luxury vacation rentals, beachfront condos, and exclusive villas across Miami's most sought-after destinations. Handpicked for comfort, style, and unforgettable experiences.
             </motion.p>
 
             {/* CTA */}
@@ -215,19 +215,9 @@ const About = () => {
               transition={{ duration: 0.6, delay: 1.2 }}
               className="relative z-10 mt-6 sm:mt-8"
             >
-              <Link
+              <FillButton
                 to="/properties"
-                className="group inline-flex items-center gap-2 rounded-full px-6 py-3 text-xs font-black tracking-[0.15em] text-white transition-all hover:-translate-y-1 sm:px-7 sm:py-3.5 sm:text-sm lg:px-8 lg:py-4"
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  boxShadow: '0 12px 28px var(--color-primary-shadow, rgba(255,79,123,0.35))',
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = 'var(--color-primary)')
-                }
+                className="group inline-flex items-center gap-2 rounded-full px-6 py-3 text-xs font-black tracking-[0.15em] transition-all hover:-translate-y-1 sm:px-7 sm:py-3.5 sm:text-sm lg:px-8 lg:py-4"
               >
                 EXPLORE STAYS
                 <svg
@@ -239,7 +229,7 @@ const About = () => {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-              </Link>
+              </FillButton>
             </motion.div>
 
             {/* URL + Socials */}
