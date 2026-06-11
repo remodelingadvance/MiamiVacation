@@ -14,6 +14,7 @@ const BookingPage = lazy(() => import('./pages/BookingPage'));
 const BookingConfirmationPage = lazy(() => import('./pages/BookingConfirmationPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const FAQPage = lazy(() => import('./pages/FAQPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
@@ -43,6 +44,7 @@ function App() {
               <Route path="/properties/:slug" element={<PropertyDetailsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/faq" element={<FAQPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />

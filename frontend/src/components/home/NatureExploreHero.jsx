@@ -15,17 +15,17 @@ const NatureExploreHero = () => {
   return (
     <section className="relative w-full overflow-hidden bg-white">
       <div className="relative">
-        <div className="relative min-h-[420px] overflow-hidden sm:min-h-[480px] lg:min-h-[540px] xl:min-h-[580px]">
+        <div className="relative min-h-[500px] overflow-hidden sm:min-h-[540px] lg:min-h-[600px] xl:min-h-[650px]">
 
           {/* ══════ BACKGROUND IMAGE — right side ══════ */}
           <div className="absolute inset-0">
             <img
-              src="https://images.unsplash.com/photo-1514214246283-d427a95c5d2f?w=1800&q=90"
-              alt="Miami Beach boardwalk"
+              src="https://images.pexels.com/photos/14420630/pexels-photo-14420630.png"
+              alt="Luxury Miami beachfront property with pool"
               className="h-full w-full object-cover object-center"
             />
-            {/* Dark overlay for text readability on mobile */}
-            <div className="absolute inset-0 bg-black/20 lg:hidden" />
+            {/* Dark overlay for text readability on mobile - ENHANCED */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10 lg:hidden" />
           </div>
 
           {/* ══════ WHITE LEFT SHAPE — brush/diagonal clip ══════ */}
@@ -38,6 +38,8 @@ const NatureExploreHero = () => {
                   'polygon(0 0, 85% 0, 65% 100%, 0 100%)',
               }}
             />
+            {/* Overlay gradient to blend */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent" />
           </div>
 
           {/* Brush stroke decorative shapes */}
@@ -96,52 +98,52 @@ const NatureExploreHero = () => {
           </div>
 
           {/* ══════ CONTENT ══════ */}
-          <div className="relative z-[5] flex min-h-[420px] items-center px-6 py-12 sm:min-h-[480px] sm:px-10 lg:min-h-[540px] lg:px-16 xl:min-h-[580px] xl:px-20">
-            <div className="grid w-full grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <div className="relative z-[5] flex min-h-[500px] items-center px-5 py-16 sm:min-h-[540px] sm:px-8 lg:min-h-[600px] lg:px-16 xl:min-h-[650px] xl:px-20">
+            <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-8">
 
               {/* ═══ LEFT CONTENT ═══ */}
               <div className="max-w-lg">
 
-                {/* Logo area */}
+                {/* Logo area - visible on all devices */}
                 <motion.div
                   initial={{ opacity: 0, y: -12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5 }}
-                  className="mb-6 sm:mb-8"
+                  className="mb-5 sm:mb-7"
                 >
                   <Link to="/" className="inline-flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8527a] shadow-lg shadow-[#e8527a]/25">
-                      <span className="text-lg font-black text-white">S</span>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8527a] shadow-lg shadow-[#e8527a]/25 sm:h-10 sm:w-10">
+                      <span className="text-base font-black text-white sm:text-lg">S</span>
                     </div>
-                    <span className="text-lg font-black text-[#0d3347] lg:text-[#0d3347]">
+                    <span className="text-base font-black text-white sm:text-lg lg:text-[#0d3347]">
                       Stay<span className="text-[#e8527a]">Wise</span>
                     </span>
                   </Link>
                 </motion.div>
 
-                {/* Headline — script style */}
+                {/* Headline — script style - WHITE ON MOBILE */}
                 <div className="overflow-hidden">
                   <motion.p
                     initial={{ y: 60 }}
                     whileInView={{ y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-                    className="text-2xl font-light italic text-[#0d3347] sm:text-3xl lg:text-4xl"
+                    className="text-xl font-light italic text-white sm:text-2xl lg:text-3xl lg:text-[#0d3347]"
                     style={{ fontFamily: 'var(--font-display, Georgia, serif)' }}
                   >
                     Journey To
                   </motion.p>
                 </div>
 
-                {/* Bold headline */}
+                {/* Bold headline - WHITE ON MOBILE */}
                 <div className="overflow-hidden">
                   <motion.h1
                     initial={{ y: 80 }}
                     whileInView={{ y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.65, delay: 0.2, ease: EASE }}
-                    className="text-5xl font-black uppercase leading-[0.95] tracking-tight text-[#0d3347] sm:text-6xl lg:text-7xl xl:text-8xl"
+                    className="text-4xl font-black uppercase leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl lg:text-[#0d3347] xl:text-7xl"
                   >
                     <span className="text-[#e8527a]">Explore</span>
                   </motion.h1>
@@ -152,19 +154,19 @@ const NatureExploreHero = () => {
                     whileInView={{ y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.65, delay: 0.3, ease: EASE }}
-                    className="text-5xl font-black uppercase leading-[0.95] tracking-tight text-[#0d3347] sm:text-6xl lg:text-7xl xl:text-8xl"
+                    className="text-4xl font-black uppercase leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl lg:text-[#0d3347] xl:text-7xl"
                   >
                     Miami
                   </motion.h1>
                 </div>
 
-                {/* Description */}
+                {/* Description - WHITE ON MOBILE */}
                 <motion.p
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.45 }}
-                  className="mt-5 max-w-sm text-sm leading-relaxed text-gray-500 sm:text-[15px] lg:text-gray-600"
+                  className="mt-4 max-w-sm text-sm leading-relaxed text-white/90 sm:mt-5 sm:text-[15px] lg:text-gray-600"
                 >
                   Discover luxury vacation rentals, beachfront condos, and
                   private homes across Miami's best neighborhoods. Your dream
@@ -177,49 +179,49 @@ const NatureExploreHero = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.55 }}
-                  className="mt-7"
+                  className="mt-6 sm:mt-7"
                 >
                   <Link
                     to="/properties"
-                    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-lg bg-[#e8527a] px-8 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-xl shadow-[#e8527a]/30 transition-all duration-200 hover:bg-[#d4405f] hover:shadow-2xl hover:shadow-[#e8527a]/40"
+                    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-lg bg-[#e8527a] px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-xl shadow-[#e8527a]/30 transition-all duration-200 hover:bg-[#d4405f] hover:shadow-2xl hover:shadow-[#e8527a]/40 sm:px-8 sm:py-3.5"
                   >
                     <span className="absolute inset-0 -translate-x-full bg-[#d4405f] transition-transform duration-300 group-hover:translate-x-0" />
                     <span className="relative z-10 flex items-center gap-2">
                       Book Now
-                      <HiArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                      <HiArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 sm:h-4 sm:w-4" />
                     </span>
                   </Link>
                 </motion.div>
 
-                {/* Bottom contact bar */}
+                {/* Bottom contact bar - WHITE TEXT ON MOBILE */}
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.65 }}
-                  className="mt-8 flex flex-wrap items-center gap-5 text-sm"
+                  className="mt-6 flex flex-wrap items-center gap-4 text-xs sm:mt-8 sm:gap-5 sm:text-sm"
                 >
                   <a
                     href={`tel:${APP_CONFIG.phone}`}
-                    className="flex items-center gap-2 font-semibold text-[#0d3347] transition-colors duration-200 hover:text-[#e8527a] lg:text-[#0d3347]"
+                    className="flex items-center gap-1.5 font-semibold text-white/90 transition-colors duration-200 hover:text-[#e8527a] sm:gap-2 lg:text-[#0d3347]"
                   >
-                    <FaWhatsapp className="h-4 w-4 text-[#e8527a]" />
+                    <FaWhatsapp className="h-3.5 w-3.5 text-[#e8527a] sm:h-4 sm:w-4" />
                     {APP_CONFIG.phone}
                   </a>
 
-                  <div className="hidden h-4 w-px bg-gray-300 sm:block" />
+                  <div className="hidden h-3 w-px bg-white/30 sm:block lg:bg-gray-300" />
 
                   <a
                     href={`https://${APP_CONFIG.website || 'staywise.com'}`}
-                    className="flex items-center gap-2 font-semibold text-[#0d3347] transition-colors duration-200 hover:text-[#e8527a] lg:text-[#0d3347]"
+                    className="flex items-center gap-1.5 font-semibold text-white/90 transition-colors duration-200 hover:text-[#e8527a] sm:gap-2 lg:text-[#0d3347]"
                   >
-                    <HiGlobe className="h-4 w-4 text-[#e8527a]" />
-                    www.staywise.com
+                    <HiGlobe className="h-3.5 w-3.5 text-[#e8527a] sm:h-4 sm:w-4" />
+                    {APP_CONFIG.website || 'staywise.com'}
                   </a>
                 </motion.div>
               </div>
 
-              {/* ═══ RIGHT — Discount badge (floats over image) ═══ */}
+              {/* ═══ RIGHT — Discount badge (desktop) ═══ */}
               <div className="hidden items-center justify-center lg:flex">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.7, rotate: -10 }}
@@ -269,13 +271,13 @@ const NatureExploreHero = () => {
             </div>
           </div>
 
-          {/* ══════ SOCIAL ICONS — top right ══════ */}
+          {/* ══════ SOCIAL ICONS — top right (desktop only) ══════ */}
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="absolute right-5 top-5 z-[6] flex items-center gap-2 sm:right-8 sm:top-8"
+            className="absolute right-5 top-5 z-[6] hidden items-center gap-2 sm:right-8 sm:top-8 lg:flex"
           >
             {[
               { icon: FaInstagram, href: '#' },
@@ -292,20 +294,20 @@ const NatureExploreHero = () => {
             ))}
           </motion.div>
 
-          {/* ══════ MOBILE DISCOUNT BADGE ══════ */}
+          {/* ══════ MOBILE DISCOUNT BADGE (repositioned for better visibility) ══════ */}
           <motion.div
             initial={{ opacity: 0, scale: 0.7 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.6, ease: 'backOut' }}
-            className="absolute bottom-6 right-6 z-[6] sm:bottom-8 sm:right-10 lg:hidden"
+            className="absolute bottom-5 right-4 z-[6] sm:bottom-6 sm:right-6 lg:hidden"
           >
-            <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-3 border-white bg-gradient-to-br from-[#e8527a] to-[#d4405f] shadow-xl shadow-[#e8527a]/30 sm:h-24 sm:w-24">
-              <span className="text-[8px] font-bold uppercase tracking-wider text-white/80 sm:text-[9px]">
+            <div className="flex h-16 w-16 flex-col items-center justify-center rounded-full border-3 border-white bg-gradient-to-br from-[#e8527a] to-[#d4405f] shadow-xl shadow-[#e8527a]/30 sm:h-20 sm:w-20">
+              <span className="text-[7px] font-bold uppercase tracking-wider text-white/80 sm:text-[8px]">
                 Up To
               </span>
-              <span className="text-xl font-black text-white sm:text-2xl">20%</span>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-white/90 sm:text-[9px]">
+              <span className="text-base font-black text-white sm:text-xl">20%</span>
+              <span className="text-[7px] font-bold uppercase tracking-wider text-white/90 sm:text-[8px]">
                 OFF!
               </span>
             </div>
