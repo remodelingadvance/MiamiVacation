@@ -22,6 +22,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useWishlist } from "../../contexts/WishlistContext";
 import { APP_CONFIG } from "../../config/constants";
 import { THEME } from "../../config/theme.config";
+import StayWiseLogo from "../../assets/stay-wise-logo-horiz.png";
 
 const iconMap = {
   Home: HiHome,
@@ -41,30 +42,11 @@ const getInitials = (user) => {
 
 const BrandLogo = ({ isTransparent = false, onClick }) => (
   <Link to="/" onClick={onClick} className="flex shrink-0 items-center gap-3">
-    <motion.div
-      whileHover={{ scale: 1.06, rotate: -4 }}
-      whileTap={{ scale: 0.96 }}
-      className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-white shadow-[0_12px_28px_rgba(255,79,123,0.35)] sm:h-12 sm:w-12"
-    >
-      <FaUmbrellaBeach className="h-5 w-5 sm:h-6 sm:w-6" />
-    </motion.div>
-
-    <div className="leading-none">
-      <p
-        className={`text-base font-black uppercase tracking-tight sm:text-lg ${
-          isTransparent ? "text-white" : "text-gray-950"
-        }`}
-      >
-        StayWise
-      </p>
-      <p
-        className={`mt-1 text-[10px] font-bold uppercase tracking-[0.22em] sm:text-xs ${
-          isTransparent ? "text-white/75" : "text-gray-500"
-        }`}
-      >
-        Smart Stays
-      </p>
-    </div>
+    <motion.img
+      src={StayWiseLogo}
+      alt="StayWise Logo"
+      className="h-12 w-42 sm:h-16 sm:w-52"
+    />
   </Link>
 );
 

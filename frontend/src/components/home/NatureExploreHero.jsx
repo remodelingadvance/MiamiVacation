@@ -24,18 +24,17 @@ const NatureExploreHero = () => {
               alt="Luxury Miami beachfront property with pool"
               className="h-full w-full object-cover object-center"
             />
-            {/* Dark overlay for text readability on mobile - ENHANCED */}
+            {/* Dark overlay for mobile only - NOT on lg screens */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10 lg:hidden" />
           </div>
 
           {/* ══════ WHITE LEFT SHAPE — brush/diagonal clip ══════ */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] hidden w-[58%] lg:block">
-            {/* Main white area */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] hidden w-[60%] lg:block">
+            {/* Main white area - expanded to cover text */}
             <div
               className="h-full w-full bg-white"
               style={{
-                clipPath:
-                  'polygon(0 0, 85% 0, 65% 100%, 0 100%)',
+                clipPath: 'polygon(0 0, 90% 0, 70% 100%, 0 100%)',
               }}
             />
             {/* Overlay gradient to blend */}
@@ -103,8 +102,7 @@ const NatureExploreHero = () => {
 
               {/* ═══ LEFT CONTENT ═══ */}
               <div className="max-w-lg">
-
-                {/* Logo area - visible on all devices */}
+                {/* Logo area */}
                 <motion.div
                   initial={{ opacity: 0, y: -12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -116,14 +114,15 @@ const NatureExploreHero = () => {
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8527a] shadow-lg shadow-[#e8527a]/25 sm:h-10 sm:w-10">
                       <span className="text-base font-black text-white sm:text-lg">S</span>
                     </div>
+                    {/* Logo text: white on mobile, dark on desktop */}
                     <span className="text-base font-black text-white sm:text-lg lg:text-[#0d3347]">
                       Stay<span className="text-[#e8527a]">Wise</span>
                     </span>
                   </Link>
                 </motion.div>
 
-                {/* Headline — script style - WHITE ON MOBILE */}
-                <div className="overflow-hidden">
+                {/* Headline — script style */}
+                <div className="">
                   <motion.p
                     initial={{ y: 60 }}
                     whileInView={{ y: 0 }}
@@ -136,9 +135,9 @@ const NatureExploreHero = () => {
                   </motion.p>
                 </div>
 
-                {/* Bold headline - WHITE ON MOBILE */}
-                <div className="overflow-hidden">
-                  <motion.h1
+                {/* Bold headline */}
+                <div className="">
+                  <motion.h2
                     initial={{ y: 80 }}
                     whileInView={{ y: 0 }}
                     viewport={{ once: true }}
@@ -146,10 +145,10 @@ const NatureExploreHero = () => {
                     className="text-4xl font-black uppercase leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl lg:text-[#0d3347] xl:text-7xl"
                   >
                     <span className="text-[#e8527a]">Explore</span>
-                  </motion.h1>
+                  </motion.h2>
                 </div>
-                <div className="overflow-hidden">
-                  <motion.h1
+                <div className="">
+                  <motion.h2
                     initial={{ y: 80 }}
                     whileInView={{ y: 0 }}
                     viewport={{ once: true }}
@@ -157,10 +156,10 @@ const NatureExploreHero = () => {
                     className="text-4xl font-black uppercase leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl lg:text-[#0d3347] xl:text-7xl"
                   >
                     Miami
-                  </motion.h1>
+                  </motion.h2>
                 </div>
 
-                {/* Description - WHITE ON MOBILE */}
+                {/* Description */}
                 <motion.p
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -193,7 +192,7 @@ const NatureExploreHero = () => {
                   </Link>
                 </motion.div>
 
-                {/* Bottom contact bar - WHITE TEXT ON MOBILE */}
+                {/* Bottom contact bar */}
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -271,13 +270,13 @@ const NatureExploreHero = () => {
             </div>
           </div>
 
-          {/* ══════ SOCIAL ICONS — top right (desktop only) ══════ */}
+          {/* ══════ SOCIAL ICONS — top right ══════ */}
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="absolute right-5 top-5 z-[6] hidden items-center gap-2 sm:right-8 sm:top-8 lg:flex"
+            className="absolute right-5 top-5 z-[6] flex items-center gap-2 sm:right-8 sm:top-8"
           >
             {[
               { icon: FaInstagram, href: '#' },
@@ -294,7 +293,7 @@ const NatureExploreHero = () => {
             ))}
           </motion.div>
 
-          {/* ══════ MOBILE DISCOUNT BADGE (repositioned for better visibility) ══════ */}
+          {/* ══════ MOBILE DISCOUNT BADGE ══════ */}
           <motion.div
             initial={{ opacity: 0, scale: 0.7 }}
             whileInView={{ opacity: 1, scale: 1 }}

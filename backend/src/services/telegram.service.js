@@ -25,6 +25,29 @@ export const buildAdminChatLink = (conversationId) => {
   return `${baseUrl.replace(/\/$/, '')}/admin/support?chat=${conversationId}&sig=${signature}`;
 };
 
+const isPrivateHost = (hostname = '') => {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === 'localhost' ||
+    normalized === '127.0.0.1' ||
+    normalized === '0.0.0.0' ||
+    normalized === '::1' ||
+    normalized.endsWith('.local') ||
+    /^10\./.test(normalized) ||
+    /^192\.168\./.test(normalized) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalized)
+  );
+};
+
+const isPublicTelegramUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !isPrivateHost(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export const sendTelegramMessage = async ({ text, replyMarkup }) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -64,6 +87,7 @@ export const sendTelegramMessage = async ({ text, replyMarkup }) => {
 export const notifyTelegramForCustomerMessage = async ({ conversation, message }) => {
   const customer = conversation.customer || {};
   const adminLink = buildAdminChatLink(conversation._id);
+  const canUseAdminLink = isPublicTelegramUrl(adminLink);
 
   const text = [
     '<b>New Stay Wise support message</b>',
@@ -76,15 +100,19 @@ export const notifyTelegramForCustomerMessage = async ({ conversation, message }
     '',
     `<b>Message:</b> ${escapeHtml(truncate(message.body || '[attachment]', 900))}`,
     '',
-    `<a href="${adminLink}">Open secure admin chat</a>`,
+    canUseAdminLink
+      ? `<a href="${adminLink}">Open secure admin chat</a>`
+      : '<i>Admin deep link unavailable in local development. Set ADMIN_URL to a public HTTPS admin URL for Telegram buttons.</i>',
   ].join('\n');
 
   return sendTelegramMessage({
     text,
-    replyMarkup: {
-      inline_keyboard: [[
-        { text: 'Open Chat Dashboard', url: adminLink },
-      ]],
-    },
+    replyMarkup: canUseAdminLink
+      ? {
+          inline_keyboard: [[
+            { text: 'Open Chat Dashboard', url: adminLink },
+          ]],
+        }
+      : undefined,
   });
 };
