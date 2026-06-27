@@ -11,7 +11,7 @@ import NewsletterSignup from '../components/home/NewsletterSignup';
 import StatsSection from '../components/home/StatsSection';
 import useApi from '../hooks/useApi';
 import apiService from '../config/api';
-import PropertyLocationSection from '../components/home/PropertyLocationSection';
+// import PropertyLocationSection from '../components/home/PropertyLocationSection';
 import AboutStayWiseBanner from '../components/home/AboutStayWiseBanner';
 import NatureExploreHero from '../components/home/NatureExploreHero';
 
@@ -45,7 +45,7 @@ const HomePage = () => {
       <HeroSection />
       <NatureExploreHero />
 
-      <PropertyLocationSection />
+      {/* <PropertyLocationSection /> */}
 
       {/* Stats Section */}
       <StatsSection />

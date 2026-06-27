@@ -56,8 +56,8 @@ function App() {
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/booking/:propertyId" element={<BookingPage />} />
                 <Route path="/booking/confirmation/:bookingId" element={<BookingConfirmationPage />} />
+                <Route path="/booking/:propertyId" element={<BookingPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-bookings" element={<MyBookingsPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />

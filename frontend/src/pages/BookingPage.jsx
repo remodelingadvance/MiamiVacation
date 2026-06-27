@@ -361,12 +361,19 @@ const BookingPage = () => {
 
       const response = await apiService.createBooking(bookingData);
       if (response.data.success) {
+        const bookingId = response.data.booking?._id || response.data.booking?.id;
+        if (!bookingId) {
+          throw new Error('Booking was created but no booking ID was returned');
+        }
         toast.success('Booking confirmed!');
-        navigate(`/booking/confirmation/${response.data.booking._id}`);
+        navigate(`/booking/confirmation/${bookingId}`, { replace: true });
+        return bookingId;
       }
+      throw new Error(response.data.message || 'Booking failed. Please try again.');
     } catch (error) {
       console.error('Booking error:', error);
-      toast.error(error.response?.data?.message || 'Booking failed. Please try again.');
+      toast.error(error.response?.data?.message || error.message || 'Booking failed. Please try again.');
+      throw error;
     }
   };
 
