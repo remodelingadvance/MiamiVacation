@@ -325,3 +325,49 @@
     }
   }
 }
+
+/* Add to your global CSS file (e.g., index.css or App.css) */
+
+/* Ensure portal elements are on top */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix for any elements with transform that create new stacking contexts */
+.glass-strong,
+.glass-light,
+[class*="glass"] {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Ensure dropdown doesn't get clipped */
+.overflow-hidden {
+  overflow: visible !important; /* Only for parent containers if needed */
+}
+
+/* Force high z-index for portal */
+body > .notification-portal {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+}
+
+body > .notification-portal > * {
+  pointer-events: auto;
+}
+
+/* Ensure dropdown is visible */
+.notification-dropdown {
+  position: fixed !important;
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+/* Fix for any transform issues */
+* {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
