@@ -47,11 +47,20 @@ const AdminUsers = () => {
     try {
       setDeleting(true);
       await adminApi.deleteUser(deleteId);
-      toast.success('User deactivated successfully');
-      fetchUsers(currentPage, searchQuery, filterRole);
+      toast.success('User deleted successfully');
+      setUsers((prev) => prev.filter((user) => user._id !== deleteId));
+      setTotalItems((prev) => Math.max(prev - 1, 0));
+
+      const nextPage = users.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+      if (nextPage !== currentPage) {
+        setCurrentPage(nextPage);
+      } else {
+        fetchUsers(nextPage, searchQuery, filterRole);
+      }
+
       setDeleteId(null);
     } catch (error) {
-      toast.error('Failed to deactivate user');
+      toast.error(error.response?.data?.message || 'Failed to delete user');
     } finally {
       setDeleting(false);
     }
@@ -152,7 +161,7 @@ const AdminUsers = () => {
           <button
             onClick={() => setDeleteId(row._id)}
             className="w-8 h-8 rounded-lg glass-light flex items-center justify-center text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
-            title="Deactivate"
+            title="Delete"
           >
             <HiTrash className="w-4 h-4" />
           </button>
@@ -206,9 +215,9 @@ const AdminUsers = () => {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Deactivate User"
-        message="Are you sure you want to deactivate this user? They will no longer be able to access their account."
-        confirmText="Deactivate User"
+        title="Delete User"
+        message="Are you sure you want to delete this user? Their account will be removed from the admin user list and they will no longer be able to access it."
+        confirmText="Delete User"
         loading={deleting}
       />
     </>

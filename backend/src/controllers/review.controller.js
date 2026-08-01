@@ -75,7 +75,7 @@ export const getPropertyReviews = catchAsync(async (req, res, next) => {
 export const createReview = catchAsync(async (req, res, next) => {
   const { propertyId, bookingId, rating, title, content, ratings } = req.body;
 
-  console.log('Create review request:', { propertyId, bookingId, rating, title });
+  logger.debug('Create review request', { propertyId, bookingId, rating });
 
   // Validate required fields
   if (!bookingId) {

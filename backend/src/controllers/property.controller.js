@@ -675,14 +675,14 @@ export const getPropertyStats = catchAsync(async (req, res, next) => {
 export const getPropertyBookings = async (req, res) => {
   const { id } = req.params;
   
-  console.log('=== GET PROPERTY BOOKINGS ===');
-  console.log('Property ID:', id);
+  logger.debug('Get property bookings request');
+  logger.debug('Property bookings lookup', { propertyId: id });
   
   try {
     // First, verify the property exists
     const property = await Property.findById(id);
     if (!property) {
-      console.log('Property not found');
+      logger.debug('Property not found while fetching bookings', { propertyId: id });
       return res.status(200).json({
         success: true,
         count: 0,
@@ -699,12 +699,8 @@ export const getPropertyBookings = async (req, res) => {
       status: { $in: ['confirmed', 'active', 'pending'] }
     });
     
-    console.log(`Found ${bookings.length} bookings for property ${id}`);
+    logger.debug('Property bookings found', { propertyId: id, count: bookings.length });
     
-    // Log each booking for debugging
-    bookings.forEach(booking => {
-      console.log(`Booking: ${booking.bookingNumber}, ${booking.checkIn} to ${booking.checkOut}, Status: ${booking.status}`);
-    });
     
     res.status(200).json({
       success: true,
@@ -845,7 +841,7 @@ export const getAllPropertiesWithFilter = catchAsync(async (req, res, next) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
   
-  console.log('Today date for comparison:', today);
+  logger.debug('Maintenance filter date prepared', { today });
   
   // Apply status filter based on the selected filter
   if (statusFilter === 'active') {
@@ -898,7 +894,7 @@ export const getAllPropertiesWithFilter = catchAsync(async (req, res, next) => {
     ];
   }
 
-  console.log('Query for statusFilter:', statusFilter, JSON.stringify(query));
+  logger.debug('Property status filter query prepared', { statusFilter });
 
   // Execute query with pagination
   const properties = await Property.find(query)
@@ -940,8 +936,8 @@ export const getAllPropertiesWithFilter = catchAsync(async (req, res, next) => {
     inactive: await Property.countDocuments({ status: 'inactive' })
   };
 
-  console.log('Counts:', counts);
-  console.log('Properties found:', properties.length);
+  logger.debug('Property status filter counts calculated', { counts });
+  logger.debug('Properties found for status filter', { count: properties.length });
 
   res.status(200).json({
     success: true,

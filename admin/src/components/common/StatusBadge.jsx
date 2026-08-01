@@ -28,7 +28,6 @@ const statusConfig = {
   flagged: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Flagged' },
 
   // Property statuses
-  active: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Active' },
   inactive: { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Inactive' },
   maintenance: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Under Maintenance' },
   'under-maintenance': { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Under Maintenance' },

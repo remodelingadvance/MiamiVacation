@@ -145,6 +145,12 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    deletedAt: Date,
+    deletedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    deletionReason: String,
     createdAt: {
         type: Date,
         default: Date.now
@@ -174,6 +180,7 @@ userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ firebaseUid: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ deletedAt: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

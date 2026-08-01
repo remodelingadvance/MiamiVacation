@@ -2,52 +2,91 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { createServer } from 'http';
-import { initializeSocket } from './src/config/socket.js';
 
-// Load env vars
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const httpServer = createServer(app);
+const requiredProductionEnv = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'FRONTEND_URL',
+  'ADMIN_URL',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'BREVO_SENDER_EMAIL',
+  'BREVO_SENDER_NAME',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_PRIVATE_KEY',
+  'GEMINI_API_KEY',
+  'TELEGRAM_BOT_TOKEN',
+  'TELEGRAM_ADMIN_CHAT_ID',
+  'ADMIN_DEEP_LINK_SECRET',
+];
 
-import app from './src/app.js';
-import connectDB from './src/config/database.js';
+const validateProductionEnv = () => {
+  if (process.env.NODE_ENV !== 'production') return;
 
-// Handle uncaught exceptions
+  const missing = requiredProductionEnv.filter((key) => !process.env[key]);
+  const localUrlKeys = ['FRONTEND_URL', 'ADMIN_URL'];
+  const localUrls = localUrlKeys.filter((key) => /localhost|127\.0\.0\.1|^http:\/\//i.test(process.env[key] || ''));
+
+  if (missing.length || localUrls.length) {
+    console.error('Production environment is not ready.');
+    if (missing.length) console.error(`Missing variables: ${missing.join(', ')}`);
+    if (localUrls.length) console.error(`Production URLs must be public HTTPS URLs: ${localUrls.join(', ')}`);
+    process.exit(1);
+  }
+};
+
+validateProductionEnv();
+
+const [{ default: app }, { default: connectDB }, { initializeSocket }] = await Promise.all([
+  import('./src/app.js'),
+  import('./src/config/database.js'),
+  import('./src/config/socket.js'),
+]);
+
 process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error('UNCAUGHT EXCEPTION. Shutting down...');
   console.error(err.name, err.message, err.stack);
   process.exit(1);
 });
 
-// Connect to MongoDB
 connectDB();
 
-// Initialize Socket.io
+const httpServer = createServer(app);
 initializeSocket(httpServer);
 
 const PORT = process.env.PORT || 5000;
+const API_PREFIX = process.env.API_PREFIX || '/api/v1';
 
 httpServer.listen(PORT, () => {
-  console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`📍 API available at http://localhost:${PORT}/api/v1`);
-  console.log(`🔌 WebSocket available at ws://localhost:${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`API prefix: ${API_PREFIX}`);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error('UNHANDLED REJECTION. Shutting down...');
   console.error(err.name, err.message);
   httpServer.close(() => {
     process.exit(1);
   });
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  console.log('SIGTERM received. Shutting down gracefully.');
   httpServer.close(() => {
-    console.log('💥 Process terminated!');
+    console.log('Process terminated.');
   });
 });

@@ -14,8 +14,6 @@ export const validate = (validations) => {
       return next();
     }
 
-    console.log('VALIDATION ERRORS');
-    console.log(errors.array());
 
     return res.status(422).json({
       success: false,

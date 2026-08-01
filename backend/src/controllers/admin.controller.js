@@ -5,6 +5,13 @@ import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import logger from '../utils/logger.js';
 
+const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const isSameObjectId = (left, right) => left?.toString() === right?.toString();
+
+const isAdminRole = (role) => ['admin', 'super-admin'].includes(role);
+
+const buildDeletedEmail = (userId) => `deleted_${userId}@deleted.staywise.com`;
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/v1/admin/dashboard
@@ -32,8 +39,8 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
     topPropertiesData,
     propertyTypeData,
   ] = await Promise.all([
-    User.countDocuments({ role: 'user' }),
-    User.countDocuments({ role: 'user', createdAt: { $gte: startOfMonth } }),
+    User.countDocuments({ role: 'user', deletedAt: { $exists: false } }),
+    User.countDocuments({ role: 'user', deletedAt: { $exists: false }, createdAt: { $gte: startOfMonth } }),
     Property.countDocuments(),
     Property.countDocuments({ status: 'active' }),
     Booking.countDocuments(),
@@ -198,17 +205,47 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/admin/users
 // @access  Private/Admin
 export const getUsers = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 20, role, status } = req.query;
+  const {
+    page = 1,
+    limit = 20,
+    role,
+    status,
+    search,
+    includeDeleted,
+  } = req.query;
 
+  const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+  const pageSize = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+  const canViewDeleted = req.user.role === 'super-admin' && includeDeleted === 'true';
   const query = {};
+
   if (role) query.role = role;
+
   if (status === 'active') query.isActive = true;
   if (status === 'inactive') query.isActive = false;
 
+  if (status === 'deleted' && canViewDeleted) {
+    query.deletedAt = { $exists: true };
+  } else if (!canViewDeleted) {
+    query.deletedAt = { $exists: false };
+  }
+
+  if (search?.trim()) {
+    const safeSearch = escapeRegex(search.trim());
+    const searchRegex = new RegExp(safeSearch, 'i');
+    query.$or = [
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { email: searchRegex },
+      { phone: searchRegex },
+    ];
+  }
+
   const users = await User.find(query)
+    .select('-password -refreshToken -verificationToken -verificationCode -resetPasswordToken')
     .sort('-createdAt')
-    .skip((page - 1) * limit)
-    .limit(parseInt(limit));
+    .skip((currentPage - 1) * pageSize)
+    .limit(pageSize);
 
   const total = await User.countDocuments(query);
 
@@ -217,9 +254,9 @@ export const getUsers = catchAsync(async (req, res, next) => {
     count: users.length,
     total,
     pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / limit),
+      page: currentPage,
+      limit: pageSize,
+      totalPages: Math.ceil(total / pageSize),
     },
     users,
   });
@@ -253,6 +290,10 @@ export const updateUser = catchAsync(async (req, res, next) => {
 
   if (!user) {
     return next(new AppError('User not found', 404));
+  }
+
+  if (user.deletedAt) {
+    return next(new AppError('Cannot update a deleted user.', 400));
   }
 
   const oldStatus = user.isActive;
@@ -309,19 +350,64 @@ export const updateUser = catchAsync(async (req, res, next) => {
 export const deleteUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     return next(new AppError('User not found', 404));
   }
 
-  // Soft delete - deactivate
+  if (isSameObjectId(user._id, req.user._id)) {
+    return next(new AppError('You cannot delete your own admin account.', 400));
+  }
+
+  if (isAdminRole(user.role) && req.user.role !== 'super-admin') {
+    return next(new AppError('Only a super admin can delete admin accounts.', 403));
+  }
+
+  const originalEmail = user.email;
+
   user.isActive = false;
+  user.deletedAt = new Date();
+  user.deletedBy = req.user._id;
+  user.deletionReason = req.body?.reason || 'Deleted by admin';
+  user.firstName = 'Deleted';
+  user.lastName = 'User';
+  user.email = buildDeletedEmail(user._id);
+  user.phone = undefined;
+  user.avatar = 'default-avatar.jpg';
+  user.firebaseUid = undefined;
+  user.authProviders = [];
+  user.address = undefined;
+  user.favorites = [];
+  user.refreshToken = undefined;
+  user.refreshTokenExpiry = undefined;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined;
+  user.verificationCode = undefined;
+  user.verificationCodeExpires = undefined;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
+
   await user.save();
 
-  logger.info(`User deactivated: ${user.email} by admin ${req.user.id}`);
+  await Notification.createNotification({
+    type: 'system_alert',
+    title: 'User Deleted',
+    message: `User ${originalEmail} was deleted by ${req.user.email}`,
+    priority: 'medium',
+    data: {
+      userId: user._id,
+      deletedEmail: originalEmail,
+      deletedBy: req.user._id,
+    },
+    link: '/admin/users',
+  });
+
+  logger.info(`User deleted: ${originalEmail} by admin ${req.user.id}`);
 
   res.status(200).json({
     success: true,
-    message: 'User deactivated successfully',
+    message: 'User deleted successfully',
+    deletedUserId: user._id,
   });
 });
 
@@ -408,7 +494,7 @@ export const getAnalytics = catchAsync(async (req, res, next) => {
       },
     ]),
     // User count
-    User.countDocuments({ role: 'user' }),
+    User.countDocuments({ role: 'user', deletedAt: { $exists: false } }),
     // Review statistics
     Review.aggregate([
       {
@@ -663,6 +749,7 @@ export const getAnalytics = catchAsync(async (req, res, next) => {
     {
       $match: {
         role: 'user',
+        deletedAt: { $exists: false },
         createdAt: { $gte: start, $lte: end },
       },
     },
@@ -763,7 +850,7 @@ export const getAnalyticsSummary = catchAsync(async (req, res, next) => {
       },
       { $group: { _id: null, total: { $sum: '$pricing.total' } } },
     ]),
-    User.countDocuments({ role: 'user' }),
+    User.countDocuments({ role: 'user', deletedAt: { $exists: false } }),
     Property.countDocuments({ status: 'active' }),
     Review.countDocuments({ status: 'pending' }),
     Contact.countDocuments({ status: 'unread' }),

@@ -70,7 +70,7 @@ export const createBooking = catchAsync(async (req, res, next) => {
     guestDetails 
   } = req.body;
 
-  console.log('Creating booking with data:', { propertyId, checkIn, checkOut, guests, guestDetails });
+  logger.debug('Creating booking request', { propertyId, checkIn, checkOut, guests });
 
   // Validate required fields
   if (!propertyId || !checkIn || !checkOut || !guests) {

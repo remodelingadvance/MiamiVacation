@@ -79,7 +79,7 @@ export const getCoupon = catchAsync(async (req, res, next) => {
 // @route   POST /api/v1/coupons
 // @access  Private/Admin
 export const createCoupon = catchAsync(async (req, res, next) => {
-  console.log('Creating coupon with data:', JSON.stringify(req.body, null, 2));
+  logger.debug('Creating coupon request', { code: req.body?.code, type: req.body?.type });
   
   // Set createdBy
   req.body.createdBy = req.user.id;

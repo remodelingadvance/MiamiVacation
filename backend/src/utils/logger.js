@@ -20,7 +20,8 @@ class Logger {
       debug: 3,
     };
 
-    this.currentLevel = this.levels[process.env.LOG_LEVEL] || this.levels.debug;
+    const defaultLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
+    this.currentLevel = this.levels[process.env.LOG_LEVEL] ?? this.levels[defaultLevel];
   }
 
   formatMessage(level, message, meta = {}) {

@@ -220,7 +220,6 @@ const ContactHero = () => {
                         borderColor: '#e8527a',
                       }}
                       whileTap={{ scale: 0.9 }}
-                      transition={{ duration: 0.12 }}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-white/8 text-white"
                     >
                       <Icon className="h-3 w-3" />
