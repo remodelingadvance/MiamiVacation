@@ -192,14 +192,15 @@ const AdminNewsletter = () => {
     
     try {
       setDeleting(true);
-      await adminApi.post('/newsletter/admin/bulk-delete', { subscriberIds: selectedSubscribers });
-      toast.success(`${selectedSubscribers.length} subscribers deleted`);
+      const response = await adminApi.bulkDeleteSubscribers(selectedSubscribers);
+      const deletedCount = response.data.deletedCount ?? selectedSubscribers.length;
+      toast.success(`${deletedCount} subscriber${deletedCount === 1 ? '' : 's'} deleted`);
       setSelectedSubscribers([]);
       setShowBulkDeleteConfirm(false);
       fetchSubscribers(currentPage, searchQuery);
     } catch (error) {
       console.error('Bulk delete error:', error);
-      toast.error('Failed to delete subscribers');
+      toast.error(error.response?.data?.message || 'Failed to delete subscribers');
     } finally {
       setDeleting(false);
     }

@@ -102,6 +102,8 @@ const adminApi = {
     // Newsletter Subscribers (Admin)
     getSubscribers: (params) => api.get('/newsletter/subscribers', { params }),
     deleteSubscriber: (id) => api.delete(`/newsletter/subscribers/${id}`),
+    bulkDeleteSubscribers: (subscriberIds) =>
+        api.delete('/newsletter/admin/bulk-delete', { data: { subscriberIds } }),
     exportSubscribers: () => api.get('/newsletter/subscribers/export', { responseType: 'blob' }),
 
     // Newsletter Campaigns (Admin)

@@ -597,6 +597,11 @@ export const bulkDeleteSubscribers = catchAsync(async (req, res, next) => {
   if (!subscriberIds || !Array.isArray(subscriberIds) || subscriberIds.length === 0) {
     return next(new AppError('Please provide subscriber IDs to delete', 400));
   }
+
+  const invalidIds = subscriberIds.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+  if (invalidIds.length > 0) {
+    return next(new AppError('One or more selected subscribers are invalid', 400));
+  }
   
   const result = await Newsletter.deleteMany({ _id: { $in: subscriberIds } });
   
