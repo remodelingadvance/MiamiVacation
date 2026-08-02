@@ -50,7 +50,7 @@ const issueAuthTokens = async (user) => {
 const sendVerificationCodeEmail = async (user, code) => {
   await emailService.send({
     to: user.email,
-    subject: 'Your Miami Luxury Rentals verification code',
+    subject: 'Your Stay Wise verification code',
     html: `
       <!DOCTYPE html>
       <html>
@@ -70,7 +70,7 @@ const sendVerificationCodeEmail = async (user, code) => {
           <div class="card">
             <div class="header">
               <h1 style="margin:0;">Verify your email</h1>
-              <p style="margin:8px 0 0;">Miami Luxury Rentals account security</p>
+              <p style="margin:8px 0 0;">Stay Wise account security</p>
             </div>
             <div class="content">
               <h2 style="margin-top:0;">Hello ${user.firstName},</h2>
@@ -154,7 +154,7 @@ const legacySignup = catchAsync(async (req, res, next) => {
     
     await emailService.send({
       to: user.email,
-      subject: 'Verify Your Email - Miami Luxury Rentals',
+      subject: 'Verify Your Email - Stay Wise',
       html: `
         <!DOCTYPE html>
         <html>
@@ -170,7 +170,7 @@ const legacySignup = catchAsync(async (req, res, next) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Welcome to Miami Luxury Rentals! 🌴</h1>
+              <h1>Welcome to Stay Wise! 🌴</h1>
             </div>
             <div class="content">
               <h2>Hello ${user.firstName},</h2>
@@ -504,7 +504,7 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Email Verified - Welcome to Miami Luxury Rentals!',
+      subject: 'Email Verified - Welcome to Stay Wise!',
       html: `
         <!DOCTYPE html>
         <html>
@@ -523,7 +523,7 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
             </div>
             <div class="content">
               <h2>Welcome aboard, ${user.firstName}!</h2>
-              <p>Your email has been verified. You now have full access to Miami Luxury Rentals.</p>
+              <p>Your email has been verified. You now have full access to Stay Wise.</p>
               <p>Start browsing our exclusive collection of luxury properties in Miami!</p>
             </div>
           </div>
@@ -567,7 +567,7 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     
     await emailService.send({
       to: user.email,
-      subject: 'Password Reset Request - Miami Luxury Rentals',
+      subject: 'Password Reset Request - Stay Wise',
       html: `
         <!DOCTYPE html>
         <html>
@@ -641,7 +641,7 @@ export const resetPassword = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Password Reset Successful - Miami Luxury Rentals',
+      subject: 'Password Reset Successful - Stay Wise',
       html: `
         <!DOCTYPE html>
         <html>
@@ -792,7 +792,7 @@ export const updatePassword = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Password Changed - Miami Luxury Rentals',
+      subject: 'Password Changed - Stay Wise',
       html: `
         <!DOCTYPE html>
         <html>

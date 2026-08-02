@@ -12,6 +12,7 @@ import {
 import { createBookingInvoicePdf } from '../utils/bookingInvoicePdf.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
+import { COMPANY_INFO } from '../config/constants.js';
 
 const hasAdminBookingAccess = (user) => ['admin', 'super-admin'].includes(user?.role);
 const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
@@ -307,7 +308,8 @@ export const createBooking = catchAsync(async (req, res, next) => {
             <li><strong>Check-out:</strong> ${checkOutDate.toLocaleDateString()}</li>
             <li><strong>Total Amount:</strong> $${pricing.total}</li>
           </ul>
-          <p>Thank you for choosing Miami Luxury Rentals!</p>
+          <p>Thank you for choosing ${COMPANY_INFO.name}!</p>
+          <p>Need help? Contact us at ${COMPANY_INFO.phone} or ${COMPANY_INFO.email}.</p>
         </div>
       `,
     });

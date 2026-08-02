@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setIsAuthenticated(true);
       
-      toast.success('Account created successfully! Welcome to Miami Luxury Rentals.');
+      toast.success('Account created successfully! Welcome to Stay Wise.');
       navigate('/');
       
       return { success: true };

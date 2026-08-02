@@ -1,3 +1,5 @@
+import { COMPANY_INFO } from '../config/constants.js';
+
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
 const MARGIN = 48;
@@ -111,8 +113,9 @@ export const createBookingInvoicePdf = (booking) => {
   };
 
   drawRect(0, 728, PAGE_WIDTH, 64, '0.03 0.08 0.30');
-  drawText('STAY WISE', MARGIN, 764, { size: 20, bold: true, color: '1 1 1' });
+  drawText(COMPANY_INFO.name.toUpperCase(), MARGIN, 764, { size: 20, bold: true, color: '1 1 1' });
   drawText('Miami Vacation Rental Invoice', MARGIN, 744, { size: 10, color: '1 1 1' });
+  drawText(`${COMPANY_INFO.phone} | ${COMPANY_INFO.email}`, MARGIN, 730, { size: 8, color: '1 1 1' });
   drawText(`Invoice ${booking.bookingNumber}`, 380, 758, { size: 14, bold: true, color: '1 1 1' });
   drawText(`Issued ${formatDate(new Date())}`, 380, 742, { size: 9, color: '1 1 1' });
 
@@ -177,10 +180,11 @@ export const createBookingInvoicePdf = (booking) => {
     drawText(`+ ${(booking.pricing.dailyRates.length - 7)} more nightly rates on file`, MARGIN, 70, { size: 8 });
   }
 
-  drawText('Thank you for booking with Stay Wise. Please keep this invoice for your records.', MARGIN, 40, {
+  drawText(`Thank you for booking with ${COMPANY_INFO.name}. Please keep this invoice for your records.`, MARGIN, 40, {
     size: 8,
     color: '0.38 0.43 0.55',
   });
+  drawText(COMPANY_INFO.address, MARGIN, 24, { size: 7, color: '0.38 0.43 0.55' });
 
   return buildPdf(`${rows.join('\n')}\n`);
 };

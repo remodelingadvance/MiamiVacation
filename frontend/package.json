@@ -1,8 +1,8 @@
 {
-  "name": "miami-luxury-rentals-frontend",
+  "name": "stay-wise-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "Miami Luxury Vacation Rentals - Premium Booking Platform",
+  "description": "Stay Wise - Premium Miami Vacation Rental Booking Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",

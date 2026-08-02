@@ -4,6 +4,7 @@ import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
+import { COMPANY_INFO } from '../config/constants.js';
 
 const CONTACT_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const CONTACT_STATUSES = ['unread', 'read', 'replied', 'resolved', 'spam'];
@@ -89,7 +90,7 @@ export const submitContact = catchAsync(async (req, res, next) => {
 
   try {
     await emailService.send({
-      to: process.env.ADMIN_EMAIL || 'admin@miamivacationrentals.com',
+      to: process.env.ADMIN_EMAIL || COMPANY_INFO.email,
       subject: `New Contact Form Submission - ${contact.subject}`,
       html: `
         <!DOCTYPE html>
@@ -122,7 +123,7 @@ export const submitContact = catchAsync(async (req, res, next) => {
 
     await emailService.send({
       to: contact.email,
-      subject: 'Thank you for contacting Miami Luxury Rentals',
+      subject: `Thank you for contacting ${COMPANY_INFO.name}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -141,9 +142,9 @@ export const submitContact = catchAsync(async (req, res, next) => {
             </div>
             <div class="content">
               <p>Dear ${escapeHtml(contact.name)},</p>
-              <p>Thank you for reaching out to Miami Luxury Rentals. We have received your message and will get back to you within 24 hours.</p>
-              <p>For urgent inquiries, please call us at +1 (305) 123-4567.</p>
-              <p>Best regards,<br>The Miami Luxury Rentals Team</p>
+              <p>Thank you for reaching out to ${COMPANY_INFO.name}. We have received your message and will get back to you within 24 hours.</p>
+              <p>For urgent inquiries, please call us at ${COMPANY_INFO.phone}.</p>
+              <p>Best regards,<br>The ${COMPANY_INFO.name} Team</p>
             </div>
           </div>
         </body>
@@ -267,13 +268,13 @@ export const replyToContact = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: contact.email,
-      subject: `Re: ${contact.subject} - Miami Luxury Rentals`,
+      subject: `Re: ${contact.subject} - ${COMPANY_INFO.name}`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Response from Miami Luxury Rentals</h2>
+          <h2>Response from ${COMPANY_INFO.name}</h2>
           <p>Dear ${escapeHtml(contact.name)},</p>
           <p>${escapeHtml(replyMessage)}</p>
-          <p>Best regards,<br>${escapeHtml(req.user.firstName)} ${escapeHtml(req.user.lastName)}<br>Miami Luxury Rentals</p>
+          <p>Best regards,<br>${escapeHtml(req.user.firstName)} ${escapeHtml(req.user.lastName)}<br>${COMPANY_INFO.name}</p>
         </div>
       `,
     });

@@ -10,11 +10,11 @@ const users = [
   {
     firstName: 'Admin',
     lastName: 'User',
-    email: 'admin@miamirentals.com',
+    email: 'info@staywise.miami',
     password: 'Admin@123456',
     role: 'super-admin',
     isVerified: true,
-    phone: '+13051234567',
+    phone: '+13056153735',
   },
   {
     firstName: 'John',

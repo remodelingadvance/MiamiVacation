@@ -28,6 +28,7 @@ import {
 import { HiArrowRight } from "react-icons/hi";
 import { CiDiscount1 } from "react-icons/ci";
 import SEOHead from "../components/common/SEOHead";
+import { APP_CONFIG } from "../config/constants";
 import HeroImg from "../assets/faq-bg.png";
 import backgroundImage from "../assets/our-story-bg.png";
 
@@ -403,7 +404,7 @@ const FAQPage = () => {
                       <HiArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
                     </Link>
                     <a
-                      href="tel:+13051234567"
+                      href={`tel:${APP_CONFIG.phoneHref}`}
                       className="inline-flex items-center gap-2 rounded-xl border-2 border-[#0d3347] px-4 py-2 text-xs font-bold text-[#0d3347] transition-all duration-200 hover:bg-[#0d3347] hover:text-white sm:px-5 sm:py-2.5"
                     >
                       <TbPhone className="h-3.5 w-3.5" />
@@ -506,7 +507,7 @@ const FAQPage = () => {
                   <HiArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
                 <a
-                  href="tel:+13051234567"
+                  href={`tel:${APP_CONFIG.phoneHref}`}
                   className="inline-flex items-center gap-2 rounded-xl border-2 border-[#0d3347] px-4 py-2 text-xs font-bold text-[#0d3347] transition-all duration-200 hover:bg-[#0d3347] hover:text-white sm:px-5 sm:py-2.5"
                 >
                   <TbPhone className="h-3.5 w-3.5" />

@@ -30,7 +30,7 @@ const testimonials = [
     location: 'London, UK',
     avatar: '/testimonials/emma-james.jpg',
     rating: 5,
-    text: 'Our family vacation was magical thanks to Miami Luxury Rentals. The villa had everything we needed, and the private pool was a hit with the kids. Truly a home away from home.',
+    text: 'Our family vacation was magical thanks to Stay Wise. The villa had everything we needed, and the private pool was a hit with the kids. Truly a home away from home.',
     property: 'Miami Beach Villa',
     date: 'January 2024',
   },

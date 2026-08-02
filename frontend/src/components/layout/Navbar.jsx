@@ -447,7 +447,7 @@ function Navbar() {
               <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
                 <div className="space-y-3">
                   <a
-                    href={`tel:${APP_CONFIG.phone}`}
+                    href={`tel:${APP_CONFIG.phoneHref}`}
                     className="flex items-center gap-3 text-sm font-bold text-gray-600 hover:text-[var(--color-primary)]"
                   >
                     <HiPhone className="h-4 w-4" />

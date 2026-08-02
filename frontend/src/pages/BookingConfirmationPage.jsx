@@ -17,6 +17,7 @@ import SEOHead from '../components/common/SEOHead';
 import apiService from '../config/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
+import { APP_CONFIG } from '../config/constants';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
@@ -271,11 +272,11 @@ const BookingConfirmationPage = () => {
                   Miami concierge support
                 </h3>
                 <div className="mt-4 space-y-3 text-sm font-bold text-[var(--color-text-secondary)]">
-                  <a href="tel:+13051234567" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                  <a href={`tel:${APP_CONFIG.phoneHref}`} className="flex items-center gap-2 hover:text-[var(--color-primary)]">
                     <HiPhone className="h-4 w-4 text-[var(--color-primary)]" />
-                    +1 (305) 123-4567
+                    {APP_CONFIG.phone}
                   </a>
-                  <a href="mailto:support@miamiluxuryrentals.com" className="flex items-center gap-2 hover:text-[var(--color-primary)]">
+                  <a href={`mailto:${APP_CONFIG.email}`} className="flex items-center gap-2 hover:text-[var(--color-primary)]">
                     <HiMail className="h-4 w-4 text-[var(--color-primary)]" />
                     Email Support
                   </a>

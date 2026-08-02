@@ -201,7 +201,7 @@ const NatureExploreHero = () => {
                   className="mt-6 flex flex-wrap items-center gap-4 text-xs sm:mt-8 sm:gap-5 sm:text-sm"
                 >
                   <a
-                    href={`tel:${APP_CONFIG.phone}`}
+                    href={`tel:${APP_CONFIG.phoneHref}`}
                     className="flex items-center gap-1.5 font-semibold text-white/90 transition-colors duration-200 hover:text-[#e8527a] sm:gap-2 lg:text-[#0d3347]"
                   >
                     <FaWhatsapp className="h-3.5 w-3.5 text-[#e8527a] sm:h-4 sm:w-4" />

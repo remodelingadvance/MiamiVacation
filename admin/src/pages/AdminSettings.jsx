@@ -111,23 +111,23 @@ const AdminSettings = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="input-label">Site Name</label>
-                      <input type="text" defaultValue="Miami Luxury Rentals" className="input-field" />
+                      <input type="text" defaultValue="Stay Wise" className="input-field" />
                     </div>
                     <div>
                       <label className="input-label">Site URL</label>
-                      <input type="text" defaultValue="https://miamiluxuryrentals.com" className="input-field" />
+                      <input type="text" defaultValue="https://staywise.miami" className="input-field" />
                     </div>
                     <div>
                       <label className="input-label">Admin Email</label>
-                      <input type="email" defaultValue="admin@miamiluxuryrentals.com" className="input-field" />
+                      <input type="email" defaultValue="info@staywise.miami" className="input-field" />
                     </div>
                     <div>
                       <label className="input-label">Phone</label>
-                      <input type="text" defaultValue="+1 (305) 123-4567" className="input-field" />
+                      <input type="text" defaultValue="(305) 615-3735" className="input-field" />
                     </div>
                     <div className="col-span-2">
                       <label className="input-label">Address</label>
-                      <input type="text" defaultValue="1000 Ocean Drive, Miami Beach, FL 33139" className="input-field" />
+                      <input type="text" defaultValue="1717 N Bayshore Dr. Ste R217, Miami, FL" className="input-field" />
                     </div>
                     <div>
                       <label className="input-label">Currency</label>
@@ -167,11 +167,11 @@ const AdminSettings = () => {
                       </div>
                       <div>
                         <label className="input-label">Sender Email</label>
-                        <input type="email" defaultValue="noreply@miamiluxuryrentals.com" className="input-field" />
+                        <input type="email" defaultValue="info@staywise.miami" className="input-field" />
                       </div>
                       <div>
                         <label className="input-label">Sender Name</label>
-                        <input type="text" defaultValue="Miami Luxury Rentals" className="input-field" />
+                        <input type="text" defaultValue="Stay Wise" className="input-field" />
                       </div>
                       <div className="col-span-2">
                         <label className="input-label">API Key</label>

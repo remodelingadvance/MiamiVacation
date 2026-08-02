@@ -50,10 +50,10 @@ const AdminLogin = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] mb-4">
-              <span className="text-3xl font-bold text-[var(--color-bg-dark)]">M</span>
+              <span className="text-3xl font-bold text-[var(--color-bg-dark)]">S</span>
             </div>
             <h1 className="text-2xl font-display font-bold text-white">Admin Portal</h1>
-            <p className="text-[var(--color-text-muted)] text-sm mt-1">Miami Luxury Rentals</p>
+            <p className="text-[var(--color-text-muted)] text-sm mt-1">Stay Wise</p>
           </div>
 
           {/* Login form */}
@@ -73,7 +73,7 @@ const AdminLogin = () => {
                     value={credentials.email}
                     onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                     className="input-field pl-10"
-                    placeholder="admin@miamirentals.com"
+                    placeholder="info@staywise.miami"
                     required
                     autoFocus
                   />

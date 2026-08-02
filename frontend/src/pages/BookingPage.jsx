@@ -659,7 +659,7 @@ const BookingPage = () => {
                             value={contactInfo.phone}
                             onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
                             className="input-field pl-10"
-                            placeholder="+1 305 123 4567"
+                            placeholder="(305) 615-3735"
                             required
                           />
                         </Field>

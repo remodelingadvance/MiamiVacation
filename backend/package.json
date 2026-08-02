@@ -1,7 +1,7 @@
 {
-  "name": "miami-luxury-rentals-backend",
+  "name": "stay-wise-backend",
   "version": "1.0.0",
-  "description": "Backend API for Miami Luxury Vacation Rentals",
+  "description": "Backend API for Stay Wise Miami Vacation Rentals",
   "main": "server.js",
   "type": "module",
   "scripts": {

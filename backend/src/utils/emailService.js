@@ -1,9 +1,12 @@
 import createTransporter from '../config/brevo.js';
+import { COMPANY_INFO } from '../config/constants.js';
 
 class EmailService {
   constructor() {
     this.transporter = createTransporter();
-    this.from = `"${process.env.BREVO_SENDER_NAME}" <${process.env.BREVO_SENDER_EMAIL}>`;
+    const senderName = process.env.BREVO_SENDER_NAME || COMPANY_INFO.name;
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || COMPANY_INFO.email;
+    this.from = `"${senderName}" <${senderEmail}>`;
   }
 
   async send({ to, subject, html, attachments = [] }) {
@@ -44,7 +47,7 @@ class EmailService {
         <div class="container">
           <div class="header">
             <h1>Booking Confirmed! 🎉</h1>
-            <p>Thank you for choosing Miami Luxury Rentals</p>
+            <p>Thank you for choosing ${COMPANY_INFO.name}</p>
           </div>
           <div class="content">
             <h2>Hello ${user.firstName},</h2>
@@ -59,7 +62,7 @@ class EmailService {
               <p><strong>Total Amount:</strong> $${booking.totalAmount.toFixed(2)}</p>
             </div>
 
-            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p>If you have any questions, please contact us at ${COMPANY_INFO.phone} or ${COMPANY_INFO.email}.</p>
             
             <a href="${process.env.FRONTEND_URL}/bookings/${booking._id}" class="button">View Booking</a>
           </div>

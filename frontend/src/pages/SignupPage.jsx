@@ -198,7 +198,7 @@ const SignupPage = () => {
                     type="tel"
                     {...register('phone')}
                     className={inputClass}
-                    placeholder="+1 (305) 123-4567"
+                    placeholder="(305) 615-3735"
                   />
                 </div>
 
@@ -387,7 +387,7 @@ const SignupPage = () => {
             className="absolute inset-0 h-full w-full object-cover"
           >
             {/* Replace with your own hosted video at /public/videos/ */}
-            <source src="/videos/miami-luxury.mp4" type="video/mp4" />
+            <source src="/videos/stay-wise.mp4" type="video/mp4" />
             <source
               src="https://assets.mixkit.co/videos/preview/mixkit-tropical-beach-paradise-1561-large.mp4"
               type="video/mp4"

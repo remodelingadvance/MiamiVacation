@@ -52,7 +52,7 @@ export const THEME = {
     subtext:
       'Curated beachfront villas, skyline penthouses, and design-led homes with local concierge support from arrival to checkout.',
     searchCta: 'Find Your Stay',
-    heroImage: '/images/miami-luxury-hero.png',
+    heroImage: '/images/stay-wise-hero.png',
     defaultDateStart: '2026-06-12',
     defaultDateEnd: '2026-06-17',
   },

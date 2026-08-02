@@ -43,6 +43,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import apiService from '../config/api';
 import { formatTimeAgo } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
+import { APP_CONFIG } from '../config/constants';
 import backgroundImage from '../assets/why-choose-us-bg.png'
 
 // All 7 tabs
@@ -1001,18 +1002,18 @@ const PropertyDetailsPage = () => {
                 </h3>
                 <div className="mt-3 space-y-2 text-xs font-semibold text-gray-600 sm:mt-4 sm:space-y-3 sm:text-sm">
                   <a
-                    href="tel:+13051234567"
+                    href={`tel:${APP_CONFIG.phoneHref}`}
                     className="flex items-center gap-2 transition hover:text-[var(--color-primary)]"
                   >
                     <HiPhone className="h-3.5 w-3.5 text-[var(--color-primary)] sm:h-4 sm:w-4" />
-                    +1 (305) 123-4567
+                    {APP_CONFIG.phone}
                   </a>
                   <a
-                    href="mailto:support@staywise.com"
+                    href={`mailto:${APP_CONFIG.email}`}
                     className="flex items-center gap-2 transition hover:text-[var(--color-primary)]"
                   >
                     <HiMail className="h-3.5 w-3.5 text-[var(--color-primary)] sm:h-4 sm:w-4" />
-                    support@staywise.com
+                    {APP_CONFIG.email}
                   </a>
                 </div>
               </motion.div>

@@ -175,7 +175,7 @@ const ContactHero = () => {
                 className="flex flex-wrap gap-3"
               >
                 <motion.a
-                  href={`tel:${APP_CONFIG.phone}`}
+                  href={`tel:${APP_CONFIG.phoneHref}`}
                   whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.1)' }}
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.15 }}

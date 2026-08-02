@@ -203,7 +203,7 @@ const Footer = () => {
                 </a>
                 
                 <a
-                  href={`tel:${APP_CONFIG.phone}`}
+                  href={`tel:${APP_CONFIG.phoneHref}`}
                   className="group flex items-center gap-3 text-white/65 transition-all duration-300 hover:text-white"
                 >
                   <HiPhone className="h-4 w-4 flex-shrink-0 transition-colors group-hover:text-[var(--color-primary)]" />

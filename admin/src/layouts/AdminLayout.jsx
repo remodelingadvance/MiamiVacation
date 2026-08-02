@@ -397,10 +397,10 @@ useEffect(() => {
             {!sidebarCollapsed && (
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center">
-                  <span className="text-lg font-bold text-[var(--color-bg-dark)]">M</span>
+                  <span className="text-lg font-bold text-[var(--color-bg-dark)]">S</span>
                 </div>
                 <div>
-                  <h1 className="text-sm font-display font-bold text-white leading-tight">MLR</h1>
+                  <h1 className="text-sm font-display font-bold text-white leading-tight">SW</h1>
                   <p className="text-[9px] text-[var(--color-primary)] uppercase tracking-wider">Admin</p>
                 </div>
               </div>
@@ -410,7 +410,7 @@ useEffect(() => {
                 className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center cursor-pointer"
                 onClick={() => navigate('/admin/dashboard')}
               >
-                <span className="text-lg font-bold text-[var(--color-bg-dark)]">M</span>
+                <span className="text-lg font-bold text-[var(--color-bg-dark)]">S</span>
               </div>
             )}
             <button

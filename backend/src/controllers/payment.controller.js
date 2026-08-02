@@ -4,6 +4,7 @@ import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
+import { COMPANY_INFO } from '../config/constants.js';
 
 // @desc    Create payment intent
 // @route   POST /api/v1/payments/create-payment-intent
@@ -219,11 +220,12 @@ async function handlePaymentFailure(paymentIntent) {
       if (user) {
         await emailService.send({
           to: user.email,
-          subject: 'Payment Failed - Miami Luxury Rentals',
+          subject: `Payment Failed - ${COMPANY_INFO.name}`,
           html: `
             <h2>Payment Failed</h2>
             <p>Your payment for booking ${booking.bookingNumber} has failed.</p>
             <p>Please update your payment method and try again.</p>
+            <p>Need help? Contact ${COMPANY_INFO.phone} or ${COMPANY_INFO.email}.</p>
           `,
         });
       }
@@ -386,6 +388,9 @@ export const generateInvoice = catchAsync(async (req, res, next) => {
       <div class="invoice">
         <div class="header">
           <h1>INVOICE</h1>
+          <p><strong>${COMPANY_INFO.name}</strong></p>
+          <p>${COMPANY_INFO.address}</p>
+          <p>${COMPANY_INFO.phone} | ${COMPANY_INFO.email}</p>
           <p>Invoice Date: ${new Date(payment.createdAt).toLocaleDateString()}</p>
           <p>Payment ID: ${payment._id}</p>
         </div>

@@ -1,4 +1,12 @@
 // Application constants
+export const COMPANY_INFO = {
+  name: process.env.COMPANY_NAME || 'Stay Wise',
+  email: process.env.COMPANY_EMAIL || 'info@staywise.miami',
+  phone: process.env.COMPANY_PHONE || '(305) 615-3735',
+  phoneHref: process.env.COMPANY_PHONE_E164 || '+13056153735',
+  address: process.env.COMPANY_ADDRESS || '1717 N Bayshore Dr. Ste R217, Miami, FL',
+  url: process.env.COMPANY_URL || 'https://staywise.miami',
+};
 export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
@@ -84,6 +92,7 @@ export const AMENITY_CATEGORIES = {
 };
 
 export default {
+  COMPANY_INFO,
   ROLES,
   BOOKING_STATUS,
   PAYMENT_STATUS,

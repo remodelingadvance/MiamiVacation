@@ -104,7 +104,7 @@ const ReviewCard = ({ review }) => {
       {/* Response from host */}
       {review.response?.text && (
         <div className="mt-4 p-4 rounded-lg glass-light border-l-2 border-[var(--color-primary)]">
-          <p className="text-xs text-[var(--color-text-muted)] mb-1">Response from Miami Luxury Rentals</p>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Response from Stay Wise</p>
           <p className="text-sm text-[var(--color-text-secondary)]">{review.response.text}</p>
         </div>
       )}

@@ -75,7 +75,7 @@ const VerifyEmailPage = () => {
               <div className="miami-brand-mark miami-brand-mark-sm">
                 <span>M</span>
               </div>
-              <span className="text-xl font-display font-bold text-white">Miami Luxury Rentals</span>
+              <span className="text-xl font-display font-bold text-white">Stay Wise</span>
             </Link>
             <h1 className="mb-2 text-3xl font-display font-bold text-white">Verify Your Email</h1>
             <p className="text-white/75">Secure your account before booking your Miami stay</p>

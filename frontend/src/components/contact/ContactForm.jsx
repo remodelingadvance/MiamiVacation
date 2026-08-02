@@ -20,6 +20,7 @@ import {
   FaPencilAlt,
 } from 'react-icons/fa';
 import apiService from '../../config/api';
+import { APP_CONFIG } from '../../config/constants';
 import toast from 'react-hot-toast';
 import ContactBg from '../../assets/contactbg.png';
 
@@ -174,12 +175,12 @@ const ContactForm = () => {
 
           {/* contact info */}
           <div className="mt-10 space-y-5">
-            <ContactInfoItem icon={HiPhone} label="Phone" value="+1 (305) 123-4567" />
-            <ContactInfoItem icon={HiMail} label="Email" value="hello@miamistay.com" />
+            <ContactInfoItem icon={HiPhone} label="Phone" value={APP_CONFIG.phone} />
+            <ContactInfoItem icon={HiMail} label="Email" value={APP_CONFIG.email} />
             <ContactInfoItem
               icon={FaMapMarkerAlt}
               label="Address"
-              value="123 Ocean Drive, Miami Beach, FL 33139, United States"
+              value={APP_CONFIG.address}
             />
           </div>
 

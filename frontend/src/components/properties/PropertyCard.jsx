@@ -37,7 +37,7 @@ const PropertyCard = ({ property }) => {
         {/* ─── Image ─── */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
-            src={property.images?.[0]?.url || '/images/miami-luxury-hero.png'}
+            src={property.images?.[0]?.url || '/images/stay-wise-hero.png'}
             alt={property.name}
             className="h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-110"
             loading="lazy"

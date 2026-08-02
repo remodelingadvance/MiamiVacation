@@ -60,7 +60,7 @@ const FAQ = () => {
             Frequently Asked Questions
           </h2>
           <p className="section-subtitle mx-auto">
-            Everything you need to know about booking with Miami Luxury Rentals
+            Everything you need to know about booking with Stay Wise
           </p>
         </motion.div>
 
