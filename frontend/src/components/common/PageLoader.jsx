@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
+import StayWiseLogo from '../../assets/stay-wise-logo-light.png';
 
 const PageLoader = ({
   title = 'Stay Wise',
@@ -18,10 +19,20 @@ const PageLoader = ({
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
 
       <div className="relative flex flex-col items-center px-6 text-center">
+        <motion.img
+          src={StayWiseLogo}
+          alt="Stay Wise"
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.25 }}
+          decoding="async"
+          className="mb-5 h-16 w-auto max-w-[220px] object-contain drop-shadow-2xl sm:h-20"
+        />
+
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
-          className="mb-6 h-16 w-16 rounded-full border-2 border-white/15 border-t-[#e8527a]"
+          className="mb-6 h-14 w-14 rounded-full border-2 border-white/15 border-t-[#e8527a] sm:h-16 sm:w-16"
         />
         <motion.p
           initial={{ opacity: 0, y: 8 }}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+﻿import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -10,6 +10,7 @@ import {
 } from "react-icons/hi";
 import { format, isValid, parseISO } from "date-fns";
 import { THEME } from "../../config/theme.config";
+import MiamiVideo from "../../assets/miami.mp4";
 
 const HERO_IMAGE = '/images/stay-wise-hero.png';
 
@@ -44,6 +45,8 @@ const HeroSection = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGuestDrop, setShowGuestDrop] = useState(false);
   const [guests, setGuests] = useState(2);
+  const [heroVideoEnabled, setHeroVideoEnabled] = useState(false);
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
 
   const [dateRange, setDateRange] = useState([
     {
@@ -66,6 +69,29 @@ const HeroSection = () => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const savesData = navigator.connection?.saveData;
+
+    if (prefersReducedMotion || savesData) return undefined;
+
+    let timeoutId;
+    let idleId;
+
+    const enableVideo = () => setHeroVideoEnabled(true);
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(enableVideo, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(enableVideo, 650);
+    }
+
+    return () => {
+      if (idleId) window.cancelIdleCallback(idleId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
   }, []);
 
   const startDate = dateRange[0]?.startDate || today;
@@ -107,8 +133,28 @@ const HeroSection = () => {
         alt="Luxury Miami vacation rental overlooking the bay"
         fetchPriority="high"
         decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+          heroVideoReady ? "opacity-0" : "opacity-100"
+        }`}
       />
+
+      {heroVideoEnabled && (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={HERO_IMAGE}
+          onCanPlay={() => setHeroVideoReady(true)}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+            heroVideoReady ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden="true"
+        >
+          <source src={MiamiVideo} type="video/mp4" />
+        </video>
+      )}
 
       <div className="absolute inset-0 bg-black/25" />
       <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
