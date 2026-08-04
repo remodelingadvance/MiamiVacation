@@ -53,7 +53,7 @@ app.use(hpp());
 
 // CORS
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL, 'http://localhost:3000', 'http://localhost:3001'],
+  origin: [process.env.FRONTEND_URL, "https://www.staywise.miami", process.env.ADMIN_URL, 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
