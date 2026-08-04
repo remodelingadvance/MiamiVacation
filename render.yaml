@@ -1,0 +1,48 @@
+services:
+  - type: web
+    runtime: static
+    name: stay-wise-frontend
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: "public, max-age=31536000, immutable"
+      - path: /*
+        name: Cache-Control
+        value: "no-cache, no-store, must-revalidate"
+    envVars:
+      - key: VITE_API_URL
+        value: https://api.staywise.miami/api/v1
+      - key: VITE_SOCKET_URL
+        value: https://api.staywise.miami
+      - key: VITE_APP_URL
+        value: https://staywise.miami
+
+  - type: web
+    runtime: static
+    name: stay-wise-admin
+    rootDir: admin
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: "public, max-age=31536000, immutable"
+      - path: /*
+        name: Cache-Control
+        value: "no-cache, no-store, must-revalidate"
+    envVars:
+      - key: VITE_API_URL
+        value: https://api.staywise.miami/api/v1
+      - key: VITE_SOCKET_URL
+        value: https://api.staywise.miami

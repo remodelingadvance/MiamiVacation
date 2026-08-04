@@ -72,8 +72,19 @@ The customer and admin apps are single page React apps. The repo now includes:
 - `admin/public/.htaccess`
 - `frontend/nginx.conf`
 - `admin/nginx.conf`
+- `render.yaml`
 
 These prevent 404 errors when refreshing deep links like `/properties/...`, `/booking/confirmation/...`, and `/admin/bookings/...`.
+
+### Render Static Site Setup
+
+If the customer frontend or admin panel is hosted on Render as a Static Site, `.htaccess` is not used. Add this Render Redirect/Rewrite rule in each static service:
+
+- Source Path: `/*`
+- Destination Path: `/index.html`
+- Action: `Rewrite`
+
+The root `render.yaml` also includes this rule for Blueprint-managed frontend and admin deployments. If your existing Render service has a different service name, either rename the entry in `render.yaml` to match it or add the rule manually in the Render Dashboard. After changing the rule, redeploy the static site and purge any external CDN cache in front of Render.
 
 ## External Service Settings
 
