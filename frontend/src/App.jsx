@@ -1,7 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import PageLoader from './components/common/PageLoader';
+﻿import { lazy, Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import RouteTransitionLoader from './components/common/RouteTransitionLoader';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
@@ -29,14 +27,16 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
+const RouteFallback = () => (
+  <div className="min-h-[55vh] bg-white" aria-hidden="true" />
+);
+
 function App() {
-  const location = useLocation();
 
   return (
     <>
-      <AnimatePresence mode="wait">
-        <Suspense fallback={<PageLoader />}>
-          <Routes location={location} key={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
             {/* Main Layout Routes */}
             <Route element={<MainLayout />}>
               <Route path="/" element={<HomePage />} />
@@ -67,9 +67,8 @@ function App() {
 
               <Route path="*" element={<NotFoundPage />} />
             </Route>
-          </Routes>
-        </Suspense>
-      </AnimatePresence>
+        </Routes>
+      </Suspense>
       <RouteTransitionLoader />
     </>
   );

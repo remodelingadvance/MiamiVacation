@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -12,21 +12,21 @@ import FillButton from '../components/common/FillButton';
 const testimonials = [
   {
     quote:
-      'Booked a Miami penthouse on a whim for a long weekend — the whole process took five minutes and the place was even better than the photos.',
+      'Booked a Miami penthouse on a whim for a long weekend â€” the whole process took five minutes and the place was even better than the photos.',
     name: 'Anneliese Woodman',
-    role: 'Art Director · Sydney, Australia',
+    role: 'Art Director Â· Sydney, Australia',
   },
   {
     quote:
       'I travel for work constantly. Having one trusted place for every Miami stay has saved me hours and a lot of stress.',
     name: 'Marcus Lee',
-    role: 'Founder · San Francisco, USA',
+    role: 'Founder Â· San Francisco, USA',
   },
   {
     quote:
       'The concierge handled everything from early check-in to dinner reservations. It honestly felt like a five-star hotel.',
     name: 'Priya Nair',
-    role: 'Designer · London, UK',
+    role: 'Designer Â· London, UK',
   },
 ];
 
@@ -97,7 +97,7 @@ const SignupPage = () => {
       <SEOHead title="Create Account" />
 
       <section className="flex min-h-screen flex-col-reverse lg:h-screen lg:flex-row mt-20">
-        {/* ─────── LEFT: form ─────── */}
+        {/* â”€â”€â”€â”€â”€â”€â”€ LEFT: form â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="relative flex w-full flex-col bg-white lg:h-screen lg:w-[45%] lg:overflow-y-auto">
           {/* Logo */}
           <div className="px-6 pt-7 sm:px-10">
@@ -376,23 +376,15 @@ const SignupPage = () => {
           </p>
         </div>
 
-        {/* ─────── RIGHT: video panel ─────── */}
+        {/* â”€â”€â”€â”€â”€â”€â”€ RIGHT: image panel â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="relative h-56 w-full overflow-hidden sm:h-72 lg:h-screen lg:w-[55%]">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster="https://images.pexels.com/photos/3927911/pexels-photo-3927911.jpeg"
+          <img
+            src="https://images.pexels.com/photos/3927911/pexels-photo-3927911.jpeg?auto=compress&cs=tinysrgb&w=1400&q=80"
+            alt="Miami beachfront vacation home"
+            loading="eager"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
-          >
-            {/* Replace with your own hosted video at /public/videos/ */}
-            <source src="/videos/stay-wise.mp4" type="video/mp4" />
-            <source
-              src="https://assets.mixkit.co/videos/preview/mixkit-tropical-beach-paradise-1561-large.mp4"
-              type="video/mp4"
-            />
-          </video>
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/25" />
 
           {/* Back button */}

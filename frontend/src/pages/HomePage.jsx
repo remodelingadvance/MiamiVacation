@@ -1,19 +1,62 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { HiArrowRight, HiShieldCheck, HiStar, HiCalendar, HiLocationMarker } from 'react-icons/hi';
+﻿import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import SEOHead from '../components/common/SEOHead';
 import HeroSection from '../components/home/HeroSection';
-import FeaturedProperties from '../components/home/FeaturedProperties';
-import Amenities from '../components/home/Amenities';
-import Testimonials from '../components/home/Testimonials';
-import NewsletterSignup from '../components/home/NewsletterSignup';
-import StatsSection from '../components/home/StatsSection';
-import useApi from '../hooks/useApi';
 import apiService from '../config/api';
-// import PropertyLocationSection from '../components/home/PropertyLocationSection';
-import AboutStayWiseBanner from '../components/home/AboutStayWiseBanner';
-import NatureExploreHero from '../components/home/NatureExploreHero';
+
+const NatureExploreHero = lazy(() => import('../components/home/NatureExploreHero'));
+const StatsSection = lazy(() => import('../components/home/StatsSection'));
+const FeaturedProperties = lazy(() => import('../components/home/FeaturedProperties'));
+const AboutStayWiseBanner = lazy(() => import('../components/home/AboutStayWiseBanner'));
+const Amenities = lazy(() => import('../components/home/Amenities'));
+const Testimonials = lazy(() => import('../components/home/Testimonials'));
+
+const SectionFallback = ({ minHeight = 280 }) => (
+  <div
+    className="w-full bg-gradient-to-b from-white to-[#f5fbfc]"
+    style={{ minHeight }}
+    aria-hidden="true"
+  />
+);
+
+const LazySection = ({ children, minHeight }) => {
+  const ref = useRef(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (shouldRender) return undefined;
+
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShouldRender(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '420px 0px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return (
+    <div ref={ref}>
+      {shouldRender ? (
+        <Suspense fallback={<SectionFallback minHeight={minHeight} />}>
+          {children}
+        </Suspense>
+      ) : (
+        <SectionFallback minHeight={minHeight} />
+      )}
+    </div>
+  );
+};
 
 const HomePage = () => {
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -30,6 +73,7 @@ const HomePage = () => {
         setLoading(false);
       }
     };
+
     fetchFeatured();
   }, []);
 
@@ -41,26 +85,31 @@ const HomePage = () => {
         keywords="Miami vacation rentals, luxury condos Miami, Miami Beach rentals, vacation homes"
       />
 
-      {/* Hero Section */}
       <HeroSection />
-      <NatureExploreHero />
 
-      {/* <PropertyLocationSection /> */}
+      <LazySection minHeight={560}>
+        <NatureExploreHero />
+      </LazySection>
 
-      {/* Stats Section */}
-      <StatsSection />
+      <LazySection minHeight={360}>
+        <StatsSection />
+      </LazySection>
 
-      {/* Featured Properties */}
+      <LazySection minHeight={520}>
+        <FeaturedProperties properties={featuredProperties} loading={loading} />
+      </LazySection>
 
-      <FeaturedProperties properties={featuredProperties} loading={loading} />
+      <LazySection minHeight={520}>
+        <AboutStayWiseBanner />
+      </LazySection>
 
-      <AboutStayWiseBanner />
+      <LazySection minHeight={520}>
+        <Amenities />
+      </LazySection>
 
-      {/* Amenities Section */}
-      <Amenities />
-
-      {/* Testimonials */}
-      <Testimonials />
+      <LazySection minHeight={520}>
+        <Testimonials />
+      </LazySection>
     </>
   );
 };

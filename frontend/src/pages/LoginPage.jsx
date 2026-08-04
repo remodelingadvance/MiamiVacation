@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -10,9 +10,9 @@ import { useAuth } from '../contexts/AuthContext';
 import FillButton from '../components/common/FillButton';
 
 const slides = [
-  'https://images.pexels.com/photos/30021728/pexels-photo-30021728.jpeg',
-  'https://images.pexels.com/photos/33664887/pexels-photo-33664887.jpeg',
-  'https://images.pexels.com/photos/33837662/pexels-photo-33837662.jpeg',
+  'https://images.pexels.com/photos/30021728/pexels-photo-30021728.jpeg?auto=compress&cs=tinysrgb&w=1400&q=80',
+  'https://images.pexels.com/photos/33664887/pexels-photo-33664887.jpeg?auto=compress&cs=tinysrgb&w=1400&q=80',
+  'https://images.pexels.com/photos/33837662/pexels-photo-33837662.jpeg?auto=compress&cs=tinysrgb&w=1400&q=80',
 ];
 
 const LoginPage = () => {
@@ -64,7 +64,7 @@ const LoginPage = () => {
       <SEOHead title="Sign In" />
 
       <section className="flex min-h-screen flex-col lg:flex-row mt-20 border-b border-[var(--color-primary)]">
-        {/* ─────── LEFT: image carousel ─────── */}
+        {/* â”€â”€â”€â”€â”€â”€â”€ LEFT: image carousel â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="relative h-56 w-full overflow-hidden sm:h-72 lg:h-auto lg:w-1/2">
           <AnimatePresence>
             <motion.img
@@ -112,7 +112,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* ─────── RIGHT: form ─────── */}
+        {/* â”€â”€â”€â”€â”€â”€â”€ RIGHT: form â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="relative flex w-full items-center justify-center bg-white px-6 py-12 sm:px-10 lg:w-1/2 lg:px-16">
           {/* Top-right pill */}
           <Link

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { HiPhone, HiGlobe, HiArrowRight } from 'react-icons/hi';
 import {
@@ -17,18 +17,20 @@ const NatureExploreHero = () => {
       <div className="relative">
         <div className="relative min-h-[500px] overflow-hidden sm:min-h-[540px] lg:min-h-[600px] xl:min-h-[650px]">
 
-          {/* ══════ BACKGROUND IMAGE — right side ══════ */}
+          {/* â•â•â•â•â•â• BACKGROUND IMAGE â€” right side â•â•â•â•â•â• */}
           <div className="absolute inset-0">
             <img
-              src="https://images.pexels.com/photos/14420630/pexels-photo-14420630.png"
+              src="https://images.pexels.com/photos/14420630/pexels-photo-14420630.png?auto=compress&cs=tinysrgb&w=1600&q=80"
               alt="Luxury Miami beachfront property with pool"
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover object-center"
             />
             {/* Dark overlay for mobile only - NOT on lg screens */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10 lg:hidden" />
           </div>
 
-          {/* ══════ WHITE LEFT SHAPE — brush/diagonal clip ══════ */}
+          {/* â•â•â•â•â•â• WHITE LEFT SHAPE â€” brush/diagonal clip â•â•â•â•â•â• */}
           <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] hidden w-[60%] lg:block">
             {/* Main white area - expanded to cover text */}
             <div
@@ -96,11 +98,11 @@ const NatureExploreHero = () => {
             </motion.div>
           </div>
 
-          {/* ══════ CONTENT ══════ */}
+          {/* â•â•â•â•â•â• CONTENT â•â•â•â•â•â• */}
           <div className="relative z-[5] flex min-h-[500px] items-center px-5 py-16 sm:min-h-[540px] sm:px-8 lg:min-h-[600px] lg:px-16 xl:min-h-[650px] xl:px-20">
             <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-8">
 
-              {/* ═══ LEFT CONTENT ═══ */}
+              {/* â•â•â• LEFT CONTENT â•â•â• */}
               <div className="max-w-lg">
                 {/* Logo area */}
                 <motion.div
@@ -121,7 +123,7 @@ const NatureExploreHero = () => {
                   </Link>
                 </motion.div>
 
-                {/* Headline — script style */}
+                {/* Headline â€” script style */}
                 <div className="">
                   <motion.p
                     initial={{ y: 60 }}
@@ -220,7 +222,7 @@ const NatureExploreHero = () => {
                 </motion.div>
               </div>
 
-              {/* ═══ RIGHT — Discount badge (desktop) ═══ */}
+              {/* â•â•â• RIGHT â€” Discount badge (desktop) â•â•â• */}
               <div className="hidden items-center justify-center lg:flex">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.7, rotate: -10 }}
@@ -270,7 +272,7 @@ const NatureExploreHero = () => {
             </div>
           </div>
 
-          {/* ══════ SOCIAL ICONS — top right ══════ */}
+          {/* â•â•â•â•â•â• SOCIAL ICONS â€” top right â•â•â•â•â•â• */}
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -293,7 +295,7 @@ const NatureExploreHero = () => {
             ))}
           </motion.div>
 
-          {/* ══════ MOBILE DISCOUNT BADGE ══════ */}
+          {/* â•â•â•â•â•â• MOBILE DISCOUNT BADGE â•â•â•â•â•â• */}
           <motion.div
             initial={{ opacity: 0, scale: 0.7 }}
             whileInView={{ opacity: 1, scale: 1 }}

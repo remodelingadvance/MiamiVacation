@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -8,11 +8,20 @@ import {
   HiSearch,
   HiUsers,
 } from "react-icons/hi";
-import { DateRange } from "react-date-range";
 import { format, isValid, parseISO } from "date-fns";
 import { THEME } from "../../config/theme.config";
-import MiamiVideo from "../../assets/miami.mp4";
 
+const HERO_IMAGE = '/images/stay-wise-hero.png';
+
+const DateRange = lazy(() =>
+  import("react-date-range").then((module) => ({ default: module.DateRange }))
+);
+
+const CalendarFallback = () => (
+  <div className="flex h-[360px] w-full items-center justify-center bg-white text-sm font-bold text-gray-500 sm:w-[360px]">
+    Loading calendar...
+  </div>
+);
 const getSafeDate = (date, fallback) => {
   if (date instanceof Date && isValid(date)) return date;
 
@@ -93,13 +102,12 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-black">
-      <video
+      <img
+        src={HERO_IMAGE}
+        alt="Luxury Miami vacation rental overlooking the bay"
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 h-full w-full object-cover"
-        src={MiamiVideo}
-        autoPlay
-        muted
-        loop
-        playsInline
       />
 
       <div className="absolute inset-0 bg-black/25" />
@@ -193,14 +201,16 @@ const HeroSection = () => {
                       transition={{ duration: 0.2 }}
                       className="fixed left-1/2 top-28 z-[10000] w-[calc(100vw-24px)] max-w-[360px] -translate-x-1/2 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl sm:absolute sm:left-0 sm:top-full sm:mt-3 sm:w-auto sm:max-w-none sm:translate-x-0"
                     >
-                      <DateRange
-                        editableDateInputs
-                        minDate={today}
-                        moveRangeOnFirstSelection={false}
-                        onChange={handleDateChange}
-                        rangeColors={["#FF4F7B"]}
-                        ranges={dateRange}
-                      />
+                      <Suspense fallback={<CalendarFallback />}>
+                        <DateRange
+                          editableDateInputs
+                          minDate={today}
+                          moveRangeOnFirstSelection={false}
+                          onChange={handleDateChange}
+                          rangeColors={["#FF4F7B"]}
+                          ranges={dateRange}
+                        />
+                      </Suspense>
 
                       <div className="flex justify-end border-t border-gray-100 px-4 py-3">
                         <button

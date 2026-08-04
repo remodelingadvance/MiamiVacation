@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import PageLoader from './PageLoader';
 
-const LOADER_DURATION_MS = 3000;
+const LOADER_DURATION_MS = 500;
 
 const RouteTransitionLoader = () => {
   const [visible, setVisible] = useState(true);
@@ -31,9 +31,8 @@ const RouteTransitionLoader = () => {
     <AnimatePresence mode="wait">
       {visible && (
         <PageLoader
-          duration={LOADER_DURATION_MS}
-          title="Opening Miami"
-          subtitle="Your Stay Wise experience is almost ready."
+          title="Stay Wise"
+          subtitle="Loading your Miami escape."
         />
       )}
     </AnimatePresence>

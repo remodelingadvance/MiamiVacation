@@ -6,7 +6,6 @@ import {
   HiOutlineStar,
   HiOutlineKey,
 } from "react-icons/hi";
-import VideoBackground from "../../assets/stat-vid.mp4";
 
 const stats = [
   {
@@ -72,23 +71,12 @@ const Counter = ({ value, decimals = 0, duration = 2 }) => {
 
 const EASE = [0.22, 1, 0.36, 1];
 
-const StatsSection = ({ items = stats, videoSrc = VideoBackground }) => {
+const StatsSection = ({ items = stats }) => {
   return (
-    <section className="relative overflow-hidden">
-      {/* Background Video */}
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        autoPlay
-        muted
-        loop
-        playsInline
-      >
-        <source src={videoSrc} type="video/mp4" />
-      </video>
-
+    <section className="relative overflow-hidden bg-[#062B3A]">
       {/* Premium Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#062B3A]/85 via-black/55 to-[#051d28]/90" />
-      <div className="absolute inset-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(232,82,122,0.22),transparent_30%),radial-gradient(circle_at_84%_20%,rgba(45,212,191,0.16),transparent_28%),linear-gradient(135deg,#062B3A_0%,#051d28_48%,#020617_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/35 to-transparent" />
 
       <motion.div
         animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
