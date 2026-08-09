@@ -1,4 +1,4 @@
-services:
+﻿services:
   - type: web
     runtime: static
     name: stay-wise-frontend
@@ -22,7 +22,7 @@ services:
       - key: VITE_SOCKET_URL
         value: https://api.staywise.miami
       - key: VITE_APP_URL
-        value: https://staywise.miami
+        value: https://www.staywise.miami
 
   - type: web
     runtime: static

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiCheck, HiDownload, HiArrowRight } from 'react-icons/hi';
@@ -19,7 +19,7 @@ const PaymentSuccessPage = () => {
 
   return (
     <>
-      <SEOHead title="Payment Successful" />
+      <SEOHead title="Payment Successful" noIndex />
 
       <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div

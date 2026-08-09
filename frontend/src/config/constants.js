@@ -1,5 +1,5 @@
-const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Stay Wise';
-const COMPANY_URL = import.meta.env.VITE_APP_URL || 'https://staywise.miami';
+﻿const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Stay Wise';
+const COMPANY_URL = import.meta.env.VITE_APP_URL || 'https://www.staywise.miami';
 
 export const APP_CONFIG = {
   name: COMPANY_NAME,
@@ -29,36 +29,36 @@ export const PROPERTY_TYPES = [
 
 export const AMENITIES = [
   { category: 'basic', amenities: [
-    { value: 'wifi', label: 'WiFi', icon: '📶' },
-    { value: 'ac', label: 'Air Conditioning', icon: '❄️' },
-    { value: 'heating', label: 'Heating', icon: '🔥' },
-    { value: 'washer', label: 'Washer', icon: '🧺' },
-    { value: 'dryer', label: 'Dryer', icon: '👕' },
-    { value: 'parking', label: 'Free Parking', icon: '🚗' },
+    { value: 'wifi', label: 'WiFi', icon: 'ðŸ“¶' },
+    { value: 'ac', label: 'Air Conditioning', icon: 'â„ï¸' },
+    { value: 'heating', label: 'Heating', icon: 'ðŸ”¥' },
+    { value: 'washer', label: 'Washer', icon: 'ðŸ§º' },
+    { value: 'dryer', label: 'Dryer', icon: 'ðŸ‘•' },
+    { value: 'parking', label: 'Free Parking', icon: 'ðŸš—' },
   ]},
   { category: 'kitchen', amenities: [
-    { value: 'kitchen', label: 'Kitchen', icon: '🍳' },
-    { value: 'dishwasher', label: 'Dishwasher', icon: '🧼' },
-    { value: 'microwave', label: 'Microwave', icon: '📡' },
-    { value: 'coffee', label: 'Coffee Maker', icon: '☕' },
+    { value: 'kitchen', label: 'Kitchen', icon: 'ðŸ³' },
+    { value: 'dishwasher', label: 'Dishwasher', icon: 'ðŸ§¼' },
+    { value: 'microwave', label: 'Microwave', icon: 'ðŸ“¡' },
+    { value: 'coffee', label: 'Coffee Maker', icon: 'â˜•' },
   ]},
   { category: 'outdoor', amenities: [
-    { value: 'pool', label: 'Pool', icon: '🏊' },
-    { value: 'hot_tub', label: 'Hot Tub', icon: '🛁' },
-    { value: 'balcony', label: 'Balcony', icon: '🌅' },
-    { value: 'garden', label: 'Garden', icon: '🌿' },
-    { value: 'bbq', label: 'BBQ Grill', icon: '🍖' },
+    { value: 'pool', label: 'Pool', icon: 'ðŸŠ' },
+    { value: 'hot_tub', label: 'Hot Tub', icon: 'ðŸ›' },
+    { value: 'balcony', label: 'Balcony', icon: 'ðŸŒ…' },
+    { value: 'garden', label: 'Garden', icon: 'ðŸŒ¿' },
+    { value: 'bbq', label: 'BBQ Grill', icon: 'ðŸ–' },
   ]},
   { category: 'entertainment', amenities: [
-    { value: 'tv', label: 'TV', icon: '📺' },
-    { value: 'gym', label: 'Gym', icon: '💪' },
-    { value: 'theater', label: 'Home Theater', icon: '🎬' },
-    { value: 'games', label: 'Game Room', icon: '🎮' },
+    { value: 'tv', label: 'TV', icon: 'ðŸ“º' },
+    { value: 'gym', label: 'Gym', icon: 'ðŸ’ª' },
+    { value: 'theater', label: 'Home Theater', icon: 'ðŸŽ¬' },
+    { value: 'games', label: 'Game Room', icon: 'ðŸŽ®' },
   ]},
   { category: 'safety', amenities: [
-    { value: 'security', label: 'Security System', icon: '🔒' },
-    { value: 'smoke_alarm', label: 'Smoke Alarm', icon: '🚨' },
-    { value: 'first_aid', label: 'First Aid Kit', icon: '🏥' },
+    { value: 'security', label: 'Security System', icon: 'ðŸ”’' },
+    { value: 'smoke_alarm', label: 'Smoke Alarm', icon: 'ðŸš¨' },
+    { value: 'first_aid', label: 'First Aid Kit', icon: 'ðŸ¥' },
   ]},
 ];
 

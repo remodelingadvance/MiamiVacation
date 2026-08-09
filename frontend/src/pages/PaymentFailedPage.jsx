@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom';
+﻿import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiX, HiArrowRight, HiRefresh } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
@@ -8,7 +8,7 @@ const PaymentFailedPage = () => {
 
   return (
     <>
-      <SEOHead title="Payment Failed" />
+      <SEOHead title="Payment Failed" noIndex />
 
       <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div

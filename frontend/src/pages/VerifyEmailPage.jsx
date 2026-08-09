@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiArrowLeft, HiCheckCircle, HiMail, HiRefresh, HiShieldCheck } from 'react-icons/hi';
@@ -53,7 +53,7 @@ const VerifyEmailPage = () => {
 
   return (
     <>
-      <SEOHead title="Verify Email" />
+      <SEOHead title="Verify Email" noIndex />
 
       <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#052A38] px-4 pb-12 pt-24">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,79,123,0.25),transparent_34%),linear-gradient(315deg,rgba(0,169,200,0.26),transparent_38%),linear-gradient(180deg,#052A38,#073949_56%,#FFFDFB_56%)]" />

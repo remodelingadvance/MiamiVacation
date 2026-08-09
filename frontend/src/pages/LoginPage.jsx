@@ -61,7 +61,7 @@ const LoginPage = () => {
 
   return (
     <>
-      <SEOHead title="Sign In" />
+      <SEOHead title="Sign In" noIndex />
 
       <section className="flex min-h-screen flex-col lg:flex-row mt-20 border-b border-[var(--color-primary)]">
         {/* â”€â”€â”€â”€â”€â”€â”€ LEFT: image carousel â”€â”€â”€â”€â”€â”€â”€ */}

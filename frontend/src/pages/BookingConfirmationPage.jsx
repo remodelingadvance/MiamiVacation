@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -97,7 +97,7 @@ const BookingConfirmationPage = () => {
 
   return (
     <>
-      <SEOHead title="Booking Confirmed" />
+      <SEOHead title="Booking Confirmed" noIndex />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
         <img src={image} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />

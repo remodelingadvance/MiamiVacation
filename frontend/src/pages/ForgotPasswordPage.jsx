@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiMail, HiArrowLeft, HiCheck } from 'react-icons/hi';
@@ -32,7 +32,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <>
-      <SEOHead title="Forgot Password" />
+      <SEOHead title="Forgot Password" noIndex />
 
       <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div

@@ -94,7 +94,7 @@ const SignupPage = () => {
 
   return (
     <>
-      <SEOHead title="Create Account" />
+      <SEOHead title="Create Account" noIndex />
 
       <section className="flex min-h-screen flex-col-reverse lg:h-screen lg:flex-row mt-20">
         {/* â”€â”€â”€â”€â”€â”€â”€ LEFT: form â”€â”€â”€â”€â”€â”€â”€ */}

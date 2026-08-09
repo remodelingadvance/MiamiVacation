@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -88,7 +88,7 @@ const ProfilePage = () => {
 
   return (
     <>
-      <SEOHead title="My Profile" />
+      <SEOHead title="My Profile" noIndex />
 
       <section className="bg-[var(--color-bg-medium)] pb-16 pt-28">
         <div className="container-custom">

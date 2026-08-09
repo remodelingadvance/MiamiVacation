@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiHeart, HiTrash } from 'react-icons/hi';
@@ -27,7 +27,7 @@ const WishlistPage = () => {
 
   return (
     <>
-      <SEOHead title="My Wishlist" />
+      <SEOHead title="My Wishlist" noIndex />
 
       <section className="bg-[var(--color-bg-medium)] pb-16 pt-28">
         <div className="container-custom">

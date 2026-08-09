@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -250,7 +250,7 @@ const Footer = () => {
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
               <p className="text-center text-xs text-white/50 sm:text-left">
                 &copy; {new Date().getFullYear()} StayWise. All rights reserved. | 
-                Crafted with <span className="text-[var(--color-primary)]">♥</span> in Miami
+                Crafted with <span className="text-[var(--color-primary)]">â™¥</span> in Miami
               </p>
               
               <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/50">
@@ -262,9 +262,9 @@ const Footer = () => {
                   Terms of Service
                 </Link>
                 <span className="h-3 w-px bg-white/20" />
-                <Link to="/sitemap" className="transition-colors hover:text-white">
+                <a href="/sitemap.xml" className="transition-colors hover:text-white">
                   Sitemap
-                </Link>
+                </a>
               </div>
             </div>
           </motion.div>

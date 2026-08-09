@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateRange } from 'react-date-range';
@@ -424,7 +424,7 @@ const BookingPage = () => {
 
   return (
     <>
-      <SEOHead title={`Book ${property?.name || 'Miami Stay'}`} />
+      <SEOHead title={`Book ${property?.name || 'Miami Stay'}`} noIndex />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
         <img src={heroImage} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />

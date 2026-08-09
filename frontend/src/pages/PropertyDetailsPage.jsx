@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -586,13 +586,47 @@ const PropertyDetailsPage = () => {
     property.description?.full || property.description?.short || ''
   );
 
+  const propertyUrl = `/properties/${property.slug || slug}`;
+  const propertyImages = property.images?.map((image) => image?.url).filter(Boolean) || [];
+  const propertyDescription = property.description?.full || property.description?.short || '';
+  const propertyStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'LodgingBusiness',
+    name: property.name,
+    description: propertyDescription,
+    image: propertyImages.length ? propertyImages : [heroImage],
+    url: `${APP_CONFIG.url.replace(/\/+$/, '')}${propertyUrl}`,
+    telephone: APP_CONFIG.phoneHref,
+    priceRange: property.pricing?.basePrice ? `$${property.pricing.basePrice}+ per night` : undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: property.location?.address,
+      addressLocality: property.location?.city || 'Miami',
+      addressRegion: property.location?.state || 'FL',
+      addressCountry: property.location?.country || 'US',
+    },
+    aggregateRating: totalReviews > 0 && averageRating > 0 ? {
+      '@type': 'AggregateRating',
+      ratingValue: averageRating,
+      reviewCount: totalReviews,
+    } : undefined,
+    amenityFeature: property.amenities?.map((amenity) => ({
+      '@type': 'LocationFeatureSpecification',
+      name: amenity.name || amenity,
+      value: true,
+    })),
+  };
+
   return (
     <>
       <SEOHead
         title={property.name}
-        description={property.description?.short}
+        description={property.description?.short || propertyDescription}
         image={heroImage}
-        type="property"
+        url={propertyUrl}
+        type="website"
+        keywords={`${property.name}, Miami vacation rental, luxury Miami stay, ${property.location?.neighborhood || property.location?.city || 'Miami'} rental`}
+        structuredData={propertyStructuredData}
       />
 
       {/* Hero Section */}
@@ -1043,7 +1077,7 @@ const PropertyDetailsPage = () => {
                 to="/properties"
                 className="text-xs font-semibold text-[var(--color-primary)] transition hover:underline sm:text-sm"
               >
-                View all stays →
+                View all stays â†’
               </Link>
             </div>
 

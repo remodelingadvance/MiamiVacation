@@ -1,0 +1,15 @@
+﻿User-agent: *
+Allow: /
+
+Disallow: /booking/
+Disallow: /profile
+Disallow: /my-bookings
+Disallow: /wishlist
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /payment/
+
+Sitemap: https://www.staywise.miami/sitemap.xml

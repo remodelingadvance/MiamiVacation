@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiLockClosed, HiEye, HiEyeOff, HiCheck } from 'react-icons/hi';
@@ -44,7 +44,7 @@ const ResetPasswordPage = () => {
 
   return (
     <>
-      <SEOHead title="Reset Password" />
+      <SEOHead title="Reset Password" noIndex />
 
       <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div

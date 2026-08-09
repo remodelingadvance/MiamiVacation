@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiHome, HiSearch } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
@@ -6,7 +6,7 @@ import SEOHead from '../components/common/SEOHead';
 const NotFoundPage = () => {
   return (
     <>
-      <SEOHead title="404 - Page Not Found" />
+      <SEOHead title="404 - Page Not Found" noIndex />
 
       <section className="flex min-h-screen items-center justify-center bg-[#062B3A] px-4 pt-24 pb-12">
         <motion.div
