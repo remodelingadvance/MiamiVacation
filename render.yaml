@@ -6,7 +6,7 @@ services:
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
-      - type: redirect
+      - type: rewrite
         source: /sitemap.xml
         destination: https://miamivacation-backend.onrender.com/sitemap.xml
       - type: rewrite
