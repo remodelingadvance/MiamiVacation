@@ -249,8 +249,7 @@ const Footer = () => {
           >
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
               <p className="text-center text-xs text-white/50 sm:text-left">
-                &copy; {new Date().getFullYear()} StayWise. All rights reserved. | 
-                Crafted with <span className="text-[var(--color-primary)]">â™¥</span> in Miami
+                &copy; {new Date().getFullYear()} StayWise. All rights reserved.
               </p>
               
               <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/50">

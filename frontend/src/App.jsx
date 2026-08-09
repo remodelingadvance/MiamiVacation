@@ -1,6 +1,7 @@
 ﻿import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import RouteTransitionLoader from './components/common/RouteTransitionLoader';
+import ScrollToTop from './components/common/ScrollToTop';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 
@@ -35,6 +36,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
             {/* Main Layout Routes */}
