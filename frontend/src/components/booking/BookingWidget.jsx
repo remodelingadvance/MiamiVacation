@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/helpers';
+import { getPropertyImageAlt } from '../../utils/propertyImageAlt';
 
 const BookingWidget = ({ property }) => {
   const navigate = useNavigate();
@@ -18,7 +19,9 @@ const BookingWidget = ({ property }) => {
 
   const basePrice = property?.pricing?.basePrice || 0;
   const maxGuests = property?.details?.maxGuests || 8;
-  const image = property?.images?.find((img) => img.isPrimary)?.url || property?.images?.[0]?.url;
+  const primaryImage = property?.images?.find((img) => img.isPrimary) || property?.images?.[0] || {};
+  const image = primaryImage.url;
+  const imageAlt = getPropertyImageAlt(property, primaryImage, 0);
 
   const handleStartBooking = () => {
     if (!isAuthenticated) {
@@ -39,7 +42,7 @@ const BookingWidget = ({ property }) => {
     >
       {image && (
         <div className="relative h-40 overflow-hidden">
-          <img src={image} alt={property?.name} className="h-full w-full object-cover" />
+          <img src={image} alt={imageAlt} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,20,76,0.82)] to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
             <p className="text-xs font-black uppercase text-white/72">Miami luxury stay</p>

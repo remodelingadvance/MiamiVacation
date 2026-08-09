@@ -25,11 +25,11 @@ const PROPERTY_STATUS = ['active', 'inactive', 'maintenance', 'draft'];
 const AMENITY_CATEGORIES = ['basic', 'kitchen', 'bathroom', 'outdoor', 'entertainment', 'safety', 'accessibility', 'other'];
 const NEARBY_PLACE_TYPES = ['airport', 'bus_station', 'metro', 'beach', 'restaurant', 'shopping', 'park', 'hospital', 'school', 'other'];
 const MAINTENANCE_REASONS = [
-  { value: 'maintenance', label: '🔧 Maintenance', color: 'yellow' },
-  { value: 'renovation', label: '🏗️ Renovation', color: 'orange' },
-  { value: 'owner_use', label: '👤 Owner Use', color: 'blue' },
-  { value: 'seasonal_closing', label: '🌴 Seasonal Closing', color: 'green' },
-  { value: 'other', label: '📝 Other', color: 'gray' }
+  { value: 'maintenance', label: 'Maintenance', color: 'yellow' },
+  { value: 'renovation', label: 'Renovation', color: 'orange' },
+  { value: 'owner_use', label: 'Owner Use', color: 'blue' },
+  { value: 'seasonal_closing', label: 'Seasonal Closing', color: 'green' },
+  { value: 'other', label: 'Other', color: 'gray' }
 ];
 
 // Component for Policy Points
@@ -312,11 +312,11 @@ const AdminPropertyForm = () => {
 
   const getReasonLabel = (reason) => {
     const reasons = {
-      maintenance: '🔧 Maintenance',
-      renovation: '🏗️ Renovation',
-      owner_use: '👤 Owner Use',
-      seasonal_closing: '🌴 Seasonal Closing',
-      other: '📝 Other'
+      maintenance: 'Maintenance',
+      renovation: 'Renovation',
+      owner_use: 'Owner Use',
+      seasonal_closing: 'Seasonal Closing',
+      other: 'Other'
     };
     return reasons[reason] || reason;
   };
@@ -357,12 +357,18 @@ const AdminPropertyForm = () => {
       const filteredAdditionalRules = (data.houseRules.additionalRules || [])
         .filter(rule => rule && rule.trim() !== '');
 
+      const imageLocationLabel = [
+        data.location.neighborhood,
+        data.location.city || 'Miami',
+        data.location.state || 'Florida',
+      ].filter(Boolean).join(', ');
+
       const imagesData = images
         .filter(img => img.url && img.url.trim() !== '')
         .map((img, index) => ({
           url: img.url,
           publicId: img.publicId || '',
-          alt: img.alt || data.name,
+          alt: img.alt?.trim() || `${data.name}${imageLocationLabel ? ` in ${imageLocationLabel}` : ''} - property photo ${index + 1}`,
           isPrimary: img.isPrimary || index === 0,
           order: index,
         }));
@@ -1052,7 +1058,7 @@ const AdminPropertyForm = () => {
           {/* Images */}
           <div className="glass rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">Property Images</h3>
-            <ImageUploader images={images} onChange={setImages} maxImages={20} multiple={true} />
+            <ImageUploader images={images} onChange={setImages} maxImages={20} multiple={true} propertyName={watch('name')} />
           </div>
 
         </form>

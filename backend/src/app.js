@@ -25,6 +25,7 @@ import newsletterRoutes from './routes/newsletter.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import newsletterCampaignRoutes from './routes/newsletterCampaign.routes.js';
 import supportRoutes from './routes/support.routes.js';
+import { getSitemap } from './controllers/sitemap.controller.js';
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -138,6 +139,9 @@ app.use((req, res, next) => {
 
 // API routes
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
+
+app.get('/sitemap.xml', getSitemap);
+app.get(`${API_PREFIX}/sitemap.xml`, getSitemap);
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/users`, userRoutes);

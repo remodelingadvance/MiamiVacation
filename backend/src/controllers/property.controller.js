@@ -13,6 +13,30 @@ import {
   toDateKey,
 } from '../utils/rateCalendar.js';
 
+const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const buildPropertyImageAlt = (propertyData, index) => {
+  const name = cleanText(propertyData.name) || 'Stay Wise Miami vacation rental';
+  const location = propertyData.location || {};
+  const locationLabel = [
+    cleanText(location.neighborhood),
+    cleanText(location.city) || 'Miami',
+    cleanText(location.state),
+  ].filter(Boolean).join(', ');
+
+  return `${name}${locationLabel ? ` in ${locationLabel}` : ''} - vacation rental photo ${index + 1}`;
+};
+
+const normalizePropertyImageAltText = (propertyData) => {
+  if (!Array.isArray(propertyData.images)) return propertyData;
+
+  propertyData.images = propertyData.images.map((image, index) => ({
+    ...image,
+    alt: cleanText(image.alt) || buildPropertyImageAlt(propertyData, index),
+  }));
+
+  return propertyData;
+};
 // @desc    Get all properties
 // @route   GET /api/v1/properties
 // @access  Public
@@ -196,6 +220,7 @@ export const getPropertyBySlug = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 export const createProperty = catchAsync(async (req, res, next) => {
   req.body.createdBy = req.user.id;
+  normalizePropertyImageAltText(req.body);
 
   const property = await Property.create(req.body);
 
@@ -212,6 +237,7 @@ export const createProperty = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 export const updateProperty = catchAsync(async (req, res, next) => {
   req.body.updatedBy = req.user.id;
+  normalizePropertyImageAltText(req.body);
 
   const property = await Property.findByIdAndUpdate(
     req.params.id,

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +44,7 @@ import apiService from '../config/api';
 import { formatTimeAgo } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
 import { APP_CONFIG } from '../config/constants';
+import { getPropertyImageAlt } from '../utils/propertyImageAlt';
 import backgroundImage from '../assets/why-choose-us-bg.png'
 
 // All 7 tabs
@@ -96,7 +97,7 @@ const formatDescriptionParagraphs = (description) => {
 };
 
 // Full Images Grid Component
-const FullImagesGrid = ({ images = [], alt }) => {
+const FullImagesGrid = ({ images = [], alt, property }) => {
   const [modalIndex, setModalIndex] = useState(null);
   const galleryImages = images.filter((img) => img?.url);
 
@@ -116,7 +117,7 @@ const FullImagesGrid = ({ images = [], alt }) => {
             >
               <img
                 src={image.url}
-                alt={`${alt} ${index + 1}`}
+                alt={getPropertyImageAlt(property || { name: alt }, image, index)}
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
@@ -138,6 +139,7 @@ const FullImagesGrid = ({ images = [], alt }) => {
             setCurrentIndex={setModalIndex}
             onClose={() => setModalIndex(null)}
             alt={alt}
+            property={property}
           />
         )}
       </AnimatePresence>
@@ -145,7 +147,7 @@ const FullImagesGrid = ({ images = [], alt }) => {
   );
 };
 
-const GalleryModal = ({ images, currentIndex, setCurrentIndex, onClose, alt }) => {
+const GalleryModal = ({ images, currentIndex, setCurrentIndex, onClose, alt, property }) => {
   const nextImage = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
   };
@@ -209,7 +211,7 @@ const GalleryModal = ({ images, currentIndex, setCurrentIndex, onClose, alt }) =
       >
         <img
           src={images[currentIndex]?.url}
-          alt={`${alt} ${currentIndex + 1}`}
+          alt={getPropertyImageAlt(property || { name: alt }, images[currentIndex], currentIndex)}
           className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl sm:rounded-3xl"
         />
       </motion.div>
@@ -222,7 +224,7 @@ const GalleryModal = ({ images, currentIndex, setCurrentIndex, onClose, alt }) =
   );
 };
 
-const PropertyImageShowcase = ({ images = [], alt }) => {
+const PropertyImageShowcase = ({ images = [], alt, property }) => {
   const [modalIndex, setModalIndex] = useState(null);
 
   const galleryImages = images.filter((img) => img?.url);
@@ -250,7 +252,7 @@ const PropertyImageShowcase = ({ images = [], alt }) => {
             >
               <img
                 src={previewImages[0]?.url}
-                alt={alt}
+                alt={getPropertyImageAlt(property || { name: alt }, previewImages[0], 0)}
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
@@ -284,7 +286,7 @@ const PropertyImageShowcase = ({ images = [], alt }) => {
                 >
                   <img
                     src={image.url}
-                    alt={`${alt} ${realIndex + 1}`}
+                    alt={getPropertyImageAlt(property || { name: alt }, image, realIndex)}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/25" />
@@ -313,6 +315,7 @@ const PropertyImageShowcase = ({ images = [], alt }) => {
             setCurrentIndex={setModalIndex}
             onClose={() => setModalIndex(null)}
             alt={alt}
+            property={property}
           />
         )}
       </AnimatePresence>
@@ -580,7 +583,8 @@ const PropertyDetailsPage = () => {
 
   const totalReviews = reviews.length || property.ratings?.count || 0;
   const totalImages = property.images?.length || 0;
-  const heroImage = property.images?.[0]?.url || THEME.hero.heroImage;
+  const heroImageObject = property.images?.find((image) => image.isPrimary) || property.images?.[0] || {};
+  const heroImage = heroImageObject.url || THEME.hero.heroImage;
 
   const descriptionParagraphs = formatDescriptionParagraphs(
     property.description?.full || property.description?.short || ''
@@ -633,7 +637,7 @@ const PropertyDetailsPage = () => {
       <section className="relative isolate overflow-hidden bg-gray-900 pt-20 text-white sm:pt-24 lg:pt-28">
         <img
           src={heroImage}
-          alt={property.name}
+          alt={getPropertyImageAlt(property, heroImageObject, 0)}
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
@@ -718,7 +722,7 @@ const PropertyDetailsPage = () => {
       </section>
 
       <main className="bg-gray-50 pb-12 sm:pb-16 lg:pb-20">
-        <PropertyImageShowcase images={property.images} alt={property.name} />
+        <PropertyImageShowcase images={property.images} alt={property.name} property={property} />
 
         <div className="mx-auto max-w-[1400px] px-3 sm:px-4 lg:px-6">
           {/* Tab Slider */}
@@ -805,7 +809,7 @@ const PropertyDetailsPage = () => {
                   <h2 className="mb-3 text-xl font-black text-gray-900 sm:mb-4 sm:text-2xl">
                     All Images ({totalImages})
                   </h2>
-                  <FullImagesGrid images={property.images} alt={property.name} />
+                  <FullImagesGrid images={property.images} alt={property.name} property={property} />
                 </div>
               )}
 

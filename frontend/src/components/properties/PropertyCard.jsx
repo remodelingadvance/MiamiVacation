@@ -6,11 +6,15 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { formatCurrency } from '../../utils/helpers';
+import { getPropertyImageAlt } from '../../utils/propertyImageAlt';
 
 const PropertyCard = ({ property }) => {
   const { isAuthenticated } = useAuth();
   const { isFavorite, toggleFavorite } = useWishlist();
   const fav = isFavorite(property._id);
+  const primaryImage = property.images?.find((image) => image.isPrimary) || property.images?.[0] || {};
+  const imageUrl = primaryImage.url || '/images/stay-wise-hero.png';
+  const imageAlt = getPropertyImageAlt(property, primaryImage, 0);
 
   const handleFavoriteClick = (event) => {
     event.preventDefault();
@@ -34,11 +38,11 @@ const PropertyCard = ({ property }) => {
         to={`/properties/${property.slug}`}
         className="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(15,23,42,0.06),0_12px_32px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04] transition-all duration-500 hover:shadow-[0_12px_28px_rgba(15,23,42,0.10),0_28px_60px_rgba(15,23,42,0.18)]"
       >
-        {/* ─── Image ─── */}
+        {/* â”€â”€â”€ Image â”€â”€â”€ */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
-            src={property.images?.[0]?.url || '/images/stay-wise-hero.png'}
-            alt={property.name}
+            src={imageUrl}
+            alt={imageAlt}
             className="h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-110"
             loading="lazy"
           />
@@ -79,7 +83,7 @@ const PropertyCard = ({ property }) => {
           </div>
         </div>
 
-        {/* ─── Content ─── */}
+        {/* â”€â”€â”€ Content â”€â”€â”€ */}
         <div className="flex flex-1 flex-col p-5">
           <h3 className="line-clamp-1 text-lg font-bold text-slate-900 transition-colors group-hover:text-[var(--color-primary)]">
             {property.name}

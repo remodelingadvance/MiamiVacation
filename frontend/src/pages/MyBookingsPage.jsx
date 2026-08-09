@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,6 +22,7 @@ import SkeletonLoader from '../components/common/SkeletonLoader';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../config/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
+import { getPropertyImageAlt } from '../utils/propertyImageAlt';
 import toast from 'react-hot-toast';
 
 const MyBookingsPage = () => {
@@ -367,7 +368,7 @@ const handleSubmitReview = async () => {
                       >
                         <img
                           src={booking.property?.images?.[0]?.url || '/placeholder.jpg'}
-                          alt={booking.property?.name}
+                          alt={getPropertyImageAlt(booking.property, booking.property?.images?.[0], 0)}
                           className="w-full h-48 sm:h-full object-cover"
                         />
                       </Link>

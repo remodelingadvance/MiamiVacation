@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateRange } from 'react-date-range';
@@ -32,6 +32,7 @@ import { useAuth } from '../contexts/AuthContext';
 import apiService from '../config/api';
 import { formatCurrency } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
+import { getPropertyImageAlt } from '../utils/propertyImageAlt';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 
@@ -204,10 +205,9 @@ const BookingPage = () => {
   const total = subtotal + taxes;
   const discount = couponDiscount?.discount || 0;
   const finalTotal = Math.max(0, total - discount);
-  const heroImage =
-    property?.images?.find((image) => image.isPrimary)?.url ||
-    property?.images?.[0]?.url ||
-    THEME.hero.heroImage;
+  const heroImageObject = property?.images?.find((image) => image.isPrimary) || property?.images?.[0] || {};
+  const heroImage = heroImageObject.url || THEME.hero.heroImage;
+  const heroImageAlt = getPropertyImageAlt(property, heroImageObject, 0);
 
   const dateIsUnavailable = (date) =>
     unavailableDates.some((unavailable) => isSameDay(unavailable, date));
@@ -427,7 +427,7 @@ const BookingPage = () => {
       <SEOHead title={`Book ${property?.name || 'Miami Stay'}`} noIndex />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
-        <img src={heroImage} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={heroImage} alt={heroImageAlt} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,20,76,0.94),rgba(7,20,76,0.74)_52%,rgba(7,20,76,0.36))]" />
         <div className="absolute -right-24 top-20 h-80 w-80 rounded-full bg-[var(--color-primary)]/30 blur-3xl" />
 
@@ -826,6 +826,7 @@ const BookingPage = () => {
               <BookingSummary
                 property={property}
                 heroImage={heroImage}
+                heroImageAlt={heroImageAlt}
                 dateRange={dateRange}
                 guests={guests}
                 pricing={{
@@ -862,14 +863,14 @@ const Field = ({ label, icon: Icon, children }) => (
   </label>
 );
 
-const BookingSummary = ({ property, heroImage, dateRange, guests, pricing }) => (
+const BookingSummary = ({ property, heroImage, heroImageAlt, dateRange, guests, pricing }) => (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
     animate={{ opacity: 1, y: 0 }}
     className="overflow-hidden rounded-[26px] bg-white shadow-[0_24px_70px_rgba(8,19,76,0.12)] ring-1 ring-black/5"
   >
     <div className="relative h-44">
-      <img src={heroImage} alt={property?.name} className="h-full w-full object-cover" />
+      <img src={heroImage} alt={heroImageAlt} className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,20,76,0.82)] to-transparent" />
       <div className="absolute bottom-4 left-4 right-4">
         <p className="text-xs font-black uppercase text-white/70">Booking summary</p>

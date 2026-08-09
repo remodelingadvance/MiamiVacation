@@ -132,7 +132,7 @@ const AdminProperties = () => {
       render: (row) => (
         <div className="w-16 h-12 rounded-lg overflow-hidden bg-[var(--color-bg-light)]">
           {row.images?.[0]?.url ? (
-            <img src={row.images[0].url} alt="" className="w-full h-full object-cover" />
+            <img src={row.images[0].url} alt={row.images[0].alt || `${row.name} property thumbnail`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <HiPhotograph className="w-5 h-5 text-[var(--color-text-muted)]" />
@@ -174,7 +174,7 @@ const AdminProperties = () => {
       title: 'Rating',
       render: (row) => (
         <span className="flex items-center gap-1 text-sm">
-          ⭐ {row.ratings?.average?.toFixed(1) || 'N/A'}
+          â­ {row.ratings?.average?.toFixed(1) || 'N/A'}
           <span className="text-xs text-[var(--color-text-muted)]">({row.ratings?.count || 0})</span>
         </span>
       ),

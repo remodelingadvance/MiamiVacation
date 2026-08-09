@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -17,6 +17,7 @@ import SEOHead from '../components/common/SEOHead';
 import apiService from '../config/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { THEME } from '../config/theme.config';
+import { getPropertyImageAlt } from '../utils/propertyImageAlt';
 import { APP_CONFIG } from '../config/constants';
 
 const BookingConfirmationPage = () => {
@@ -71,7 +72,9 @@ const BookingConfirmationPage = () => {
   }
 
   const property = booking.property;
-  const image = property?.images?.[0]?.url || THEME.hero.heroImage;
+  const primaryImage = property?.images?.find((img) => img.isPrimary) || property?.images?.[0] || {};
+  const image = primaryImage.url || THEME.hero.heroImage;
+  const imageAlt = getPropertyImageAlt(property, primaryImage, 0);
   const guests = (booking.guests?.adults || 0) + (booking.guests?.children || 0);
 
   const handleDownloadInvoice = async () => {
@@ -100,7 +103,7 @@ const BookingConfirmationPage = () => {
       <SEOHead title="Booking Confirmed" noIndex />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
-        <img src={image} alt={property?.name} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={image} alt={imageAlt} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,20,76,0.94),rgba(7,20,76,0.72)_52%,rgba(7,20,76,0.34))]" />
         <div className="absolute -right-24 top-16 h-80 w-80 rounded-full bg-[var(--color-primary)]/30 blur-3xl" />
 
@@ -149,7 +152,7 @@ const BookingConfirmationPage = () => {
                 <div className="flex flex-col gap-5 sm:flex-row">
                   <img
                     src={image}
-                    alt={property?.name}
+                    alt={imageAlt}
                     className="h-48 w-full rounded-2xl object-cover sm:h-36 sm:w-56"
                   />
                   <div className="flex-1">

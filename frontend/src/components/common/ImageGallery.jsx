@@ -179,7 +179,7 @@ const ImageGallery = ({ images, alt = 'Property image' }) => {
                   }`}
                   aria-label={`Open photo ${index + 1}`}
                 >
-                  <img src={image.url} alt="" className="w-full h-full object-cover" />
+                  <img src={image.url} alt={image.alt || `${alt} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

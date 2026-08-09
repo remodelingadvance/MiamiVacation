@@ -231,7 +231,7 @@ const AdminAnalytics = () => {
             <h1 className="text-2xl font-display font-bold text-white">Analytics</h1>
             <p className="text-sm text-[var(--color-text-muted)]">
               Detailed insights and performance metrics
-              {data?.dateRange && ` · ${new Date(data.dateRange.start).toLocaleDateString()} - ${new Date(data.dateRange.end).toLocaleDateString()}`}
+              {data?.dateRange && ` Â· ${new Date(data.dateRange.start).toLocaleDateString()} - ${new Date(data.dateRange.end).toLocaleDateString()}`}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -639,7 +639,7 @@ const AdminAnalytics = () => {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             {property.property?.images?.[0]?.url && (
-                              <img src={property.property.images[0].url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                              <img src={property.property.images[0].url} alt={property.property.images[0].alt || `${property.property.name || 'Property'} thumbnail`} className="w-10 h-10 rounded-lg object-cover" />
                             )}
                             <p className="text-white font-medium">{property.property?.name || property.name}</p>
                           </div>

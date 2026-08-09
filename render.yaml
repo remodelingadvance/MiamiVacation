@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     runtime: static
     name: stay-wise-frontend
@@ -6,6 +6,9 @@
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
+      - type: redirect
+        source: /sitemap.xml
+        destination: https://api.staywise.miami/sitemap.xml
       - type: rewrite
         source: /*
         destination: /index.html
