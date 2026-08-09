@@ -8,7 +8,7 @@ services:
     routes:
       - type: redirect
         source: /sitemap.xml
-        destination: https://api.staywise.miami/sitemap.xml
+        destination: https://miamivacation-backend.onrender.com/sitemap.xml
       - type: rewrite
         source: /*
         destination: /index.html
@@ -21,9 +21,9 @@ services:
         value: "no-cache, no-store, must-revalidate"
     envVars:
       - key: VITE_API_URL
-        value: https://api.staywise.miami/api/v1
+        value: https://miamivacation-backend.onrender.com/api/v1
       - key: VITE_SOCKET_URL
-        value: https://api.staywise.miami
+        value: https://miamivacation-backend.onrender.com
       - key: VITE_APP_URL
         value: https://www.staywise.miami
 
@@ -46,6 +46,6 @@ services:
         value: "no-cache, no-store, must-revalidate"
     envVars:
       - key: VITE_API_URL
-        value: https://api.staywise.miami/api/v1
+        value: https://miamivacation-backend.onrender.com/api/v1
       - key: VITE_SOCKET_URL
-        value: https://api.staywise.miami
+        value: https://miamivacation-backend.onrender.com
