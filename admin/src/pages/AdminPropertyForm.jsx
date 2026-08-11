@@ -32,6 +32,45 @@ const MAINTENANCE_REASONS = [
   { value: 'other', label: 'Other', color: 'gray' }
 ];
 
+const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const parseInteger = (value, fallback = 0) => {
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const parseFloatValue = (value, fallback = 0) => {
+  const parsed = parseFloat(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const parseCoordinate = (value, fallback) => {
+  const parsed = parseFloat(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const parseOptionalInteger = (value) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+const omitUndefined = (object) => Object.fromEntries(
+  Object.entries(object).filter(([, value]) => value !== undefined)
+);
+
+const getApiValidationMessage = (error) => {
+  const validationErrors = error.response?.data?.errors;
+  if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+    return validationErrors
+      .map((item) => item.msg)
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  return error.response?.data?.message || error.response?.data?.error || 'Failed to save property';
+};
+
 // Component for Policy Points
 const PolicyPoints = ({ control, register, policyIndex }) => {
   const { fields: pointsFields, append: appendPoint, remove: removePoint } = useFieldArray({
@@ -328,8 +367,8 @@ const AdminPropertyForm = () => {
       let coordinates = [-80.1300, 25.7800];
       if (data.location.coordinates && Array.isArray(data.location.coordinates)) {
         coordinates = [
-          parseFloat(data.location.coordinates[0]) || -80.1300,
-          parseFloat(data.location.coordinates[1]) || 25.7800
+          parseCoordinate(data.location.coordinates[0], -80.1300),
+          parseCoordinate(data.location.coordinates[1], 25.7800)
         ];
       }
 
@@ -358,9 +397,9 @@ const AdminPropertyForm = () => {
         .filter(rule => rule && rule.trim() !== '');
 
       const imageLocationLabel = [
-        data.location.neighborhood,
-        data.location.city || 'Miami',
-        data.location.state || 'Florida',
+        cleanText(data.location.neighborhood),
+        cleanText(data.location.city) || 'Miami',
+        cleanText(data.location.state) || 'Florida',
       ].filter(Boolean).join(', ');
 
       const imagesData = images
@@ -368,50 +407,50 @@ const AdminPropertyForm = () => {
         .map((img, index) => ({
           url: img.url,
           publicId: img.publicId || '',
-          alt: img.alt?.trim() || `${data.name}${imageLocationLabel ? ` in ${imageLocationLabel}` : ''} - property photo ${index + 1}`,
+          alt: cleanText(img.alt) || `${cleanText(data.name)}${imageLocationLabel ? ` in ${imageLocationLabel}` : ''} - property photo ${index + 1}`,
           isPrimary: img.isPrimary || index === 0,
           order: index,
         }));
 
       const propertyData = {
-        name: data.name,
+        name: cleanText(data.name),
         description: {
-          short: data.description.short,
-          full: data.description.full,
+          short: cleanText(data.description.short),
+          full: cleanText(data.description.full),
         },
         type: data.type,
         status: data.status,
         featured: data.featured || false,
         location: {
-          address: data.location.address,
-          neighborhood: data.location.neighborhood || '',
-          city: data.location.city || 'Miami',
-          state: data.location.state || 'Florida',
-          zipCode: data.location.zipCode || '',
+          address: cleanText(data.location.address),
+          neighborhood: cleanText(data.location.neighborhood),
+          city: cleanText(data.location.city) || 'Miami',
+          state: cleanText(data.location.state) || 'Florida',
+          zipCode: cleanText(data.location.zipCode),
           coordinates: {
             type: 'Point',
             coordinates: coordinates,
           },
           nearbyPlaces: filteredNearbyPlaces,
         },
-        details: {
-          bedrooms: parseInt(data.details.bedrooms) || 0,
-          bathrooms: parseFloat(data.details.bathrooms) || 0,
-          maxGuests: parseInt(data.details.maxGuests) || 1,
-          size: data.details.size ? parseInt(data.details.size) : null,
-          floor: data.details.floor ? parseInt(data.details.floor) : null,
-          yearBuilt: data.details.yearBuilt ? parseInt(data.details.yearBuilt) : null,
-          parking: parseInt(data.details.parking) || 0,
-        },
+        details: omitUndefined({
+          bedrooms: parseInteger(data.details.bedrooms, 0),
+          bathrooms: parseFloatValue(data.details.bathrooms, 0),
+          maxGuests: parseInteger(data.details.maxGuests, 1),
+          size: parseOptionalInteger(data.details.size),
+          floor: parseOptionalInteger(data.details.floor),
+          yearBuilt: parseOptionalInteger(data.details.yearBuilt),
+          parking: parseInteger(data.details.parking, 0),
+        }),
         amenities: filteredAmenities,
         pricing: {
-          basePrice: parseFloat(data.pricing.basePrice) || 0,
-          cleaningFee: parseFloat(data.pricing.cleaningFee) || 0,
-          serviceFee: parseFloat(data.pricing.serviceFee) || 0,
-          taxRate: parseFloat(data.pricing.taxRate) || 13.5,
-          minimumStay: parseInt(data.pricing.minimumStay) || 2,
-          weeklyDiscount: parseFloat(data.pricing.weeklyDiscount) || 0,
-          monthlyDiscount: parseFloat(data.pricing.monthlyDiscount) || 0,
+          basePrice: parseFloatValue(data.pricing.basePrice, 0),
+          cleaningFee: parseFloatValue(data.pricing.cleaningFee, 0),
+          serviceFee: parseFloatValue(data.pricing.serviceFee, 0),
+          taxRate: parseFloatValue(data.pricing.taxRate, 13.5),
+          minimumStay: parseInteger(data.pricing.minimumStay, 2),
+          weeklyDiscount: parseFloatValue(data.pricing.weeklyDiscount, 0),
+          monthlyDiscount: parseFloatValue(data.pricing.monthlyDiscount, 0),
         },
         houseRules: {
           checkIn: data.houseRules.checkIn || '15:00',
@@ -441,7 +480,7 @@ const AdminPropertyForm = () => {
       navigate('/admin/properties');
     } catch (error) {
       console.error('Error saving property:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save property';
+      const errorMessage = getApiValidationMessage(error);
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -522,7 +561,13 @@ const AdminPropertyForm = () => {
                 <label className="input-label">Property Name *</label>
                 <input
                   type="text"
-                  {...register('name', { required: 'Property name is required' })}
+                  {...register('name', {
+                    required: 'Property name is required',
+                    minLength: {
+                      value: 5,
+                      message: 'Property name must be at least 5 characters',
+                    },
+                  })}
                   className="input-field"
                   placeholder="e.g., Luxury Oceanfront Penthouse"
                 />
@@ -537,16 +582,18 @@ const AdminPropertyForm = () => {
                   rows={2}
                   placeholder="Brief summary of the property"
                 />
+                {errors.description?.short && <p className="text-red-500 text-xs mt-1">{errors.description.short.message}</p>}
               </div>
 
               <div className="md:col-span-2">
                 <label className="input-label">Full Description *</label>
                 <textarea
-                  {...register('description.full')}
+                  {...register('description.full', { required: 'Full description is required' })}
                   className="input-field resize-none"
                   rows={6}
                   placeholder="Detailed description of the property..."
                 />
+                {errors.description?.full && <p className="text-red-500 text-xs mt-1">{errors.description.full.message}</p>}
               </div>
 
               <div>
@@ -590,6 +637,7 @@ const AdminPropertyForm = () => {
                   className="input-field"
                   placeholder="123 Ocean Drive"
                 />
+                {errors.location?.address && <p className="text-red-500 text-xs mt-1">{errors.location.address.message}</p>}
               </div>
               <div>
                 <label className="input-label">Neighborhood</label>
@@ -786,6 +834,7 @@ const AdminPropertyForm = () => {
                   className="input-field"
                   placeholder="0.00"
                 />
+                {errors.pricing?.basePrice && <p className="text-red-500 text-xs mt-1">{errors.pricing.basePrice.message}</p>}
               </div>
               <div>
                 <label className="input-label">Cleaning Fee ($)</label>

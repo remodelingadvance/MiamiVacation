@@ -74,12 +74,12 @@ export const createPropertyValidator = [
         .withMessage('Maximum guests must be at least 1'),
 
     body('details.size')
-        .optional()
+        .optional({ values: 'null' })
         .isInt({ min: 0 })
         .withMessage('Size must be a positive number'),
 
     body('details.yearBuilt')
-        .optional()
+        .optional({ values: 'null' })
         .isInt({ min: 1800, max: new Date().getFullYear() })
         .withMessage('Invalid year'),
 

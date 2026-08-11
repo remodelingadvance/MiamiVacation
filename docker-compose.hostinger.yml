@@ -1,0 +1,80 @@
+name: staywise
+
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      API_PREFIX: /api/v1
+      FRONTEND_URL: https://www.staywise.miami
+      ADMIN_URL: https://admin.staywise.miami
+      COMPANY_URL: https://www.staywise.miami
+    ports:
+      - "127.0.0.1:5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://api.staywise.miami/api/v1}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-https://api.staywise.miami}
+        VITE_APP_URL: ${VITE_APP_URL:-https://www.staywise.miami}
+        SITEMAP_BACKEND_URL: ${SITEMAP_BACKEND_URL:-https://api.staywise.miami}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+        VITE_IMAGE_URL: ${VITE_IMAGE_URL:-}
+        VITE_COMPANY_NAME: ${VITE_COMPANY_NAME:-Stay Wise}
+        VITE_COMPANY_EMAIL: ${VITE_COMPANY_EMAIL:-info@staywise.miami}
+        VITE_COMPANY_PHONE: ${VITE_COMPANY_PHONE:-(305) 615-3735}
+        VITE_COMPANY_PHONE_HREF: ${VITE_COMPANY_PHONE_HREF:-+13056153735}
+        VITE_COMPANY_ADDRESS: ${VITE_COMPANY_ADDRESS:-1717 N Bayshore Dr. Ste R217, Miami, FL}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
+        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET:-}
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  admin:
+    build:
+      context: ./admin
+      args:
+        VITE_API_URL: ${ADMIN_VITE_API_URL:-https://api.staywise.miami/api/v1}
+        VITE_SOCKET_URL: ${ADMIN_VITE_SOCKET_URL:-https://api.staywise.miami}
+    ports:
+      - "127.0.0.1:3001:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
