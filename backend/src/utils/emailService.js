@@ -30,6 +30,10 @@ class EmailService {
 
   async sendBookingConfirmation(booking, user) {
     const subject = `Booking Confirmation - ${booking.bookingNumber}`;
+    const totalAmount = Number(booking.pricing?.total || booking.payment?.amountPaid || booking.totalAmount || 0);
+    const guestCount = booking.guests?.adults
+      ? `${booking.guests.adults || 0} adults, ${booking.guests.children || 0} children, ${booking.guests.infants || 0} infants`
+      : booking.guests;
     const html = `
       <!DOCTYPE html>
       <html>
@@ -58,8 +62,8 @@ class EmailService {
               <p><strong>Property:</strong> ${booking.property.name}</p>
               <p><strong>Check-in:</strong> ${new Date(booking.checkIn).toLocaleDateString()}</p>
               <p><strong>Check-out:</strong> ${new Date(booking.checkOut).toLocaleDateString()}</p>
-              <p><strong>Guests:</strong> ${booking.guests}</p>
-              <p><strong>Total Amount:</strong> $${booking.totalAmount.toFixed(2)}</p>
+              <p><strong>Guests:</strong> ${guestCount}</p>
+              <p><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</p>
             </div>
 
             <p>If you have any questions, please contact us at ${COMPANY_INFO.phone} or ${COMPANY_INFO.email}.</p>
@@ -76,6 +80,9 @@ class EmailService {
 
   async sendPaymentConfirmation(booking, user) {
     const subject = `Payment Confirmed - ${booking.bookingNumber}`;
+    const amountPaid = Number(
+      booking.pricing?.total || booking.payment?.amountPaid || booking.totalAmount || 0
+    );
     const html = `
       <!DOCTYPE html>
       <html>
@@ -94,7 +101,7 @@ class EmailService {
           </div>
           <div class="content">
             <h2>Hello ${user.firstName},</h2>
-            <p>Your payment of $${booking.totalAmount.toFixed(2)} has been processed successfully.</p>
+            <p>Your payment of $${amountPaid.toFixed(2)} has been processed successfully.</p>
             <p>Booking Number: ${booking.bookingNumber}</p>
           </div>
         </div>

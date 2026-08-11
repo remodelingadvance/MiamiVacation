@@ -6,11 +6,34 @@ import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
 import { COMPANY_INFO } from '../config/constants.js';
 
+const hasAdminPaymentAccess = (user) => ['admin', 'super-admin'].includes(user?.role);
+
+const ownsBooking = (booking, user) =>
+  booking?.user?.toString?.() === user?.id || booking?.user?._id?.toString?.() === user?.id;
+
+const getReceiptUrl = (paymentIntent) =>
+  paymentIntent.latest_charge?.receipt_url || paymentIntent.charges?.data?.[0]?.receipt_url;
+
+const serializePaymentResponse = (paymentIntent) => ({
+  status: paymentIntent.status,
+  requiresAction: ['requires_action', 'requires_source_action'].includes(paymentIntent.status),
+  clientSecret: paymentIntent.client_secret,
+  paymentIntentId: paymentIntent.id,
+});
+
 // @desc    Create payment intent
 // @route   POST /api/v1/payments/create-payment-intent
 // @access  Private
 export const createPaymentIntent = catchAsync(async (req, res, next) => {
   const { bookingId, paymentMethodId } = req.body;
+
+  if (!bookingId || !paymentMethodId) {
+    return next(new AppError('Booking ID and Stripe payment method are required', 400));
+  }
+
+  if (!/^pm_[A-Za-z0-9]+/.test(paymentMethodId)) {
+    return next(new AppError('Invalid Stripe payment method', 400));
+  }
 
   const booking = await Booking.findById(bookingId).populate('property');
 
@@ -18,12 +41,16 @@ export const createPaymentIntent = catchAsync(async (req, res, next) => {
     return next(new AppError('Booking not found', 404));
   }
 
-  if (booking.user.toString() !== req.user.id) {
+  if (!ownsBooking(booking, req.user)) {
     return next(new AppError('You can only pay for your own bookings', 403));
   }
 
   if (booking.payment.status === 'paid') {
     return next(new AppError('Booking is already paid', 400));
+  }
+
+  if (!booking.pricing?.total || booking.pricing.total <= 0) {
+    return next(new AppError('Booking total is invalid', 400));
   }
 
   try {
@@ -43,12 +70,13 @@ export const createPaymentIntent = catchAsync(async (req, res, next) => {
       await req.user.save();
     }
 
-    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(booking.pricing.total * 100), // Convert to cents
       currency: 'usd',
       customer: stripeCustomerId,
       payment_method: paymentMethodId,
+      payment_method_types: ['card'],
+      confirm: true,
       description: `Booking ${booking.bookingNumber} - ${booking.property.name}`,
       metadata: {
         bookingId: booking._id.toString(),
@@ -56,38 +84,81 @@ export const createPaymentIntent = catchAsync(async (req, res, next) => {
         bookingNumber: booking.bookingNumber,
       },
       receipt_email: req.user.email,
-      setup_future_usage: 'off_session',
     });
 
-    // Confirm payment intent
-    const confirmedIntent = await stripe.paymentIntents.confirm(paymentIntent.id);
+    const isSucceeded = paymentIntent.status === 'succeeded';
+    const payment = await Payment.findOneAndUpdate(
+      { booking: booking._id },
+      {
+        booking: booking._id,
+        user: req.user.id,
+        amount: booking.pricing.total,
+        currency: 'usd',
+        status: isSucceeded ? 'succeeded' : 'processing',
+        method: 'card',
+        stripePaymentIntentId: paymentIntent.id,
+        stripeCustomerId,
+        receiptUrl: getReceiptUrl(paymentIntent),
+        description: `Payment for booking ${booking.bookingNumber}`,
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
-    // Save payment record
-    const payment = await Payment.create({
-      booking: booking._id,
-      user: req.user.id,
-      amount: booking.pricing.total,
-      currency: 'usd',
-      status: 'processing',
-      method: 'card',
-      stripePaymentIntentId: confirmedIntent.id,
-      stripeCustomerId: stripeCustomerId,
-      description: `Payment for booking ${booking.bookingNumber}`,
-    });
+    booking.payment.stripePaymentIntentId = paymentIntent.id;
+    booking.payment.status = isSucceeded ? 'paid' : 'processing';
 
-    // Update booking payment info
-    booking.payment.stripePaymentIntentId = confirmedIntent.id;
-    booking.payment.status = 'processing';
+    if (isSucceeded) {
+      booking.payment.amountPaid = paymentIntent.amount / 100;
+      booking.payment.paidAt = new Date();
+      booking.status = 'confirmed';
+    }
+
     await booking.save();
+
+    if (isSucceeded) {
+      try {
+        await emailService.sendPaymentConfirmation(booking, req.user);
+      } catch (error) {
+        logger.error('Payment confirmation email failed:', error);
+      }
+    }
 
     res.status(200).json({
       success: true,
-      clientSecret: confirmedIntent.client_secret,
-      paymentIntentId: confirmedIntent.id,
+      ...serializePaymentResponse(paymentIntent),
       payment,
+      booking,
     });
   } catch (error) {
     logger.error('Payment intent creation failed:', error);
+
+    if (['StripeCardError', 'StripeInvalidRequestError'].includes(error.name)) {
+      booking.payment.status = 'failed';
+      booking.status = 'cancelled';
+      await booking.save();
+
+      await Payment.findOneAndUpdate(
+        { booking: booking._id },
+        {
+          booking: booking._id,
+          user: req.user.id,
+          amount: booking.pricing.total,
+          currency: 'usd',
+          status: 'failed',
+          method: 'card',
+          error: {
+            code: error.code,
+            message: error.message,
+            type: error.type,
+          },
+          description: `Failed payment for booking ${booking.bookingNumber}`,
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return next(new AppError(error.message || 'Payment failed. Please try another card.', 402));
+    }
+
     return next(new AppError('Payment processing failed. Please try again.', 500));
   }
 });
@@ -98,19 +169,41 @@ export const createPaymentIntent = catchAsync(async (req, res, next) => {
 export const confirmPayment = catchAsync(async (req, res, next) => {
   const { paymentIntentId, bookingId } = req.body;
 
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-  if (paymentIntent.status !== 'succeeded') {
-    return next(new AppError('Payment not successful', 400));
+  if (!paymentIntentId || !bookingId) {
+    return next(new AppError('Payment intent ID and booking ID are required', 400));
   }
 
-  // Update booking
   const booking = await Booking.findById(bookingId);
   if (!booking) {
     return next(new AppError('Booking not found', 404));
   }
 
+  if (!ownsBooking(booking, req.user) && !hasAdminPaymentAccess(req.user)) {
+    return next(new AppError('You can only confirm your own payments', 403));
+  }
+
+  if (
+    booking.payment?.stripePaymentIntentId &&
+    booking.payment.stripePaymentIntentId !== paymentIntentId
+  ) {
+    return next(new AppError('Payment intent does not match this booking', 400));
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ['latest_charge'],
+  });
+
+  if (paymentIntent.metadata?.bookingId && paymentIntent.metadata.bookingId !== booking._id.toString()) {
+    return next(new AppError('Payment intent does not belong to this booking', 400));
+  }
+
+  if (paymentIntent.status !== 'succeeded') {
+    return next(new AppError('Payment not successful', 400));
+  }
+
+  const wasAlreadyPaid = booking.payment.status === 'paid';
   booking.payment.status = 'paid';
+  booking.payment.stripePaymentIntentId = paymentIntent.id;
   booking.payment.amountPaid = paymentIntent.amount / 100;
   booking.payment.paidAt = new Date();
   booking.status = 'confirmed';
@@ -120,15 +213,17 @@ export const confirmPayment = catchAsync(async (req, res, next) => {
   const payment = await Payment.findOne({ stripePaymentIntentId: paymentIntentId });
   if (payment) {
     payment.status = 'succeeded';
-    payment.receiptUrl = paymentIntent.charges.data[0]?.receipt_url;
+    payment.receiptUrl = getReceiptUrl(paymentIntent);
     await payment.save();
   }
 
   // Send payment confirmation email
-  try {
-    await emailService.sendPaymentConfirmation(booking, req.user);
-  } catch (error) {
-    logger.error('Payment confirmation email failed:', error);
+  if (!wasAlreadyPaid) {
+    try {
+      await emailService.sendPaymentConfirmation(booking, req.user);
+    } catch (error) {
+      logger.error('Payment confirmation email failed:', error);
+    }
   }
 
   logger.info(`Payment confirmed for booking ${booking.bookingNumber}`);
@@ -175,6 +270,11 @@ export const handleWebhook = catchAsync(async (req, res, next) => {
       await handleRefund(refund);
       break;
 
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      await handleCheckoutSessionCompleted(session);
+      break;
+
     default:
       logger.info(`Unhandled event type ${event.type}`);
   }
@@ -190,11 +290,28 @@ async function handlePaymentSuccess(paymentIntent) {
     });
 
     if (booking) {
+      const wasAlreadyPaid = booking.payment.status === 'paid';
       booking.payment.status = 'paid';
       booking.payment.amountPaid = paymentIntent.amount / 100;
       booking.payment.paidAt = new Date();
       booking.status = 'confirmed';
       await booking.save();
+
+      await Payment.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntent.id },
+        {
+          status: 'succeeded',
+          receiptUrl: getReceiptUrl(paymentIntent),
+        },
+        { new: true }
+      );
+
+      if (!wasAlreadyPaid) {
+        const user = await User.findById(booking.user);
+        if (user) {
+          await emailService.sendPaymentConfirmation(booking, user);
+        }
+      }
 
       logger.info(`Webhook: Payment succeeded for booking ${booking.bookingNumber}`);
     }
@@ -212,8 +329,21 @@ async function handlePaymentFailure(paymentIntent) {
 
     if (booking) {
       booking.payment.status = 'failed';
-      booking.status = 'pending';
+      booking.status = 'cancelled';
       await booking.save();
+
+      await Payment.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntent.id },
+        {
+          status: 'failed',
+          error: {
+            code: paymentIntent.last_payment_error?.code,
+            message: paymentIntent.last_payment_error?.message,
+            type: paymentIntent.last_payment_error?.type,
+          },
+        },
+        { new: true }
+      );
 
       // Notify user
       const user = await User.findById(booking.user);
@@ -234,6 +364,46 @@ async function handlePaymentFailure(paymentIntent) {
     }
   } catch (error) {
     logger.error('Webhook payment failure handling failed:', error);
+  }
+}
+
+async function handleCheckoutSessionCompleted(session) {
+  try {
+    const booking = await Booking.findOne({
+      'payment.stripeSessionId': session.id,
+    });
+
+    if (!booking || !session.payment_intent) return;
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent, {
+      expand: ['latest_charge'],
+    });
+
+    booking.payment.stripePaymentIntentId = paymentIntent.id;
+    await booking.save();
+
+    await Payment.findOneAndUpdate(
+      { booking: booking._id },
+      {
+        booking: booking._id,
+        user: booking.user,
+        amount: booking.pricing?.total,
+        currency: 'usd',
+        status: paymentIntent.status === 'succeeded' ? 'succeeded' : 'processing',
+        method: 'card',
+        stripePaymentIntentId: paymentIntent.id,
+        stripeSessionId: session.id,
+        receiptUrl: getReceiptUrl(paymentIntent),
+        description: `Payment for booking ${booking.bookingNumber}`,
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    if (paymentIntent.status === 'succeeded') {
+      await handlePaymentSuccess(paymentIntent);
+    }
+  } catch (error) {
+    logger.error('Webhook checkout session handling failed:', error);
   }
 }
 
@@ -270,6 +440,14 @@ export const createCheckoutSession = catchAsync(async (req, res, next) => {
     return next(new AppError('Booking not found', 404));
   }
 
+  if (!ownsBooking(booking, req.user)) {
+    return next(new AppError('You can only pay for your own bookings', 403));
+  }
+
+  if (booking.payment.status === 'paid') {
+    return next(new AppError('Booking is already paid', 400));
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -288,7 +466,7 @@ export const createCheckoutSession = catchAsync(async (req, res, next) => {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/booking/${bookingId}`,
       customer_email: req.user.email,
       client_reference_id: bookingId,
@@ -301,6 +479,7 @@ export const createCheckoutSession = catchAsync(async (req, res, next) => {
 
     // Save session ID to booking
     booking.payment.stripeSessionId = session.id;
+    booking.payment.status = 'processing';
     await booking.save();
 
     res.status(200).json({
@@ -318,8 +497,13 @@ export const createCheckoutSession = catchAsync(async (req, res, next) => {
 // @route   GET /api/v1/payments/history
 // @access  Private
 export const getPaymentHistory = catchAsync(async (req, res, next) => {
-  const payments = await Payment.find({ user: req.user.id })
+  const query = hasAdminPaymentAccess(req.user) && req.originalUrl.includes('/admin/all')
+    ? {}
+    : { user: req.user.id };
+
+  const payments = await Payment.find(query)
     .populate('booking')
+    .populate('user', 'firstName lastName email')
     .sort('-createdAt');
 
   res.status(200).json({
@@ -341,7 +525,7 @@ export const getPaymentDetails = catchAsync(async (req, res, next) => {
     return next(new AppError('Payment not found', 404));
   }
 
-  if (payment.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (payment.user._id.toString() !== req.user.id && !hasAdminPaymentAccess(req.user)) {
     return next(new AppError('You can only view your own payments', 403));
   }
 
@@ -367,6 +551,14 @@ export const generateInvoice = catchAsync(async (req, res, next) => {
 
   if (!payment) {
     return next(new AppError('Payment not found', 404));
+  }
+
+  if (payment.user._id.toString() !== req.user.id && !hasAdminPaymentAccess(req.user)) {
+    return next(new AppError('You can only view your own invoices', 403));
+  }
+
+  if (payment.status !== 'succeeded') {
+    return next(new AppError('Invoice is available after payment confirmation', 400));
   }
 
   // Generate invoice HTML (simplified version)

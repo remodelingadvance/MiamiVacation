@@ -337,7 +337,9 @@ const BookingPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCreateBooking = async () => {
+  const handleCreateBooking = async (paymentMethodId, stripeClient) => {
+    let createdBookingId;
+
     try {
       const bookingData = {
         propertyId: property._id,
@@ -365,13 +367,50 @@ const BookingPage = () => {
         if (!bookingId) {
           throw new Error('Booking was created but no booking ID was returned');
         }
-        toast.success('Booking confirmed!');
+        createdBookingId = bookingId;
+
+        const paymentResponse = await apiService.createPaymentIntent({
+          bookingId,
+          paymentMethodId,
+        });
+
+        const paymentData = paymentResponse.data;
+
+        if (paymentData.requiresAction) {
+          const { error: actionError, paymentIntent } = await stripeClient.confirmCardPayment(
+            paymentData.clientSecret
+          );
+
+          if (actionError) {
+            throw new Error(actionError.message || 'Payment authentication failed');
+          }
+
+          await apiService.confirmPayment({
+            bookingId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } else if (paymentData.status !== 'succeeded' && paymentData.status !== 'processing') {
+          throw new Error('Payment could not be completed. Please try another card.');
+        }
+
+        toast.success(
+          paymentData.status === 'processing'
+            ? 'Payment is processing. We will confirm your booking shortly.'
+            : 'Payment confirmed!'
+        );
         navigate(`/booking/confirmation/${bookingId}`, { replace: true });
         return bookingId;
       }
       throw new Error(response.data.message || 'Booking failed. Please try again.');
     } catch (error) {
       console.error('Booking error:', error);
+      if (createdBookingId) {
+        try {
+          await apiService.cancelBooking(createdBookingId, 'Payment failed before confirmation');
+        } catch (cleanupError) {
+          console.error('Pending booking cleanup failed:', cleanupError);
+        }
+      }
       toast.error(error.response?.data?.message || error.message || 'Booking failed. Please try again.');
       throw error;
     }
@@ -969,7 +1008,7 @@ const PaymentForm = ({ finalTotal, onSuccess }) => {
 
     try {
       const cardElement = elements.getElement(CardElement);
-      const { error: stripeError } = await stripe.createPaymentMethod({
+      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
       });
@@ -979,9 +1018,14 @@ const PaymentForm = ({ finalTotal, onSuccess }) => {
         return;
       }
 
-      await onSuccess();
-    } catch {
-      setError('Payment failed. Please try again.');
+      if (!paymentMethod?.id) {
+        setError('Unable to create a secure payment method. Please try again.');
+        return;
+      }
+
+      await onSuccess(paymentMethod.id, stripe);
+    } catch (paymentError) {
+      setError(paymentError.message || 'Payment failed. Please try again.');
     } finally {
       setProcessing(false);
     }

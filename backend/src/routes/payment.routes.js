@@ -10,7 +10,7 @@ import {
 } from '../controllers/payment.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { webhookLimiter } from '../middleware/rateLimiter.js';
-import expressRaw from 'express';
+import { rejectRawPaymentData } from '../middleware/paymentSecurity.js';
 
 const router = express.Router();
 
@@ -24,6 +24,14 @@ router.post(
 
 // Protected routes
 router.use(protect);
+router.use(rejectRawPaymentData);
+
+// Admin routes must be declared before /:id.
+router.get(
+  '/admin/all',
+  authorize('admin', 'super-admin'),
+  getPaymentHistory
+);
 
 // Payment routes
 router.post('/create-payment-intent', createPaymentIntent);
@@ -32,12 +40,5 @@ router.post('/create-checkout-session', createCheckoutSession);
 router.get('/history', getPaymentHistory);
 router.get('/:id', getPaymentDetails);
 router.get('/:id/invoice', generateInvoice);
-
-// Admin routes
-router.get(
-  '/admin/all',
-  authorize('admin', 'super-admin'),
-  getPaymentHistory
-);
 
 export default router;

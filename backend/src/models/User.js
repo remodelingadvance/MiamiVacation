@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { decryptField, encryptedString, encryptDocumentPaths } from '../utils/fieldEncryption.js';
+
+const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -55,7 +58,15 @@ const userSchema = new mongoose.Schema({
     phone: {
         type: String,
         trim: true,
-        match: [/^\+?[0-9\s().-]{7,20}$/, 'Please provide a valid phone number']
+        set: encryptedString().set,
+        get: encryptedString().get,
+        validate: {
+            validator(value) {
+                const plaintextPhone = decryptField(value);
+                return !plaintextPhone || phoneRegex.test(plaintextPhone);
+            },
+            message: 'Please provide a valid phone number'
+        }
     },
     avatar: {
         type: String,
@@ -81,18 +92,18 @@ const userSchema = new mongoose.Schema({
     resetPasswordToken: String,
     resetPasswordExpires: Date,
     refreshToken: String,
-    stripeCustomerId: String,
+    stripeCustomerId: encryptedString(),
     favorites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Property'
     }],
     address: {
-        street: String,
-        city: String,
-        state: String,
-        zipCode: String,
+        street: encryptedString(),
+        city: encryptedString(),
+        state: encryptedString(),
+        zipCode: encryptedString(),
         country: {
-            type: String,
+            ...encryptedString(),
             default: 'US'
         }
     },
@@ -161,8 +172,8 @@ const userSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toJSON: { virtuals: true, getters: true },
+    toObject: { virtuals: true, getters: true }
 });
 
 // Virtual for full name
@@ -176,9 +187,7 @@ userSchema.virtual('bookingCount').get(function () {
 });
 
 // Indexes
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
-userSchema.index({ firebaseUid: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ deletedAt: 1 });
 
@@ -197,6 +206,15 @@ userSchema.pre('save', async function (next) {
 
 // Update updatedAt before saving
 userSchema.pre('save', function (next) {
+    encryptDocumentPaths(this, [
+        'phone',
+        'stripeCustomerId',
+        'address.street',
+        'address.city',
+        'address.state',
+        'address.zipCode',
+        'address.country',
+    ]);
     this.updatedAt = Date.now();
     next();
 });

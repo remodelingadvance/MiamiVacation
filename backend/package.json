@@ -10,7 +10,8 @@
     "lint": "eslint src/",
     "test": "jest",
     "seed": "node src/config/seeder.js -i",
-    "seed:destroy": "node src/config/seeder.js -d"
+    "seed:destroy": "node src/config/seeder.js -d",
+    "encrypt:pii": "node src/scripts/encryptExistingPii.js"
   },
   "keywords": [
     "vacation-rental",

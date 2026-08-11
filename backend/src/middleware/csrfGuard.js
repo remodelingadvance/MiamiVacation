@@ -5,8 +5,13 @@ const mutatingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const allowedOrigins = () => new Set([
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
+  'https://www.staywise.miami',
+  'https://staywise.miami',
+  'https://admin.staywise.miami',
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:5173',
+  'http://localhost:5174',
 ].filter(Boolean));
 
 export const csrfOriginGuard = (req, res, next) => {

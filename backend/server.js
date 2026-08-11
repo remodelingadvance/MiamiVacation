@@ -12,6 +12,7 @@ const requiredProductionEnv = [
   'MONGODB_URI',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
+  'FIELD_ENCRYPTION_KEY',
   'FRONTEND_URL',
   'ADMIN_URL',
   'CLOUDINARY_CLOUD_NAME',
@@ -51,11 +52,19 @@ const validateProductionEnv = () => {
 
 validateProductionEnv();
 
-const [{ default: app }, { default: connectDB }, { initializeSocket }] = await Promise.all([
+const [
+  { default: app },
+  { default: connectDB },
+  { initializeSocket },
+  { assertFieldEncryptionReady },
+] = await Promise.all([
   import('./src/app.js'),
   import('./src/config/database.js'),
   import('./src/config/socket.js'),
+  import('./src/utils/fieldEncryption.js'),
 ]);
+
+assertFieldEncryptionReady();
 
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION. Shutting down...');

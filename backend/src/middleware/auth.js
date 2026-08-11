@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
+import { tokenMatchesStoredHash } from '../utils/tokenSecurity.js';
 
 // Simple in-memory token blacklist (clears on server restart)
 // For production with multiple servers, use a database table instead
@@ -60,6 +61,10 @@ export const protect = catchAsync(async (req, res, next) => {
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
       return next(new AppError('The user belonging to this token no longer exists.', 401));
+    }
+
+    if (Number(decoded.version || 0) !== Number(user.tokenVersion || 0)) {
+      return next(new AppError('Your session has expired. Please log in again.', 401));
     }
 
     // Check if user changed password after token was issued
@@ -121,7 +126,7 @@ export const optionalAuth = catchAsync(async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select('-password');
-      if (user && user.isActive) {
+      if (user && user.isActive && Number(decoded.version || 0) === Number(user.tokenVersion || 0)) {
         req.user = user;
       }
     } catch (error) {
@@ -144,7 +149,11 @@ export const verifyRefreshToken = catchAsync(async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id);
 
-    if (!user || user.refreshToken !== refreshToken) {
+    if (!user || !tokenMatchesStoredHash(refreshToken, user.refreshToken)) {
+      return next(new AppError('Invalid refresh token', 401));
+    }
+
+    if (Number(decoded.version || 0) !== Number(user.tokenVersion || 0)) {
       return next(new AppError('Invalid refresh token', 401));
     }
 

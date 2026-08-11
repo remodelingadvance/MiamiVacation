@@ -14,6 +14,7 @@ import {
 } from '../controllers/booking.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { rejectRawPaymentData } from '../middleware/paymentSecurity.js';
 import {
   createBookingValidator,
   updateBookingValidator,
@@ -26,7 +27,7 @@ const router = express.Router();
 router.use(protect);
 
 // User routes
-router.post('/', bookingLimiter, validate(createBookingValidator), createBooking);
+router.post('/', bookingLimiter, rejectRawPaymentData, validate(createBookingValidator), createBooking);
 router.get('/my-bookings', getMyBookings);
 
 // Admin routes

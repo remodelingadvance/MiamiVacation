@@ -4,6 +4,7 @@ import { User } from '../models/index.js';
 import AppError from '../utils/AppError.js';
 import catchAsync from '../utils/catchAsync.js';
 import { generateToken, generateRefreshToken } from '../utils/generateToken.js';
+import { hashToken, tokenMatchesStoredHash } from '../utils/tokenSecurity.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
 import { getFirebaseAuth } from '../config/firebaseAdmin.js';
@@ -38,9 +39,9 @@ const authUserPayload = (user) => ({
 });
 
 const issueAuthTokens = async (user) => {
-  const token = generateToken(user._id);
-  const refreshToken = generateRefreshToken(user._id);
-  user.refreshToken = refreshToken;
+  const token = generateToken(user);
+  const refreshToken = generateRefreshToken(user);
+  user.refreshToken = hashToken(refreshToken);
   user.lastLogin = Date.now();
   await user.save({ validateBeforeSave: false });
 
@@ -185,9 +186,9 @@ const legacySignup = catchAsync(async (req, res, next) => {
     });
 
     // Generate tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
-    user.refreshToken = refreshToken;
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+    user.refreshToken = hashToken(refreshToken);
     await user.save({ validateBeforeSave: false });
 
     res.status(201).json({
@@ -208,9 +209,9 @@ const legacySignup = catchAsync(async (req, res, next) => {
     logger.error('Email sending failed during signup:', error);
     
     // Still create user but mark as unverified
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
-    user.refreshToken = refreshToken;
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+    user.refreshToken = hashToken(refreshToken);
     await user.save({ validateBeforeSave: false });
 
     res.status(201).json({
@@ -692,13 +693,17 @@ export const refreshToken = catchAsync(async (req, res, next) => {
     const decoded = jwt.verify(requestRefreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id);
 
-    if (!user || user.refreshToken !== requestRefreshToken) {
+    if (!user || !tokenMatchesStoredHash(requestRefreshToken, user.refreshToken)) {
       return next(new AppError('Invalid refresh token', 401));
     }
 
-    const newToken = generateToken(user._id);
-    const newRefreshToken = generateRefreshToken(user._id);
-    user.refreshToken = newRefreshToken;
+    if (Number(decoded.version || 0) !== Number(user.tokenVersion || 0)) {
+      return next(new AppError('Invalid refresh token', 401));
+    }
+
+    const newToken = generateToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+    user.refreshToken = hashToken(newRefreshToken);
     await user.save({ validateBeforeSave: false });
 
     res.status(200).json({
@@ -783,9 +788,9 @@ export const updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   // Generate new tokens
-  const token = generateToken(user._id);
-  const refreshToken = generateRefreshToken(user._id);
-  user.refreshToken = refreshToken;
+  const token = generateToken(user);
+  const refreshToken = generateRefreshToken(user);
+  user.refreshToken = hashToken(refreshToken);
   await user.save({ validateBeforeSave: false });
 
   // Send notification email

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptedString, encryptDocumentPaths } from '../utils/fieldEncryption.js';
 
 const bookingSchema = new mongoose.Schema({
     bookingNumber: {
@@ -101,36 +102,36 @@ const bookingSchema = new mongoose.Schema({
     },
     guestsInfo: {
         primaryGuest: {
-            firstName: String,
-            lastName: String,
-            email: String,
-            phone: String,
+            firstName: encryptedString(),
+            lastName: encryptedString(),
+            email: encryptedString(),
+            phone: encryptedString(),
             address: {
-                street: String,
-                city: String,
-                state: String,
-                postalCode: String,
+                street: encryptedString(),
+                city: encryptedString(),
+                state: encryptedString(),
+                postalCode: encryptedString(),
                 country: {
-                    type: String,
+                    ...encryptedString(),
                     default: 'US'
                 }
             }
         },
         additionalGuests: [{
-            firstName: String,
-            lastName: String,
+            firstName: encryptedString(),
+            lastName: encryptedString(),
             age: Number
         }]
     },
-    specialRequests: String,
-    checkInInstructions: String,
+    specialRequests: encryptedString(),
+    checkInInstructions: encryptedString(),
     cancellation: {
         cancelledAt: Date,
         cancelledBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
-        reason: String,
+        reason: encryptedString(),
         refundAmount: Number,
         cancellationFee: Number
     },
@@ -156,8 +157,8 @@ const bookingSchema = new mongoose.Schema({
             enum: ['direct', 'google', 'referral', 'other'],
             default: 'direct'
         },
-        ip: String,
-        userAgent: String
+        ip: encryptedString(),
+        userAgent: encryptedString()
     },
     viewedByAdmin: {
         type: Boolean,
@@ -172,8 +173,8 @@ const bookingSchema = new mongoose.Schema({
     },
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toJSON: { virtuals: true, getters: true },
+    toObject: { virtuals: true, getters: true }
 });
 
 // Virtual for total guests
@@ -187,7 +188,6 @@ bookingSchema.virtual('duration').get(function () {
 });
 
 // Indexes
-bookingSchema.index({ bookingNumber: 1 });
 bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ property: 1, checkIn: 1, checkOut: 1 });
 bookingSchema.index({ 'payment.status': 1 });
@@ -203,6 +203,26 @@ bookingSchema.pre('save', async function (next) {
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         this.bookingNumber = `MIA${year}${month}${random}`;
     }
+    next();
+});
+
+bookingSchema.pre('save', function (next) {
+    encryptDocumentPaths(this, [
+        'guestsInfo.primaryGuest.firstName',
+        'guestsInfo.primaryGuest.lastName',
+        'guestsInfo.primaryGuest.email',
+        'guestsInfo.primaryGuest.phone',
+        'guestsInfo.primaryGuest.address.street',
+        'guestsInfo.primaryGuest.address.city',
+        'guestsInfo.primaryGuest.address.state',
+        'guestsInfo.primaryGuest.address.postalCode',
+        'guestsInfo.primaryGuest.address.country',
+        'specialRequests',
+        'checkInInstructions',
+        'cancellation.reason',
+        'metadata.ip',
+        'metadata.userAgent',
+    ]);
     next();
 });
 

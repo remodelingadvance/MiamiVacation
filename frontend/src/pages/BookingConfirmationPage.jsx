@@ -76,6 +76,8 @@ const BookingConfirmationPage = () => {
   const image = primaryImage.url || THEME.hero.heroImage;
   const imageAlt = getPropertyImageAlt(property, primaryImage, 0);
   const guests = (booking.guests?.adults || 0) + (booking.guests?.children || 0);
+  const paymentSettled = booking.payment?.status === 'paid';
+  const paymentProcessing = booking.payment?.status === 'processing';
 
   const handleDownloadInvoice = async () => {
     try {
@@ -100,7 +102,7 @@ const BookingConfirmationPage = () => {
 
   return (
     <>
-      <SEOHead title="Booking Confirmed" noIndex />
+      <SEOHead title={paymentSettled ? 'Booking Confirmed' : 'Booking Pending Payment'} noIndex />
 
       <section className="relative isolate overflow-hidden bg-[var(--color-text-primary)] pt-28 text-white lg:pt-36">
         <img src={image} alt={imageAlt} className="absolute inset-0 h-full w-full object-cover" />
@@ -118,13 +120,17 @@ const BookingConfirmationPage = () => {
               <HiCheck className="h-12 w-12" />
             </div>
             <p className="text-sm font-black uppercase text-[var(--color-primary)]">
-              Booking confirmed
+              {paymentSettled ? 'Booking confirmed' : 'Payment pending'}
             </p>
             <h1 className="mt-3 font-hero text-5xl font-black uppercase leading-[0.95] sm:text-6xl lg:text-7xl">
-              Miami is waiting
+              {paymentSettled ? 'Miami is waiting' : 'Almost there'}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-white/80">
-              Your Miami stay is confirmed. We sent the details to your email.
+              {paymentSettled
+                ? 'Your Miami stay is confirmed. We sent the details to your email.'
+                : paymentProcessing
+                  ? 'Your payment is processing. We will confirm your stay as soon as Stripe finishes the payment.'
+                  : 'Your booking is saved, but payment is not complete yet.'}
             </p>
           </motion.div>
         </div>
@@ -216,7 +222,7 @@ const BookingConfirmationPage = () => {
                       </div>
                     )}
                     <div className="flex justify-between border-t border-[var(--color-border)] pt-3 text-lg font-black text-[var(--color-text-primary)]">
-                      <span>Total Paid</span>
+                      <span>{paymentSettled ? 'Total Paid' : 'Total Due'}</span>
                       <span>{formatCurrency(booking.pricing?.total || 0)}</span>
                     </div>
                   </div>
@@ -229,11 +235,15 @@ const BookingConfirmationPage = () => {
                   <button
                     type="button"
                     onClick={handleDownloadInvoice}
-                    disabled={downloadingInvoice}
+                    disabled={downloadingInvoice || !paymentSettled}
                     className="btn-outline flex flex-1 items-center justify-center gap-2"
                   >
                     <HiDownload className="h-5 w-5" />
-                    {downloadingInvoice ? 'Downloading...' : 'Download Invoice'}
+                    {downloadingInvoice
+                      ? 'Downloading...'
+                      : paymentSettled
+                        ? 'Download Invoice'
+                        : 'Invoice after payment'}
                   </button>
                 </div>
               </div>

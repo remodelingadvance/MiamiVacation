@@ -34,6 +34,23 @@ import { csrfOriginGuard } from './middleware/csrfGuard.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
+
+const knownProductionOrigins = [
+  'https://www.staywise.miami',
+  'https://staywise.miami',
+  'https://admin.staywise.miami',
+];
+
+const allowedCorsOrigins = () => new Set([
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+  ...knownProductionOrigins,
+  ...(process.env.NODE_ENV === 'production'
+    ? []
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:5174']),
+].filter(Boolean));
+
 // Body parser - IMPORTANT: Do this before webhook route
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/v1/payments/webhook') {
@@ -54,7 +71,13 @@ app.use(hpp());
 
 // CORS
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, "https://www.staywise.miami", process.env.ADMIN_URL, 'http://localhost:3000', 'http://localhost:3001'],
+  origin(origin, callback) {
+    if (!origin || allowedCorsOrigins().has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -133,7 +156,9 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
   next();
 });
 

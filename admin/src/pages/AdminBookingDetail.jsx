@@ -270,7 +270,7 @@ const AdminBookingDetail = () => {
               <h3 className="mb-4 text-lg font-bold text-white">Payment Details</h3>
               <div className="space-y-3">
                 <InfoCell label="Method" value={booking.payment?.method || 'stripe'} compact />
-                <InfoCell label="Amount Paid" value={formatCurrency(booking.payment?.amountPaid || booking.pricing?.total || 0)} compact />
+                <InfoCell label="Amount Paid" value={formatCurrency(booking.payment?.amountPaid || 0)} compact />
                 <InfoCell label="Paid At" value={booking.payment?.paidAt ? formatDate(booking.payment.paidAt) : 'Not provided'} compact />
                 <InfoCell label="Stripe Payment ID" value={booking.payment?.stripePaymentIntentId || 'Not provided'} compact />
               </div>

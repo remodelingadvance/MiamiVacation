@@ -67,7 +67,6 @@ export const createBooking = catchAsync(async (req, res, next) => {
     guests, 
     couponCode, 
     specialRequests, 
-    paymentMethodId, 
     guestDetails 
   } = req.body;
 
@@ -217,12 +216,10 @@ export const createBooking = catchAsync(async (req, res, next) => {
       children: guests.children || 0,
       infants: guests.infants || 0,
     },
-    status: 'confirmed',
+    status: 'pending',
     payment: {
-      status: 'paid',
+      status: 'pending',
       method: 'stripe',
-      amountPaid: pricing.total,
-      paidAt: new Date(),
     },
     pricing: {
       nightlyRate: pricing.nightlyRate,
@@ -291,22 +288,22 @@ export const createBooking = catchAsync(async (req, res, next) => {
     link: `/admin/bookings/${booking._id}`,
   });
 
-  // Send confirmation email
+  // Send pending-payment email. Confirmation is sent only after Stripe succeeds.
   try {
     await emailService.send({
       to: primaryGuest.email,
-      subject: `Booking Confirmed - ${bookingNumber}`,
+      subject: `Booking Pending Payment - ${bookingNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Booking Confirmed! 🎉</h2>
+          <h2>Booking request received</h2>
           <p>Dear ${primaryGuest.firstName},</p>
-          <p>Your booking has been confirmed. Here are the details:</p>
+          <p>We received your booking request. Your reservation will be confirmed after payment is successfully processed.</p>
           <ul>
             <li><strong>Booking Number:</strong> ${bookingNumber}</li>
             <li><strong>Property:</strong> ${property.name}</li>
             <li><strong>Check-in:</strong> ${checkInDate.toLocaleDateString()}</li>
             <li><strong>Check-out:</strong> ${checkOutDate.toLocaleDateString()}</li>
-            <li><strong>Total Amount:</strong> $${pricing.total}</li>
+            <li><strong>Total Due:</strong> $${pricing.total}</li>
           </ul>
           <p>Thank you for choosing ${COMPANY_INFO.name}!</p>
           <p>Need help? Contact us at ${COMPANY_INFO.phone} or ${COMPANY_INFO.email}.</p>
@@ -339,10 +336,6 @@ export const updateBookingStatus = catchAsync(async (req, res, next) => {
 
   const oldStatus = booking.status;
   booking.status = status;
-  
-  if (status === 'completed') {
-    booking.payment.status = 'paid';
-  }
   
   await booking.save();
 
@@ -452,6 +445,10 @@ export const downloadBookingInvoice = catchAsync(async (req, res, next) => {
     return next(new AppError('You can only download your own booking invoice', 403));
   }
 
+  if (booking.payment?.status !== 'paid') {
+    return next(new AppError('Invoice is available after payment confirmation', 400));
+  }
+
   const pdfBuffer = createBookingInvoicePdf(booking);
   const fileName = `stay-wise-invoice-${booking.bookingNumber}.pdf`;
 
@@ -504,7 +501,11 @@ export const cancelBooking = catchAsync(async (req, res, next) => {
   }
 
   // Process refund if applicable
-  if (refundAmount > 0 && booking.payment.stripePaymentIntentId) {
+  if (
+    refundAmount > 0 &&
+    booking.payment.stripePaymentIntentId &&
+    ['paid', 'partially_refunded'].includes(booking.payment.status)
+  ) {
     try {
       const refund = await stripe.refunds.create({
         payment_intent: booking.payment.stripePaymentIntentId,
