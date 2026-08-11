@@ -71,7 +71,7 @@ const MaintenanceModal = ({ isOpen, onClose, property, onSuccess }) => {
         onSuccess?.();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add maintenance period');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to add maintenance period');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ const MaintenanceModal = ({ isOpen, onClose, property, onSuccess }) => {
         onSuccess?.();
       }
     } catch (error) {
-      toast.error('Failed to remove maintenance period');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to remove maintenance period');
     }
   };
 

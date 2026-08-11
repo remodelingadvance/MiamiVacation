@@ -122,7 +122,7 @@ export const sanitizeUser = (user) => {
 
 // Validate email format
 export const isValidEmail = (email) => {
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   return emailRegex.test(email);
 };
 

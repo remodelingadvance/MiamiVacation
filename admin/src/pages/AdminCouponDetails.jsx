@@ -54,7 +54,7 @@ const AdminCouponDetails = () => {
       toast.success('Coupon deactivated successfully');
       navigate('/admin/coupons');
     } catch (error) {
-      toast.error('Failed to deactivate coupon');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to deactivate coupon');
     } finally {
       setDeleting(false);
     }

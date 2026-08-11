@@ -30,7 +30,7 @@ const AdminBookings = () => {
       setBookings(response.data.bookings);
       setTotalItems(response.data.total || response.data.count);
     } catch (error) {
-      toast.error('Failed to load bookings');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load bookings');
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ const AdminBookings = () => {
       toast.success(`Booking status updated to ${newStatus}`);
       fetchBookings(currentPage, filterStatus);
     } catch (error) {
-      toast.error('Failed to update booking status');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update booking status');
     }
   };
 

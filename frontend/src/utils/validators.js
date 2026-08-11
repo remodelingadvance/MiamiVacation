@@ -1,6 +1,6 @@
 export const validateEmail = (email) => {
   if (!email) return 'Email is required';
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!emailRegex.test(email)) return 'Please enter a valid email';
   return '';
 };
@@ -11,7 +11,7 @@ export const validatePassword = (password) => {
   if (!/(?=.*[a-z])/.test(password)) return 'Password must contain a lowercase letter';
   if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain an uppercase letter';
   if (!/(?=.*\d)/.test(password)) return 'Password must contain a number';
-  if (!/(?=.*[@$!%*?&])/.test(password)) return 'Password must contain a special character';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain a special character';
   return '';
 };
 

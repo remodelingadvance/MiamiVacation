@@ -50,7 +50,7 @@ const SubscriberImportModal = ({ isOpen, onClose, onSuccess }) => {
         onClose();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add subscriber');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to add subscriber');
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ const SubscriberImportModal = ({ isOpen, onClose, onSuccess }) => {
         }, 3000);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Bulk import failed');
+      toast.error(error.userMessage || error.response?.data?.message || 'Bulk import failed');
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ const SubscriberImportModal = ({ isOpen, onClose, onSuccess }) => {
         }, 3000);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'File import failed');
+      toast.error(error.userMessage || error.response?.data?.message || 'File import failed');
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ const SubscriberImportModal = ({ isOpen, onClose, onSuccess }) => {
       
       toast.success('Template downloaded');
     } catch (error) {
-      toast.error('Failed to download template');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to download template');
     }
   };
   

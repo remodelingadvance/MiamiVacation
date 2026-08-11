@@ -51,6 +51,16 @@ const handleStripeError = (err) => {
   return new AppError(message, 400);
 };
 
+const normalizeKnownError = (err) => {
+  if (err.name === 'CastError') return handleCastErrorDB(err);
+  if (err.code === 11000) return handleDuplicateFieldsDB(err);
+  if (err.name === 'ValidationError') return handleValidationErrorDB(err);
+  if (err.name === 'JsonWebTokenError') return handleJWTError();
+  if (err.name === 'TokenExpiredError') return handleJWTExpiredError();
+  if (err.type && err.type.startsWith('Stripe')) return handleStripeError(err);
+  return err;
+};
+
 // Send error during development
 const sendErrorDev = (err, req, res) => {
   // API
@@ -109,29 +119,14 @@ const sendErrorProd = (err, req, res) => {
 
 // Error handler middleware
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+  const normalizedError = normalizeKnownError(err);
+  normalizedError.statusCode = normalizedError.statusCode || 500;
+  normalizedError.status = normalizedError.status || 'error';
 
-  if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, req, res);
-  } else if (process.env.NODE_ENV === 'production') {
-    let error = { ...err };
-    error.message = err.message;
-    error.name = err.name;
-
-    // Mongoose errors
-    if (error.name === 'CastError') error = handleCastErrorDB(error);
-    if (error.code === 11000) error = handleDuplicateFieldsDB(error);
-    if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
-    
-    // JWT errors
-    if (error.name === 'JsonWebTokenError') error = handleJWTError();
-    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
-    
-    // Stripe errors
-    if (error.type && error.type.startsWith('Stripe')) error = handleStripeError(error);
-
-    sendErrorProd(error, req, res);
+  if (process.env.NODE_ENV === 'production') {
+    sendErrorProd(normalizedError, req, res);
+  } else {
+    sendErrorDev(normalizedError, req, res);
   }
 };
 

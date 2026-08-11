@@ -1,13 +1,13 @@
 import { body, param, query } from 'express-validator';
 
 const guestSessionValidator = body('guestSessionId')
-  .optional()
+  .optional({ values: 'falsy' })
   .trim()
   .isLength({ min: 12, max: 120 })
   .withMessage('Guest session is invalid');
 
 const messageBodyValidator = body('message')
-  .optional()
+  .optional({ values: 'falsy' })
   .trim()
   .isLength({ min: 1, max: 4000 })
   .withMessage('Message must be between 1 and 4000 characters');
@@ -20,23 +20,23 @@ export const askAiValidator = [
     .isLength({ min: 2, max: 2000 })
     .withMessage('Message must be between 2 and 2000 characters'),
   guestSessionValidator,
-  body('currentUrl').optional().trim().isLength({ max: 500 }),
+  body('currentUrl').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
 ];
 
 export const createConversationValidator = [
   guestSessionValidator,
-  body('customer.name').optional().trim().isLength({ max: 120 }),
-  body('customer.email').optional().trim().isEmail().normalizeEmail(),
-  body('customer.phone').optional().trim().isLength({ max: 40 }),
-  body('subject').optional().trim().isLength({ max: 180 }),
+  body('customer.name').optional({ values: 'falsy' }).trim().isLength({ max: 120 }),
+  body('customer.email').optional({ values: 'falsy' }).trim().isEmail().normalizeEmail(),
+  body('customer.phone').optional({ values: 'falsy' }).trim().isLength({ max: 40 }),
+  body('subject').optional({ values: 'falsy' }).trim().isLength({ max: 180 }),
   body('message')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 4000 })
     .withMessage('Message cannot exceed 4000 characters'),
-  body('property').optional().isMongoId(),
-  body('booking').optional().isMongoId(),
-  body('currentUrl').optional().trim().isLength({ max: 500 }),
+  body('property').optional({ values: 'falsy' }).isMongoId(),
+  body('booking').optional({ values: 'falsy' }).isMongoId(),
+  body('currentUrl').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
 ];
 
 export const conversationIdValidator = [

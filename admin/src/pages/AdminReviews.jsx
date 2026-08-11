@@ -33,7 +33,7 @@ const AdminReviews = () => {
       setReviews(response.data.reviews);
       setTotalItems(response.data.total || response.data.count);
     } catch (error) {
-      toast.error('Failed to load reviews');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load reviews');
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ const AdminReviews = () => {
       setSelectedReview(null);
       setResponseText('');
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to moderate review';
+      const message = error.userMessage || error.response?.data?.message || 'Failed to moderate review';
       toast.error(message);
     } finally {
       setModerating(false);

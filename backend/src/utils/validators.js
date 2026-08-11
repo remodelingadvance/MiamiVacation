@@ -17,7 +17,7 @@ export const isValidDateRange = (startDate, endDate) => {
 };
 
 export const isValidEmail = (email) => {
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   return emailRegex.test(email);
 };
 
@@ -28,7 +28,7 @@ export const isValidPhone = (phone) => {
 
 export const isValidPassword = (password) => {
   // At least 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   return passwordRegex.test(password);
 };
 

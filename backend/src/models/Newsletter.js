@@ -1,6 +1,8 @@
 // models/Newsletter.js
 import mongoose from 'mongoose';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 const newsletterSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -8,7 +10,7 @@ const newsletterSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
+    match: [emailRegex, 'Please provide a valid email']
   },
   firstName: {
     type: String,

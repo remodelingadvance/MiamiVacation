@@ -30,6 +30,10 @@ const testimonials = [
   },
 ];
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const phonePattern = /^\+?[0-9\s().-]{7,20}$/;
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 const SignupPage = () => {
   const { signup, loginWithFirebase, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -54,7 +58,7 @@ const SignupPage = () => {
     { label: 'One uppercase letter', valid: /[A-Z]/.test(password) },
     { label: 'One lowercase letter', valid: /[a-z]/.test(password) },
     { label: 'One number', valid: /\d/.test(password) },
-    { label: 'One special character (!@#$%^&*)', valid: /[!@#$%^&*]/.test(password) },
+    { label: 'One special character', valid: /[^A-Za-z0-9]/.test(password) },
   ];
 
   useEffect(() => {
@@ -161,6 +165,7 @@ const SignupPage = () => {
                       {...register('lastName', {
                         required: 'Last name is required',
                         minLength: { value: 2, message: 'Must be at least 2 characters' },
+                        pattern: { value: /^[a-zA-Z\s'-]+$/, message: 'Invalid characters' },
                       })}
                       className={inputClass}
                       placeholder="Doe"
@@ -179,7 +184,7 @@ const SignupPage = () => {
                     {...register('email', {
                       required: 'Email is required',
                       pattern: {
-                        value: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+                        value: emailPattern,
                         message: 'Please enter a valid email',
                       },
                     })}
@@ -196,10 +201,18 @@ const SignupPage = () => {
                   <label className={labelClass}>Phone (Optional)</label>
                   <input
                     type="tel"
-                    {...register('phone')}
+                    {...register('phone', {
+                      pattern: {
+                        value: phonePattern,
+                        message: 'Please enter a valid phone number',
+                      },
+                    })}
                     className={inputClass}
                     placeholder="(305) 615-3735"
                   />
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -212,7 +225,7 @@ const SignupPage = () => {
                         required: 'Password is required',
                         minLength: { value: 8, message: 'Must be at least 8 characters' },
                         pattern: {
-                          value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/,
+                          value: passwordPattern,
                           message: 'Must contain uppercase, lowercase, number, and special character',
                         },
                       })}

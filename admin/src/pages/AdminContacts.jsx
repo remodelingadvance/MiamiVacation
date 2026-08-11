@@ -31,7 +31,7 @@ const AdminContacts = () => {
       setContacts(response.data.contacts);
       setTotalItems(response.data.total || response.data.count);
     } catch (error) {
-      toast.error('Failed to load contacts');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load contacts');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ const AdminContacts = () => {
       setShowDetailModal(false);
       fetchContacts(currentPage, filterStatus);
     } catch (error) {
-      toast.error('Failed to send reply');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to send reply');
     } finally {
       setReplying(false);
     }
@@ -64,7 +64,7 @@ const AdminContacts = () => {
       toast.success(`Contact marked as ${status}`);
       fetchContacts(currentPage, filterStatus);
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update status');
     }
   };
 

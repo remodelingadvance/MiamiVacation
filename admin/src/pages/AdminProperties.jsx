@@ -56,7 +56,7 @@ const AdminProperties = () => {
       });
     } catch (error) {
       console.error('Failed to load properties:', error);
-      toast.error('Failed to load properties');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load properties');
       setProperties([]);
     } finally {
       setLoading(false);
@@ -87,7 +87,7 @@ const AdminProperties = () => {
       fetchProperties(currentPage, searchQuery, statusFilter);
       setDeleteId(null);
     } catch (error) {
-      toast.error('Failed to delete property');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete property');
     } finally {
       setDeleting(false);
     }

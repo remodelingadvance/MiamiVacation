@@ -1,5 +1,9 @@
 import { body } from 'express-validator';
 
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const strongPasswordMessage =
+  'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+
 export const signupValidator = [
   body('firstName')
     .trim()
@@ -32,11 +36,11 @@ export const signupValidator = [
     .withMessage('Password is required')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    .matches(strongPasswordRegex)
+    .withMessage(strongPasswordMessage),
 
   body('phone')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .matches(/^\+?[0-9\s().-]{7,20}$/)
     .withMessage('Please provide a valid phone number'),
@@ -112,8 +116,8 @@ export const resetPasswordValidator = [
     .withMessage('Password is required')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    .matches(strongPasswordRegex)
+    .withMessage(strongPasswordMessage),
 
   body('confirmPassword')
     .notEmpty()
@@ -136,7 +140,7 @@ export const updatePasswordValidator = [
     .withMessage('New password is required')
     .isLength({ min: 8 })
     .withMessage('New password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/)
+    .matches(strongPasswordRegex)
     .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 ];
 
@@ -158,7 +162,7 @@ export const updateProfileValidator = [
     .withMessage('Last name can only contain letters, spaces, hyphens, and apostrophes'),
 
   body('phone')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .matches(/^\+?[0-9\s().-]{7,20}$/)
     .withMessage('Please provide a valid phone number'),

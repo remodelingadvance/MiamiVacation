@@ -63,12 +63,12 @@ const getApiValidationMessage = (error) => {
   const validationErrors = error.response?.data?.errors;
   if (Array.isArray(validationErrors) && validationErrors.length > 0) {
     return validationErrors
-      .map((item) => item.msg)
+      .map((item) => item.message || item.msg)
       .filter(Boolean)
       .join(', ');
   }
 
-  return error.response?.data?.message || error.response?.data?.error || 'Failed to save property';
+  return error.userMessage || error.response?.data?.message || error.response?.data?.error || 'Failed to save property';
 };
 
 // Component for Policy Points
@@ -312,7 +312,7 @@ const AdminPropertyForm = () => {
         fetchMaintenanceDates();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add maintenance period');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to add maintenance period');
     } finally {
       setAddingMaintenance(false);
     }
@@ -326,7 +326,7 @@ const AdminPropertyForm = () => {
         fetchMaintenanceDates();
       }
     } catch (error) {
-      toast.error('Failed to remove maintenance period');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to remove maintenance period');
     }
   };
 

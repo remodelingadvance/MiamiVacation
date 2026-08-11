@@ -33,14 +33,14 @@ const AdminSettings = () => {
 
     try {
       setSaving(true);
-      await adminApi.updateProfile({
+      await adminApi.updatePassword({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
       toast.success('Password updated successfully');
       resetPassword();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update password');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update password');
     } finally {
       setSaving(false);
     }

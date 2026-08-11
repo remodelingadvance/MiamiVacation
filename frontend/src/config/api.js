@@ -12,6 +12,22 @@ const api = axios.create({
     timeout: 30000,
 });
 
+const normalizeApiErrorMessage = (error) => {
+    const data = error.response?.data;
+    const validationErrors = Array.isArray(data?.errors) ? data.errors : [];
+    const firstValidationMessage = validationErrors
+        .map((item) => item.message || item.msg)
+        .find(Boolean);
+
+    if (firstValidationMessage && data) {
+        data.message = firstValidationMessage;
+        error.userMessage = firstValidationMessage;
+        return;
+    }
+
+    error.userMessage = data?.message || data?.error || error.message || 'Request failed';
+};
+
 // Request interceptor
 api.interceptors.request.use(
     (config) => {
@@ -33,9 +49,10 @@ api.interceptors.response.use(
     },
     async (error) => {
         const originalRequest = error.config;
+        normalizeApiErrorMessage(error);
 
         // Handle 401 errors - token expired
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {

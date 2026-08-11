@@ -435,7 +435,7 @@ const fetchAllSidebarBadges = useCallback(async () => {
       return true;
     } catch (error) {
       console.error('[Notification] Delete error:', error);
-      toast.error('Failed to delete notification');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete notification');
       return false;
     }
   }, [notifications]);
@@ -462,7 +462,7 @@ const fetchAllSidebarBadges = useCallback(async () => {
       return true;
     } catch (error) {
       console.error('[Notification] Bulk delete error:', error);
-      toast.error('Failed to delete notifications');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete notifications');
       return false;
     }
   }, [notifications]);

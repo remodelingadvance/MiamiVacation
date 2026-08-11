@@ -22,7 +22,7 @@ const AdminCoupons = () => {
       const response = await adminApi.getCoupons();
       setCoupons(response.data.coupons);
     } catch (error) {
-      toast.error('Failed to load coupons');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load coupons');
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ const AdminCoupons = () => {
       fetchCoupons();
       setDeleteId(null);
     } catch (error) {
-      toast.error('Failed to delete coupon');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete coupon');
     } finally {
       setDeleting(false);
     }

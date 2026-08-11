@@ -5,6 +5,8 @@ import { HiLockClosed, HiEye, HiEyeOff, HiCheck } from 'react-icons/hi';
 import SEOHead from '../components/common/SEOHead';
 import { useAuth } from '../contexts/AuthContext';
 
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 const ResetPasswordPage = () => {
   const { token } = useParams();
   const { resetPassword } = useAuth();
@@ -29,6 +31,11 @@ const ResetPasswordPage = () => {
 
     if (passwords.password.length < 8) {
       setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!strongPasswordRegex.test(passwords.password)) {
+      setError('Password must contain uppercase, lowercase, number, and special character');
       return;
     }
 

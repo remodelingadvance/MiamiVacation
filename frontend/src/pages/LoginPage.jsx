@@ -15,6 +15,8 @@ const slides = [
   'https://images.pexels.com/photos/33837662/pexels-photo-33837662.jpeg?auto=compress&cs=tinysrgb&w=1400&q=80',
 ];
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 const LoginPage = () => {
   const { login, loginWithFirebase, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -162,7 +164,7 @@ const LoginPage = () => {
                   {...register('email', {
                     required: 'Email is required',
                     pattern: {
-                      value: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+                      value: emailPattern,
                       message: 'Please enter a valid email',
                     },
                   })}
@@ -188,10 +190,6 @@ const LoginPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     {...register('password', {
                       required: 'Password is required',
-                      minLength: {
-                        value: 6,
-                        message: 'Password must be at least 6 characters',
-                      },
                     })}
                     className={`${inputClass} pr-11`}
                     placeholder="Enter your password"

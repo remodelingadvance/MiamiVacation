@@ -65,7 +65,7 @@ const AdminBookingDetail = () => {
       setBooking(prev => ({ ...prev, status: newStatus }));
       toast.success('Status updated');
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -84,7 +84,7 @@ const AdminBookingDetail = () => {
       window.URL.revokeObjectURL(url);
       toast.success('Invoice downloaded');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to download invoice');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to download invoice');
     } finally {
       setDownloadingInvoice(false);
     }

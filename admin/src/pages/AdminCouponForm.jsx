@@ -66,7 +66,7 @@ const AdminCouponForm = () => {
         status: coupon.status,
       });
     } catch (error) {
-      toast.error('Failed to load coupon');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load coupon');
       navigate('/admin/coupons');
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ const AdminCouponForm = () => {
       navigate('/admin/coupons');
     } catch (error) {
       console.error('Error saving coupon:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to save coupon';
+      const errorMessage = error.userMessage || error.response?.data?.message || 'Failed to save coupon';
       toast.error(errorMessage);
     } finally {
       setSaving(false);

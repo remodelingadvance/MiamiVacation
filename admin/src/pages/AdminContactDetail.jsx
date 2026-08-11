@@ -52,7 +52,7 @@ const AdminContactDetail = () => {
       const response = await adminApi.getContact(id);
       setContact(response.data.contact);
     } catch (error) {
-      toast.error('Failed to send reply');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to send reply');
     } finally {
       setReplying(false);
     }
@@ -64,7 +64,7 @@ const AdminContactDetail = () => {
       setContact(prev => ({ ...prev, status }));
       toast.success(`Message marked as ${status}`);
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update status');
     }
   };
 

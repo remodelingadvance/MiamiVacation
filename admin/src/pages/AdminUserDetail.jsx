@@ -47,7 +47,7 @@ const AdminUserDetail = () => {
       setUser(prev => ({ ...prev, isActive: !prev.isActive }));
       toast.success(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
     } catch (error) {
-      toast.error('Failed to update user status');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update user status');
     }
   };
 

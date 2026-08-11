@@ -78,7 +78,7 @@ export const AdminAuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.userMessage || error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, message };
     }

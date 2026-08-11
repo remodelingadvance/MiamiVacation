@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, requiresVerification: true, email };
       }
 
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      const message = error.userMessage || error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(message);
       return { success: false, message };
     }
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Signup failed. Please try again.';
+      const message = error.userMessage || error.response?.data?.message || 'Signup failed. Please try again.';
       toast.error(message);
       return { success: false, message };
     }
@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const message =
+        error.userMessage ||
         error.response?.data?.message ||
         error.message ||
         `${providerName === 'apple' ? 'Apple' : 'Google'} sign-in failed.`;
@@ -149,7 +150,7 @@ export const AuthProvider = ({ children }) => {
       navigate('/');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Email verification failed';
+      const message = error.userMessage || error.response?.data?.message || 'Email verification failed';
       toast.error(message);
       return { success: false, message };
     }
@@ -161,7 +162,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Verification code sent.');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to resend verification code';
+      const message = error.userMessage || error.response?.data?.message || 'Failed to resend verification code';
       toast.error(message);
       return { success: false, message };
     }
@@ -190,7 +191,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Profile updated successfully');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Profile update failed';
+      const message = error.userMessage || error.response?.data?.message || 'Profile update failed';
       toast.error(message);
       return { success: false, message };
     }
@@ -206,7 +207,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Password updated successfully');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Password update failed';
+      const message = error.userMessage || error.response?.data?.message || 'Password update failed';
       toast.error(message);
       return { success: false, message };
     }
@@ -219,7 +220,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Password reset link sent to your email');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to send reset email';
+      const message = error.userMessage || error.response?.data?.message || 'Failed to send reset email';
       toast.error(message);
       return { success: false, message };
     }
@@ -233,7 +234,7 @@ export const AuthProvider = ({ children }) => {
       navigate('/login');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Password reset failed';
+      const message = error.userMessage || error.response?.data?.message || 'Password reset failed';
       toast.error(message);
       return { success: false, message };
     }
@@ -246,7 +247,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Email verified successfully!');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Email verification failed';
+      const message = error.userMessage || error.response?.data?.message || 'Email verification failed';
       toast.error(message);
       return { success: false, message };
     }

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { decryptField, encryptedString, encryptDocumentPaths } from '../utils/fieldEncryption.js';
 
 const phoneRegex = /^\+?[0-9\s().-]{7,20}$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -25,7 +26,7 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true,
         match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            emailRegex,
             'Please provide a valid email'
         ]
     },

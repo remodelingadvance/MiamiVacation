@@ -31,7 +31,7 @@ const AdminUsers = () => {
       setUsers(response.data.users);
       setTotalItems(response.data.total || response.data.count);
     } catch (error) {
-      toast.error('Failed to load users');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ const AdminUsers = () => {
 
       setDeleteId(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete user');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete user');
     } finally {
       setDeleting(false);
     }
@@ -72,7 +72,7 @@ const AdminUsers = () => {
       toast.success('User role updated');
       fetchUsers(currentPage, searchQuery, filterRole);
     } catch (error) {
-      toast.error('Failed to update user role');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update user role');
     }
   };
 

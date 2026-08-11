@@ -63,7 +63,7 @@ const AdminNewsletter = () => {
       setCampaigns(response.data.campaigns || []);
     } catch (error) {
       console.error('Failed to load campaigns:', error);
-      toast.error('Failed to load campaigns');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load campaigns');
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ const AdminNewsletter = () => {
       setSubscriberStats(response.data.stats || {});
     } catch (error) {
       console.error('Failed to load subscribers:', error);
-      toast.error('Failed to load subscribers');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load subscribers');
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ const AdminNewsletter = () => {
       }
     } catch (error) {
       console.error('Create campaign error:', error);
-      toast.error(error.response?.data?.message || 'Failed to create campaign');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to create campaign');
     }
   };
 
@@ -146,7 +146,7 @@ const AdminNewsletter = () => {
       }
     } catch (error) {
       console.error('Send campaign error:', error);
-      toast.error(error.response?.data?.message || 'Failed to send campaign');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to send campaign');
     } finally {
       setSending(false);
     }
@@ -163,7 +163,7 @@ const AdminNewsletter = () => {
       fetchCampaigns();
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete campaign');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete campaign');
     } finally {
       setDeleting(false);
     }
@@ -180,7 +180,7 @@ const AdminNewsletter = () => {
       fetchSubscribers(currentPage, searchQuery);
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete subscriber');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete subscriber');
     } finally {
       setDeleting(false);
     }
@@ -200,7 +200,7 @@ const AdminNewsletter = () => {
       fetchSubscribers(currentPage, searchQuery);
     } catch (error) {
       console.error('Bulk delete error:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete subscribers');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete subscribers');
     } finally {
       setDeleting(false);
     }

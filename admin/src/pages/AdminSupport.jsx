@@ -233,7 +233,7 @@ const AdminSupport = () => {
         appendMessage(response.data.message);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Reply could not be sent');
+      toast.error(error.userMessage || error.response?.data?.message || 'Reply could not be sent');
     } finally {
       setSending(false);
     }

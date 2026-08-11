@@ -11,6 +11,22 @@ const api = axios.create({
     timeout: 30000,
 });
 
+const normalizeApiErrorMessage = (error) => {
+    const data = error.response?.data;
+    const validationErrors = Array.isArray(data?.errors) ? data.errors : [];
+    const firstValidationMessage = validationErrors
+        .map((item) => item.message || item.msg)
+        .find(Boolean);
+
+    if (firstValidationMessage && data) {
+        data.message = firstValidationMessage;
+        error.userMessage = firstValidationMessage;
+        return;
+    }
+
+    error.userMessage = data?.message || data?.error || error.message || 'Request failed';
+};
+
 // Request interceptor
 api.interceptors.request.use(
     (config) => {
@@ -27,6 +43,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        normalizeApiErrorMessage(error);
+
         if (error.response?.status === 401) {
             localStorage.removeItem('mlr_admin_token');
             localStorage.removeItem('mlr_admin_user');
@@ -40,6 +58,8 @@ const adminApi = {
     // Auth
     login: (credentials) => api.post('/auth/login', credentials),
     getMe: () => api.get('/auth/me'),
+    updateProfile: (data) => api.patch('/auth/update-profile', data),
+    updatePassword: (data) => api.patch('/auth/update-password', data),
 
     // Dashboard
     getDashboardStats: () => api.get('/admin/dashboard'),

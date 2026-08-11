@@ -60,7 +60,7 @@ const RateCalendarManager = ({ propertyId, basePrice = 0, minimumStay = 1 }) => 
       const response = await adminApi.getRateCalendar(propertyId, windowParams);
       setRateDays(response.data.days || []);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to load rate calendar');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to load rate calendar');
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ const RateCalendarManager = ({ propertyId, basePrice = 0, minimumStay = 1 }) => 
       syncDays(response.data.days);
       toast.success(reset ? 'Date reset to default pricing' : 'Rate updated');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update rate');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update rate');
     } finally {
       setSaving(false);
     }
@@ -129,7 +129,7 @@ const RateCalendarManager = ({ propertyId, basePrice = 0, minimumStay = 1 }) => 
       syncDays(response.data.days);
       toast.success('Date reset to default pricing');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset rate');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to reset rate');
     } finally {
       setSaving(false);
     }
@@ -163,7 +163,7 @@ const RateCalendarManager = ({ propertyId, basePrice = 0, minimumStay = 1 }) => 
       syncDays(response.data.days);
       toast.success(reset ? 'Range reset to default pricing' : 'Range updated');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update range');
+      toast.error(error.userMessage || error.response?.data?.message || 'Failed to update range');
     } finally {
       setSaving(false);
     }
