@@ -48,6 +48,24 @@ const issueAuthTokens = async (user) => {
   return { token, refreshToken };
 };
 
+const getVerificationEmailFailureMessage = (error) => {
+  const providerMessage = `${error?.response || ''} ${error?.message || ''}`;
+
+  if (error?.responseCode === 525 || /unauthorized ip address/i.test(providerMessage)) {
+    return 'Brevo rejected this server IP address. Add the backend/VPS outbound IP address to Brevo Authorized IPs, or disable unknown IP blocking, then request a new verification code.';
+  }
+
+  if (error?.code === 'EAUTH') {
+    return 'Brevo SMTP authentication failed. Use the SMTP login and SMTP key from Brevo SMTP settings, not the API key or account password.';
+  }
+
+  if (error?.code === 'ECONNECTION' || error?.code === 'ETIMEDOUT') {
+    return 'Could not connect to Brevo SMTP. Check SMTP host, port, TLS settings, and outbound SMTP firewall rules.';
+  }
+
+  return 'Verification email could not be sent. Please check the email provider configuration and try again.';
+};
+
 const sendVerificationCodeEmail = async (user, code) => {
   await emailService.send({
     to: user.email,
@@ -115,7 +133,10 @@ export const signup = catchAsync(async (req, res, next) => {
     await sendVerificationCodeEmail(user, verificationCode);
   } catch (error) {
     logger.error('Verification code email failed during signup:', error);
-    return next(new AppError('Account created, but the verification email could not be sent. Please request a new code.', 500));
+    return next(new AppError(
+      `Account created, but the verification email could not be sent. ${getVerificationEmailFailureMessage(error)}`,
+      502
+    ));
   }
 
   res.status(201).json({
@@ -314,7 +335,12 @@ export const resendVerificationCode = catchAsync(async (req, res, next) => {
 
   const verificationCode = user.generateVerificationCode();
   await user.save({ validateBeforeSave: false });
-  await sendVerificationCodeEmail(user, verificationCode);
+  try {
+    await sendVerificationCodeEmail(user, verificationCode);
+  } catch (error) {
+    logger.error('Verification code email failed during resend:', error);
+    return next(new AppError(getVerificationEmailFailureMessage(error), 502));
+  }
 
   res.status(200).json({
     success: true,
