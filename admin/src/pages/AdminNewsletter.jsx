@@ -24,6 +24,8 @@ import adminApi from '../config/api';
 import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
+const SUBSCRIBER_PAGE_SIZE = 20;
+
 const AdminNewsletter = () => {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [campaigns, setCampaigns] = useState([]);
@@ -55,6 +57,11 @@ const AdminNewsletter = () => {
     targetAudience: 'all',
   });
 
+  const currentPageSubscriberIds = subscribers.map((subscriber) => subscriber._id);
+  const allCurrentPageSubscribersSelected =
+    currentPageSubscriberIds.length > 0 &&
+    currentPageSubscriberIds.every((id) => selectedSubscribers.includes(id));
+
   // Fetch campaigns
   const fetchCampaigns = useCallback(async () => {
     try {
@@ -73,7 +80,7 @@ const AdminNewsletter = () => {
   const fetchSubscribers = useCallback(async (page = 1, search = '') => {
     try {
       setLoading(true);
-      const params = { page, limit: 20 };
+      const params = { page, limit: SUBSCRIBER_PAGE_SIZE };
       if (search) params.search = search;
       
       const response = await adminApi.getSubscribers(params);
@@ -177,7 +184,13 @@ const AdminNewsletter = () => {
       await adminApi.deleteSubscriber(deleteId);
       toast.success('Subscriber deleted');
       setDeleteId(null);
-      fetchSubscribers(currentPage, searchQuery);
+
+      const nextPage = subscribers.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+      if (nextPage !== currentPage) {
+        setCurrentPage(nextPage);
+      } else {
+        fetchSubscribers(nextPage, searchQuery);
+      }
     } catch (error) {
       console.error('Delete error:', error);
       toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete subscriber');
@@ -195,9 +208,22 @@ const AdminNewsletter = () => {
       const response = await adminApi.bulkDeleteSubscribers(selectedSubscribers);
       const deletedCount = response.data.deletedCount ?? selectedSubscribers.length;
       toast.success(`${deletedCount} subscriber${deletedCount === 1 ? '' : 's'} deleted`);
+
+      const deletedFromCurrentPage = subscribers.filter((subscriber) =>
+        selectedSubscribers.includes(subscriber._id)
+      ).length;
+      const nextPage =
+        deletedFromCurrentPage >= subscribers.length && currentPage > 1
+          ? currentPage - 1
+          : currentPage;
+
       setSelectedSubscribers([]);
       setShowBulkDeleteConfirm(false);
-      fetchSubscribers(currentPage, searchQuery);
+      if (nextPage !== currentPage) {
+        setCurrentPage(nextPage);
+      } else {
+        fetchSubscribers(nextPage, searchQuery);
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       toast.error(error.userMessage || error.response?.data?.message || 'Failed to delete subscribers');
@@ -274,10 +300,16 @@ const AdminNewsletter = () => {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedSubscribers(subscribers.map(s => s._id));
+      setSelectedSubscribers((prev) => Array.from(new Set([...prev, ...currentPageSubscriberIds])));
     } else {
-      setSelectedSubscribers([]);
+      setSelectedSubscribers((prev) => prev.filter((id) => !currentPageSubscriberIds.includes(id)));
     }
+  };
+
+  const handleSubscriberSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    setSelectedSubscribers([]);
   };
 
   // Campaign Table Columns
@@ -370,9 +402,10 @@ const AdminNewsletter = () => {
       title: () => (
         <input
           type="checkbox"
-          checked={selectedSubscribers.length === subscribers.length && subscribers.length > 0}
+          checked={allCurrentPageSubscribersSelected}
           onChange={(e) => handleSelectAll(e.target.checked)}
           className="w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+          aria-label="Select all subscribers on this page"
         />
       ),
       render: (row) => (
@@ -381,6 +414,7 @@ const AdminNewsletter = () => {
           checked={selectedSubscribers.includes(row._id)}
           onChange={(e) => handleSelectSubscriber(row._id, e.target.checked)}
           className="w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+          aria-label={`Select subscriber ${row.email}`}
         />
       ),
       width: '50px',
@@ -646,13 +680,11 @@ const AdminNewsletter = () => {
           data={activeTab === 'campaigns' ? campaigns : subscribers}
           loading={loading}
           totalItems={activeTab === 'subscribers' ? totalSubscribers : campaigns.length}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          onSearch={activeTab === 'subscribers' ? (query) => {
-            setSearchQuery(query);
-            setCurrentPage(1);
-          } : undefined}
+          currentPage={activeTab === 'subscribers' ? currentPage : 1}
+          onPageChange={activeTab === 'subscribers' ? setCurrentPage : undefined}
+          onSearch={activeTab === 'subscribers' ? handleSubscriberSearch : undefined}
           searchPlaceholder="Search by email, name..."
+          pageSize={activeTab === 'subscribers' ? SUBSCRIBER_PAGE_SIZE : Math.max(campaigns.length, 1)}
           emptyMessage={activeTab === 'campaigns' ? 'No campaigns yet. Create your first campaign!' : 'No subscribers found. Click "Add Subscriber" to get started!'}
         />
       </div>

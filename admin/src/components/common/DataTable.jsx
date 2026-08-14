@@ -72,7 +72,7 @@ const DataTable = ({
                   className="text-left px-6 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider whitespace-nowrap"
                   style={column.width ? { width: column.width } : {}}
                 >
-                  {column.title}
+                  {typeof column.title === 'function' ? column.title() : column.title}
                 </th>
               ))}
             </tr>
