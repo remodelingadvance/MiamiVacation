@@ -31,7 +31,7 @@ const RouteTransitionLoader = () => {
     <AnimatePresence mode="wait">
       {visible && (
         <PageLoader
-          title="Stay Wise"
+          title="Stay Wise Miami"
           subtitle="Loading your Miami escape."
         />
       )}

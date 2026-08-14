@@ -53,7 +53,7 @@ const AdminLogin = () => {
               <span className="text-3xl font-bold text-[var(--color-bg-dark)]">S</span>
             </div>
             <h1 className="text-2xl font-display font-bold text-white">Admin Portal</h1>
-            <p className="text-[var(--color-text-muted)] text-sm mt-1">Stay Wise</p>
+            <p className="text-[var(--color-text-muted)] text-sm mt-1">Stay Wise Miami</p>
           </div>
 
           {/* Login form */}

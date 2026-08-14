@@ -1,4 +1,4 @@
-﻿const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Stay Wise';
+﻿const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Stay Wise Miami';
 const COMPANY_URL = import.meta.env.VITE_APP_URL || 'https://www.staywise.miami';
 
 export const APP_CONFIG = {

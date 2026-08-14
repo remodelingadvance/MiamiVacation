@@ -2,7 +2,7 @@
 import StayWiseLogo from '../../assets/stay-wise-logo-light.png';
 
 const PageLoader = ({
-  title = 'Stay Wise',
+  title = 'Stay Wise Miami',
   subtitle = 'Preparing your Miami stay.',
 }) => {
   return (
@@ -21,7 +21,7 @@ const PageLoader = ({
       <div className="relative flex flex-col items-center px-6 text-center">
         <motion.img
           src={StayWiseLogo}
-          alt="Stay Wise"
+          alt="Stay Wise Miami"
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25 }}

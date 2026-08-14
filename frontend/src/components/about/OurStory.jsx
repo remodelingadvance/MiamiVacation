@@ -273,7 +273,7 @@ const OurStory = () => {
                   className="mt-2.5 flex items-center gap-1.5 text-lg text-[var(--color-primary)] sm:text-xl"
                   style={{ fontFamily: "'Dancing Script', cursive" }}
                 >
-                  Stay Wise, Stay Miami
+                  Stay Wise Miami
                   <GiPalmTree className="h-4 w-4" />
                 </p>
               </motion.div>

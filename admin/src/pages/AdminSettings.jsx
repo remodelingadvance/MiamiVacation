@@ -111,7 +111,7 @@ const AdminSettings = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="input-label">Site Name</label>
-                      <input type="text" defaultValue="Stay Wise" className="input-field" />
+                      <input type="text" defaultValue="Stay Wise Miami" className="input-field" />
                     </div>
                     <div>
                       <label className="input-label">Site URL</label>
@@ -171,7 +171,7 @@ const AdminSettings = () => {
                       </div>
                       <div>
                         <label className="input-label">Sender Name</label>
-                        <input type="text" defaultValue="Stay Wise" className="input-field" />
+                        <input type="text" defaultValue="Stay Wise Miami" className="input-field" />
                       </div>
                       <div className="col-span-2">
                         <label className="input-label">API Key</label>

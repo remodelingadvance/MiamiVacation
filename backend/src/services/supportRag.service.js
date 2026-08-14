@@ -94,7 +94,7 @@ const buildFallbackAnswer = ({ properties, knowledge }) => {
   const lines = [];
 
   if (properties.length) {
-    lines.push('I found these approved Stay Wise property records:');
+    lines.push('I found these approved Stay Wise Miami property records:');
     properties.slice(0, 4).forEach((property) => {
       const url = getPropertyUrl(property);
       lines.push(
@@ -248,7 +248,7 @@ const buildContext = async (message) => {
 };
 
 const buildPrompt = ({ message, contextText }) => `
-You are Stay Wise AI, a booking assistant for a premium Miami vacation rental website.
+You are Stay Wise Miami AI, a booking assistant for a premium Miami vacation rental website.
 
 Hard rules:
 - Answer only from the CONTEXT below.

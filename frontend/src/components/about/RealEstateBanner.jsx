@@ -166,7 +166,7 @@ const RealEstateBanner = () => {
               <HiSparkles className="h-3.5 w-3.5" />
             </motion.span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#e8527a] sm:text-[11px]">
-              Miami Vacation Rentals
+              Stay Wise Miami
             </span>
           </motion.div>
 

@@ -69,7 +69,7 @@ const getVerificationEmailFailureMessage = (error) => {
 const sendVerificationCodeEmail = async (user, code) => {
   await emailService.send({
     to: user.email,
-    subject: 'Your Stay Wise verification code',
+    subject: 'Your Stay Wise Miami verification code',
     html: `
       <!DOCTYPE html>
       <html>
@@ -89,7 +89,7 @@ const sendVerificationCodeEmail = async (user, code) => {
           <div class="card">
             <div class="header">
               <h1 style="margin:0;">Verify your email</h1>
-              <p style="margin:8px 0 0;">Stay Wise account security</p>
+              <p style="margin:8px 0 0;">Stay Wise Miami account security</p>
             </div>
             <div class="content">
               <h2 style="margin-top:0;">Hello ${user.firstName},</h2>
@@ -176,7 +176,7 @@ const legacySignup = catchAsync(async (req, res, next) => {
     
     await emailService.send({
       to: user.email,
-      subject: 'Verify Your Email - Stay Wise',
+      subject: 'Verify Your Email - Stay Wise Miami',
       html: `
         <!DOCTYPE html>
         <html>
@@ -192,7 +192,7 @@ const legacySignup = catchAsync(async (req, res, next) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Welcome to Stay Wise! 🌴</h1>
+              <h1>Welcome to Stay Wise Miami! 🌴</h1>
             </div>
             <div class="content">
               <h2>Hello ${user.firstName},</h2>
@@ -531,7 +531,7 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Email Verified - Welcome to Stay Wise!',
+      subject: 'Email Verified - Welcome to Stay Wise Miami!',
       html: `
         <!DOCTYPE html>
         <html>
@@ -550,7 +550,7 @@ export const verifyEmail = catchAsync(async (req, res, next) => {
             </div>
             <div class="content">
               <h2>Welcome aboard, ${user.firstName}!</h2>
-              <p>Your email has been verified. You now have full access to Stay Wise.</p>
+              <p>Your email has been verified. You now have full access to Stay Wise Miami.</p>
               <p>Start browsing our exclusive collection of luxury properties in Miami!</p>
             </div>
           </div>
@@ -594,7 +594,7 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     
     await emailService.send({
       to: user.email,
-      subject: 'Password Reset Request - Stay Wise',
+      subject: 'Password Reset Request - Stay Wise Miami',
       html: `
         <!DOCTYPE html>
         <html>
@@ -668,7 +668,7 @@ export const resetPassword = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Password Reset Successful - Stay Wise',
+      subject: 'Password Reset Successful - Stay Wise Miami',
       html: `
         <!DOCTYPE html>
         <html>
@@ -823,7 +823,7 @@ export const updatePassword = catchAsync(async (req, res, next) => {
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Password Changed - Stay Wise',
+      subject: 'Password Changed - Stay Wise Miami',
       html: `
         <!DOCTYPE html>
         <html>

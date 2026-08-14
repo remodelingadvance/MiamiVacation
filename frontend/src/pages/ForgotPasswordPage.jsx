@@ -45,7 +45,7 @@ const ForgotPasswordPage = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center">
                 <span className="text-2xl font-bold text-[var(--color-bg-dark)]">M</span>
               </div>
-              <span className="text-xl font-display font-bold text-white">Stay Wise</span>
+              <span className="text-xl font-display font-bold text-white">Stay Wise Miami</span>
             </Link>
           </div>
 

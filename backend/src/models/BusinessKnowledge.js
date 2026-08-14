@@ -32,7 +32,7 @@ const businessKnowledgeSchema = new mongoose.Schema({
   source: {
     type: String,
     trim: true,
-    default: 'Stay Wise approved knowledge',
+    default: 'Stay Wise Miami approved knowledge',
   },
   isApproved: {
     type: Boolean,

@@ -1,21 +1,34 @@
 import createTransporter from '../config/brevo.js';
 import { COMPANY_INFO } from '../config/constants.js';
 
+const normalizeSenderName = (value) => {
+  const name = String(value || '').trim();
+  if (
+    !name ||
+    /^stay\s+wise$/i.test(name) ||
+    /miami\s+luxury\s+rentals|miami\s+vacation\s+rentals/i.test(name)
+  ) {
+    return 'Stay Wise Miami';
+  }
+  return name;
+};
+
 class EmailService {
   constructor() {
     this.transporter = createTransporter();
-    const senderName = process.env.BREVO_SENDER_NAME || COMPANY_INFO.name;
+    const senderName = normalizeSenderName(process.env.BREVO_SENDER_NAME || COMPANY_INFO.name);
     const senderEmail = process.env.BREVO_SENDER_EMAIL || COMPANY_INFO.email;
     this.from = `"${senderName}" <${senderEmail}>`;
   }
 
-  async send({ to, subject, html, attachments = [] }) {
+  async send({ to, subject, html, text, attachments = [] }) {
     try {
       const mailOptions = {
         from: this.from,
         to,
         subject,
         html,
+        text,
         attachments,
       };
 

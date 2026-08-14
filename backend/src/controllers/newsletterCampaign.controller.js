@@ -4,10 +4,94 @@ import catchAsync from '../utils/catchAsync.js';
 import emailService from '../utils/emailService.js';
 import logger from '../utils/logger.js';
 
+const BRAND_NAME = 'Stay Wise Miami';
+const LEGACY_BRAND_PATTERN = /Miami\s+Luxury\s+Rentals|Miami\s+Vacation\s+Rentals/gi;
+const SHORT_BRAND_PATTERN = /Stay\s+Wise(?!\s+Miami)/gi;
+
+const decodeHtmlEntities = (value = '') => {
+  const entities = {
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#34;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&nbsp;': ' ',
+  };
+
+  let decoded = String(value);
+  for (let i = 0; i < 3; i += 1) {
+    const next = decoded
+      .replace(/&(lt|gt|quot|#34|#39|apos|nbsp);/gi, (match) => entities[match.toLowerCase()] || match)
+      .replace(/&amp;/gi, '&');
+
+    if (next === decoded) break;
+    decoded = next;
+  }
+
+  return decoded;
+};
+
+const normalizeBrandText = (value = '') =>
+  String(value)
+    .replace(LEGACY_BRAND_PATTERN, BRAND_NAME)
+    .replace(SHORT_BRAND_PATTERN, BRAND_NAME);
+
+const sanitizeCampaignHtml = (value = '') => {
+  let html = normalizeBrandText(decodeHtmlEntities(value));
+
+  html = html
+    .replace(/href=(["'])\[(https?:\/\/[^\]]+)\]\((https?:\/\/[^)]+)\)\1/gi, 'href="$3"')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<(iframe|object|embed|form|input|button|textarea|select|meta|link)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(iframe|object|embed|form|input|button|textarea|select|meta|link)\b[^>]*\/?>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(["'])[\s\S]*?\1/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/\s+(href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+    .replace(/\s+(href|src)\s*=\s*(["'])\s*data:text\/html[\s\S]*?\2/gi, ' $1="#"');
+
+  return html.trim();
+};
+
+const stripHtmlToText = (html = '') =>
+  normalizeBrandText(decodeHtmlEntities(html))
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeCampaignPayload = (payload = {}) => {
+  if (payload.name) payload.name = normalizeBrandText(payload.name).trim();
+  if (payload.subject) payload.subject = normalizeBrandText(payload.subject).trim();
+  if (payload.content) payload.content = sanitizeCampaignHtml(payload.content);
+  return payload;
+};
+
+const buildCampaignEmail = (campaign) => {
+  const html = sanitizeCampaignHtml(campaign.content);
+  return {
+    subject: normalizeBrandText(campaign.subject),
+    html,
+    text: stripHtmlToText(html),
+  };
+};
+
+const normalizeCampaignForResponse = (campaign) => {
+  if (!campaign) return campaign;
+
+  const item = typeof campaign.toObject === 'function' ? campaign.toObject() : { ...campaign };
+  item.name = normalizeBrandText(item.name || '').trim();
+  item.subject = normalizeBrandText(item.subject || '').trim();
+  item.content = sanitizeCampaignHtml(item.content || '');
+  return item;
+};
+
 // @desc    Create newsletter campaign
 // @route   POST /api/v1/newsletter/campaigns
 // @access  Private/Admin
 export const createCampaign = catchAsync(async (req, res, next) => {
+  normalizeCampaignPayload(req.body);
   req.body.createdBy = req.user.id;
 
   const campaign = await NewsletterCampaign.create(req.body);
@@ -21,7 +105,7 @@ export const createCampaign = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     success: true,
-    campaign,
+    campaign: normalizeCampaignForResponse(campaign),
   });
 });
 
@@ -46,7 +130,7 @@ export const getCampaigns = catchAsync(async (req, res, next) => {
     success: true,
     count: campaigns.length,
     total,
-    campaigns,
+    campaigns: campaigns.map(normalizeCampaignForResponse),
   });
 });
 
@@ -63,7 +147,7 @@ export const getCampaign = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    campaign,
+    campaign: normalizeCampaignForResponse(campaign),
   });
 });
 
@@ -71,6 +155,8 @@ export const getCampaign = catchAsync(async (req, res, next) => {
 // @route   PATCH /api/v1/newsletter/campaigns/:id
 // @access  Private/Admin
 export const updateCampaign = catchAsync(async (req, res, next) => {
+  normalizeCampaignPayload(req.body);
+
   const campaign = await NewsletterCampaign.findByIdAndUpdate(
     req.params.id,
     req.body,
@@ -83,7 +169,7 @@ export const updateCampaign = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    campaign,
+    campaign: normalizeCampaignForResponse(campaign),
   });
 });
 
@@ -111,7 +197,7 @@ export const sendCampaign = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Campaign sending started',
-    campaign,
+    campaign: normalizeCampaignForResponse(campaign),
   });
 });
 
@@ -217,6 +303,10 @@ async function processCampaignSend(campaignId) {
     }
 
     const subscribers = await Newsletter.find(query);
+    const email = buildCampaignEmail(campaign);
+    campaign.name = normalizeBrandText(campaign.name || '').trim();
+    campaign.subject = email.subject;
+    campaign.content = email.html;
     campaign.recipients.total = subscribers.length;
     await campaign.save();
 
@@ -232,8 +322,9 @@ async function processCampaignSend(campaignId) {
           try {
             await emailService.send({
               to: subscriber.email,
-              subject: campaign.subject,
-              html: campaign.content,
+              subject: email.subject,
+              html: email.html,
+              text: email.text,
             });
             sentCount++;
           } catch (error) {

@@ -9,7 +9,7 @@ const ContactPage = () => {
     <>
       <SEOHead
         title="Contact Us"
-        description="Get in touch with Stay Wise. We're here to help with your booking, questions, or any assistance you need."
+        description="Get in touch with Stay Wise Miami. We're here to help with your booking, questions, or any assistance you need."
       />
 
       <ContactHero />

@@ -1,6 +1,6 @@
 // Application constants
 export const COMPANY_INFO = {
-  name: process.env.COMPANY_NAME || 'Stay Wise',
+  name: process.env.COMPANY_NAME || 'Stay Wise Miami',
   email: process.env.COMPANY_EMAIL || 'info@staywise.miami',
   phone: process.env.COMPANY_PHONE || '(305) 615-3735',
   phoneHref: process.env.COMPANY_PHONE_E164 || '+13056153735',

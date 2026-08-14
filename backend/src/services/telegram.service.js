@@ -90,7 +90,7 @@ export const notifyTelegramForCustomerMessage = async ({ conversation, message }
   const canUseAdminLink = isPublicTelegramUrl(adminLink);
 
   const text = [
-    '<b>New Stay Wise support message</b>',
+    '<b>New Stay Wise Miami support message</b>',
     '',
     `<b>Chat:</b> ${escapeHtml(conversation.conversationId || conversation._id)}`,
     `<b>Customer:</b> ${escapeHtml(customer.name || 'Guest visitor')}`,

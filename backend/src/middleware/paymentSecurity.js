@@ -60,7 +60,7 @@ export const rejectRawPaymentData = (req, res, next) => {
   if (rawPaymentField) {
     return next(
       new AppError(
-        'Do not send card numbers, CVV, or raw card details to Stay Wise. Use Stripe Elements and PaymentMethod IDs only.',
+        'Do not send card numbers, CVV, or raw card details to Stay Wise Miami. Use Stripe Elements and PaymentMethod IDs only.',
         400
       )
     );

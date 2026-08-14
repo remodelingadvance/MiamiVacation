@@ -9,9 +9,9 @@ const AboutPage = () => {
   return (
     <>
       <SEOHead
-        title="About Stay Wise"
-        description="Learn about Stay Wise, a Miami-based luxury vacation rental platform offering handpicked stays, local concierge care, and premium booking support."
-        keywords="about Stay Wise, Miami vacation rental company, luxury Miami rentals, Miami concierge stays"
+        title="About Stay Wise Miami"
+        description="Learn about Stay Wise Miami, a Miami-based luxury vacation rental platform offering handpicked stays, local concierge care, and premium booking support."
+        keywords="about Stay Wise Miami, Miami vacation rental company, luxury Miami rentals, Miami concierge stays"
       />
 
       <main className="overflow-hidden bg-white">

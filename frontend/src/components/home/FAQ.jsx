@@ -60,7 +60,7 @@ const FAQ = () => {
             Frequently Asked Questions
           </h2>
           <p className="section-subtitle mx-auto">
-            Everything you need to know about booking with Stay Wise
+            Everything you need to know about booking with Stay Wise Miami
           </p>
         </motion.div>
 
